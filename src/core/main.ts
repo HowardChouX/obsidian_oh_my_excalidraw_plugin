@@ -218,7 +218,6 @@ export default class ExcalidrawPlugin extends Plugin {
   private settingsReady: boolean = false;
   public wasPenModeActivePreviously: boolean = false;
   public popScope: (() => void) | null = null;
-  public lastPDFLeafID: string = null;
   public forceExcalidrawViewMode: boolean = false;
 
   constructor(app: App, manifest: PluginManifest) {
@@ -872,36 +871,6 @@ export default class ExcalidrawPlugin extends Plugin {
     } catch (e) {
       new Notice(`Error running startup script: ${e}`);
     }
-  }
-
-  public getLastActivePDFPageLink(requestorFile: TFile): string {
-    if (!this.lastPDFLeafID) {
-      return;
-    }
-    const leaf = this.app.workspace.getLeafById(this.lastPDFLeafID);
-    if (!leaf || !leaf.view || leaf.view.getViewType() !== "pdf") {
-      return;
-    }
-    const view = leaf.view as {
-      file?: TFile;
-      viewer?: {
-        child?: {
-          pdfViewer?: {
-            page?: number;
-          };
-        };
-      };
-    };
-    const file = view.file;
-    const page = view.viewer.child.pdfViewer.page;
-    if (!file || !page) {
-      return;
-    }
-    return `${this.app.metadataCache.fileToLinktext(
-      file,
-      requestorFile?.path,
-      false,
-    )}#page=${page}`;
   }
 
   public async activeLeafChangeEventHandler(leaf: WorkspaceLeaf) {

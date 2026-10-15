@@ -71,7 +71,6 @@ import {
   emulateCTRLClickForLinks,
   linkClickModifierType,
 } from "../../utils/modifierkeyHelper";
-import { InsertPDFModal } from "../../shared/Dialogs/InsertPDFModal";
 import { ExportDialog } from "../../shared/Dialogs/ExportDialog";
 import { UniversalInsertFileModal } from "../../shared/Dialogs/UniversalInsertFileModal";
 import { PublishOutOfDateFilesDialog } from "../../shared/Dialogs/PublishOutOfDateFiles";
@@ -2310,56 +2309,6 @@ export class CommandManager {
           return true;
         }
         return false;
-      },
-    });
-
-    this.addCommand({
-      id: "insert-pdf",
-      name: t("INSERT_PDF"),
-      checkCallback: (checking: boolean) => {
-        if (checking) {
-          return Boolean(
-            this.app.workspace.getActiveViewOfType(ExcalidrawView),
-          );
-        }
-        const view = this.app.workspace.getActiveViewOfType(ExcalidrawView);
-        if (view) {
-          const insertPDFModal = new InsertPDFModal(this.plugin, view);
-          insertPDFModal.open();
-          return true;
-        }
-        return false;
-      },
-    });
-
-    this.addCommand({
-      id: "insert-pdf",
-      name: t("INSERT_LAST_ACTIVE_PDF_PAGE_AS_IMAGE"),
-      checkCallback: (checking: boolean) => {
-        const view = this.app.workspace.getActiveViewOfType(ExcalidrawView);
-        if (!view) {
-          return false;
-        }
-        const PDFLink = this.plugin.getLastActivePDFPageLink(view.file);
-        if (!PDFLink) {
-          return false;
-        }
-        if (checking) {
-          return true;
-        }
-        void (async () => {
-          const ea = getEA(view);
-          const id = await insertImageToView(
-            ea,
-            view.currentPosition,
-            PDFLink,
-            undefined,
-            undefined,
-            true,
-          );
-          ea.selectElementsInView([id]);
-          ea.destroy();
-        })();
       },
     });
 

@@ -879,65 +879,6 @@ export function obsidianURLIsImage(data: string): boolean {
   }
 }
 
-export function hyperlinkIsYouTubeLink(link: string): boolean {
-  return (
-    isHyperLink(link) &&
-    (link.startsWith(URLs.YOUTU_BE) ||
-      link.startsWith(URLs.WWW_YOUTUBE_COM) ||
-      link.startsWith(URLs.YOUTUBE_COM) ||
-      link.startsWith("https//www.youtu.be")) &&
-    link.match(/(youtu.be\/|v=)([^?/&]*)/) !== null
-  );
-}
-
-export async function getYouTubeThumbnailLink(
-  youtubelink: string,
-): Promise<string> {
-  //https://stackoverflow.com/questions/2068344/how-do-i-get-a-youtube-video-thumbnail-from-the-youtube-api
-  //https://youtu.be/z8UkHGpykYU?t=60
-  //https://www.youtube.com/watch?v=z8UkHGpykYU&ab_channel=VerbaltoVisual
-  const parsed = youtubelink.match(/(youtu.be\/|v=)([^?/&]*)/);
-  if (!parsed || !parsed[2]) {
-    return null;
-  }
-  const videoId = parsed[2];
-
-  let url = `${URLs.I_YTIMG_COM}/${videoId}/maxresdefault.jpg`;
-  let response = await requestUrl({
-    url,
-    method: "get",
-    contentType: "image/jpeg",
-    throw: false,
-  });
-  if (response && response.status === 200) {
-    return url;
-  }
-
-  url = `${URLs.I_YTIMG_COM}/${videoId}/hq720.jpg`;
-  response = await requestUrl({
-    url,
-    method: "get",
-    contentType: "image/jpeg",
-    throw: false,
-  });
-  if (response && response.status === 200) {
-    return url;
-  }
-
-  url = `${URLs.I_YTIMG_COM}/${videoId}/mqdefault.jpg`;
-  response = await requestUrl({
-    url,
-    method: "get",
-    contentType: "image/jpeg",
-    throw: false,
-  });
-  if (response && response.status === 200) {
-    return url;
-  }
-
-  return `${URLs.I_YTIMG_COM}/${videoId}/default.jpg`;
-}
-
 export function convertSVGStringToElement(svg: string): SVGSVGElement {
   const parser = new DOMParser();
   const doc = parser.parseFromString(makeEntitiesXmlSafe(svg), "image/svg+xml");

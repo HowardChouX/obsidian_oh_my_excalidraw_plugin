@@ -207,15 +207,6 @@ export interface ExcalidrawSettings {
   customPens: PenStyle[];
   numberOfCustomPens: number;
   pdfScale: number;
-  pdfBorderBox: boolean;
-  pdfFrame: boolean;
-  pdfGapSize: number;
-  pdfGroupPages: boolean;
-  pdfLockAfterImport: boolean;
-  pdfNumColumns: number;
-  pdfNumRows: number;
-  pdfDirection: "down" | "right";
-  pdfImportScale: number;
   gridSettings: GridSettings;
   laserSettings: {
     DECAY_TIME: number;
@@ -435,15 +426,6 @@ export const DEFAULT_SETTINGS: ExcalidrawSettings = {
   ],
   numberOfCustomPens: 0,
   pdfScale: 4,
-  pdfBorderBox: true,
-  pdfFrame: false,
-  pdfGapSize: 20,
-  pdfGroupPages: false,
-  pdfLockAfterImport: true,
-  pdfNumColumns: 1,
-  pdfNumRows: 1,
-  pdfDirection: "right",
-  pdfImportScale: 0.3,
   gridSettings: {
     DYNAMIC_COLOR: true,
     COLOR: "#000000",

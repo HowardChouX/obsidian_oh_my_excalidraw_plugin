@@ -301,10 +301,6 @@ export class EventManager {
       return;
     }
 
-    if (leaf.view && leaf.view.getViewType() === "pdf") {
-      this.plugin.lastPDFLeafID = leaf.id;
-    }
-
     if (leaf.view && leaf.view.getViewType() === VIEW_TYPE_EXCALIDRAW) {
       this.plugin.lastActiveExcalidrawLeafID = leaf.id;
     } else {

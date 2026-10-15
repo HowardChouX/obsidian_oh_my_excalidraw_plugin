@@ -101,7 +101,6 @@ import {
   hasExportTheme,
   scaleLoadedImage,
   hyperlinkIsImage,
-  getYouTubeThumbnailLink,
   isContainer,
   fragWithHTML,
   isMaskFile,
@@ -194,7 +193,7 @@ import {
   ModifierKeys,
 } from "../utils/modifierkeyHelper";
 import { setDynamicStyle } from "../utils/dynamicStyling";
-import { CustomEmbeddable, renderWebView } from "./components/CustomEmbeddable";
+import { CustomEmbeddable } from "./components/CustomEmbeddable";
 import {
   addBackOfTheNoteCard,
   insertBackOfTheNoteContent,
@@ -700,7 +699,6 @@ export default class ExcalidrawView
         REGEX_LINK,
         REG_LINKINDEX_HYPERLINK,
         openExternalLink,
-        renderWebView,
         useDefaultExcalidrawFrame,
         openUIModeSettings: () => {
           const uiModes = new UIModeSettings(this.plugin);
@@ -4663,15 +4661,6 @@ export default class ExcalidrawView
         ea.destroy();
       }
     })();
-  }
-
-  async addYouTubeThumbnail(link: string) {
-    const thumbnailLink = await getYouTubeThumbnailLink(link);
-    const ea = getEA(this);
-    const id = await ea.addImage(0, 0, thumbnailLink);
-    ea.getElement(id).link = link;
-    await ea.addElementsToView(true, true, true);
-    ea.destroy();
   }
 
   async addImageWithURL(link: string) {

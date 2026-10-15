@@ -214,7 +214,6 @@ import { ExcalidrawSidepanelTab } from "src/view/sidepanel/SidepanelTab";
 import { patchMobileView } from "src/utils/customEmbeddableUtils";
 import { ObsidianCanvasNode } from "src/view/managers/CanvasNodeFactory";
 import { getAspectRatio } from "src/utils/YoutTubeUtils";
-import { getPDFCropRect } from "src/utils/PDFUtils";
 import type { SelectedElementMenuAction } from "src/types/elementActionTypes";
 import { CaptureUpdateActionType } from "@zsviczian/excalidraw/types/element/src";
 import { URL_REGISTRY, URLs } from "src/constants/safeUrls";
@@ -2878,14 +2877,10 @@ export class ExcalidrawAutomate {
       colorMap = topXOrOpts.colorMap;
     }
 
-    const pdfLinkRegex = /^[^#]*#page=\d*(&\w*=[^&]+){0,}&rect=\d*,\d*,\d*,\d*/;
     const isDataURL =
       typeof imageFile === "string" && imageFile.startsWith("data:image/");
     const originalLink = typeof imageFile === "string" ? imageFile : null;
-    const imageFileForLoader =
-      originalLink && pdfLinkRegex.test(originalLink)
-        ? originalLink.split("&rect=")[0]
-        : imageFile;
+    const imageFileForLoader = imageFile;
 
     const id = nanoid();
     const dataURL = isDataURL ? originalLink : null;
@@ -2967,24 +2962,6 @@ export class ExcalidrawAutomate {
     newEl.fileId = fileId;
     newEl.scale = [1, 1];
     newEl.crop = null;
-    if (originalLink && pdfLinkRegex.test(originalLink)) {
-      const fd = this.imagesDict[fileId];
-      newEl.crop = getPDFCropRect({
-        scale: this.plugin.settings.pdfScale,
-        link: originalLink,
-        naturalHeight: fd.size.height,
-        naturalWidth: fd.size.width,
-        pdfPageViewProps: fd.pdfPageViewProps,
-      });
-      addAppendUpdateCustomData(newEl, {
-        pdfPageViewProps: fd.pdfPageViewProps,
-      });
-      if (newEl.crop) {
-        newEl.width = newEl.crop.width / this.plugin.settings.pdfScale;
-        newEl.height = newEl.crop.height / this.plugin.settings.pdfScale;
-      }
-      newEl.link = `[[${originalLink}]]`;
-    }
     if (!scale && anchor) {
       newEl.customData = { isAnchored: true };
     }

@@ -69,7 +69,6 @@ import {
 } from "../utils/fileUtils";
 import { t } from "../lang/helpers";
 import { displayFontMessage } from "../utils/excalidrawViewUtils";
-import { getPDFRect } from "../utils/PDFUtils";
 import { URLs } from "src/constants/safeUrls";
 import { errorlog } from "src/utils/coreUtils";
 import { log } from "src/utils/debugHelper";
@@ -1820,43 +1819,6 @@ export class ExcalidrawData {
     return file;
   }
 
-  private syncCroppedPDFs() {
-    const scene = this.scene;
-    const pdfScale = this.plugin.settings.pdfScale;
-    scene.elements
-      .filter((el) => el.type === "image" && el.crop && !el.isDeleted)
-      .forEach((el: Mutable<ExcalidrawImageElement>) => {
-        const ef = this.getFile(el.fileId);
-        if (!ef.file) {
-          return;
-        }
-        if (ef.file.extension !== "pdf") {
-          return;
-        }
-        const pageRef = ef.linkParts.original.split("#")?.[1];
-        if (
-          !pageRef ||
-          !pageRef.startsWith("page=") ||
-          pageRef.includes("rect")
-        ) {
-          return;
-        }
-        const restOfLink = el.link
-          ? el.link.match(/&rect=\d*,\d*,\d*,\d*(.*)/)?.[1]
-          : "";
-        const link =
-          ef.linkParts.original +
-          getPDFRect({
-            elCrop: el.crop,
-            scale: pdfScale,
-            customData: el.customData,
-          }) +
-          (restOfLink ? restOfLink : "]]");
-        el.link = `[[${link}`;
-        this.elementLinks.set(el.id, el.link);
-      });
-  }
-
   /**
    * deletes fileIds from Excalidraw data for files no longer in the scene
    * @returns
@@ -2070,7 +2032,6 @@ export class ExcalidrawData {
     this.updateElementLinksFromScene(linkedNonTextElementsById);
     result =
       result ||
-      this.syncCroppedPDFs() ||
       this.setLinkPrefix() ||
       this.setUrlPrefix() ||
       this.setShowLinkBrackets() ||

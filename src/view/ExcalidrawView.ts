@@ -285,7 +285,6 @@ import { FileData } from "src/types/embeddedFileLoaderTypes";
 import { UIMode } from "src/shared/Dialogs/UIModeSettingComponent";
 import { UIModeSettings } from "src/shared/Dialogs/UIModeSettings";
 import { copyLinkToSelectedElementToClipboard } from "src/shared/Dialogs/copyLinkToSelectedElement";
-import { getPDFCropRect } from "src/utils/PDFUtils";
 import {
   CaptureUpdateActionType,
   DurableIncrement,
@@ -6231,37 +6230,6 @@ export default class ExcalidrawView
                 ),
               ]);
               ea.destroy();
-            } else if (
-              link.match(
-                /^[^#]*#page=\d*(&\w*=[^&]+){0,}&rect=\d*,\d*,\d*,\d*/g,
-              )
-            ) {
-              const ea = getEA(this);
-              const imgID = await ea.addImage(
-                this.currentPosition.x,
-                this.currentPosition.y,
-                link.split("&rect=")[0],
-              );
-              const el = ea.getElement(
-                imgID,
-              ) as Mutable<ExcalidrawImageElement>;
-              const fd = ea.imagesDict[el.fileId];
-              el.crop = getPDFCropRect({
-                scale: this.plugin.settings.pdfScale,
-                link,
-                naturalHeight: fd.size.height,
-                naturalWidth: fd.size.width,
-                pdfPageViewProps: fd.pdfPageViewProps,
-              });
-              addAppendUpdateCustomData(el, {
-                pdfPageViewProps: fd.pdfPageViewProps,
-              });
-              if (el.crop) {
-                el.width = el.crop.width / this.plugin.settings.pdfScale;
-                el.height = el.crop.height / this.plugin.settings.pdfScale;
-              }
-              el.link = `[[${link}]]`;
-              await ea.addElementsToView(false, false).then(() => ea.destroy());
             } else {
               const modal = new UniversalInsertFileModal(this.plugin, this);
               modal.open(file, this.currentPosition);

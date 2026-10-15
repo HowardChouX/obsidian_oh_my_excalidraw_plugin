@@ -22,7 +22,6 @@ import {
   errorlog,
   hyperlinkIsImage,
 } from "src/utils/utils";
-import { InsertPDFModal } from "src/shared/Dialogs/InsertPDFModal";
 import { ExcalidrawAutomate } from "src/shared/ExcalidrawAutomate";
 import { getEA } from "src/core";
 import {
@@ -201,26 +200,20 @@ export class DropManager {
           if (
             ["image", "image-fullsize"].contains(internalDragAction) &&
             (IMAGE_TYPES.contains(file.extension) ||
-              file.extension === "md" ||
-              file.extension.toLowerCase() === "pdf")
+              file.extension === "md")
           ) {
-            if (file.extension.toLowerCase() === "pdf") {
-              const insertPDFModal = new InsertPDFModal(this.plugin, this.view);
-              insertPDFModal.open(file);
-            } else {
-              void (async () => {
-                const ea: ExcalidrawAutomate = getEA(this.view);
-                ea.selectElementsInView([
-                  await insertImageToView(
-                    ea,
-                    this.currentPosition,
-                    file,
-                    !(internalDragAction === "image-fullsize"),
-                  ),
-                ]);
-                ea.destroy();
-              })();
-            }
+            void (async () => {
+              const ea: ExcalidrawAutomate = getEA(this.view);
+              ea.selectElementsInView([
+                await insertImageToView(
+                  ea,
+                  this.currentPosition,
+                  file,
+                  !(internalDragAction === "image-fullsize"),
+                ),
+              ]);
+              ea.destroy();
+            })();
             return false;
           }
 
@@ -295,13 +288,6 @@ export class DropManager {
                   counter++;
                   await ea.addElementsToView(false, false, true);
                   ea.selectElementsInView(ids);
-                }
-                if (f.extension.toLowerCase() === "pdf") {
-                  const insertPDFModal = new InsertPDFModal(
-                    this.plugin,
-                    this.view,
-                  );
-                  insertPDFModal.open(f);
                 }
               }
               ea.destroy();
@@ -478,13 +464,6 @@ export class DropManager {
                 ea.destroy(),
               );
             } else {
-              if (link.file.extension === "pdf") {
-                const insertPDFModal = new InsertPDFModal(
-                  this.plugin,
-                  this.view,
-                );
-                insertPDFModal.open(link.file);
-              }
               const ea = getEA(this.view);
               void insertImageToView(ea, pos, link.file).then(() =>
                 ea.destroy(),

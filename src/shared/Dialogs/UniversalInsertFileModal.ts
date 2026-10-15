@@ -15,7 +15,6 @@ import {
   insertImageToView,
 } from "src/utils/excalidrawViewUtils";
 import { getEA } from "src/core";
-import { InsertPDFModal } from "./InsertPDFModal";
 import { t } from "src/lang/helpers";
 import { hideElement, setStyle, showElement } from "src/utils/styleUtils";
 import {
@@ -103,7 +102,6 @@ export class UniversalInsertFileModal extends Modal {
     let sectionPicker: DropdownComponent;
     let actionIFrame: ButtonComponent;
     let actionImage: ButtonComponent;
-    let actionPDF: ButtonComponent;
     let anchorTo100: boolean = false;
     let file = this.file;
     let fileSections: MarkdownHeadingSubpath[] = [];
@@ -119,7 +117,6 @@ export class UniversalInsertFileModal extends Modal {
       const isAnimatedImage =
         file && ANIMATED_IMAGE_TYPES.contains(file.extension);
       const isIFrame = file && !isImage;
-      const isPDF = file && file.extension === "pdf";
       const isExcalidraw = file && ea.isExcalidrawFile(file);
 
       fileSections =
@@ -171,12 +168,6 @@ export class UniversalInsertFileModal extends Modal {
         showElement(actionIFrame.buttonEl);
       } else {
         hideElement(actionIFrame.buttonEl);
-      }
-
-      if (isPDF) {
-        showElement(actionPDF.buttonEl);
-      } else {
-        hideElement(actionPDF.buttonEl);
       }
     };
 
@@ -246,14 +237,6 @@ export class UniversalInsertFileModal extends Modal {
         actionIFrame = button;
       })
       .addButton((button) => {
-        button.setButtonText(t("UIFM_BTN_PDF")).onClick(() => {
-          const insertPDFModal = new InsertPDFModal(this.plugin, this.view);
-          insertPDFModal.open(file);
-          this.close();
-        });
-        actionPDF = button;
-      })
-      .addButton((button) => {
         if (this.preferredAction === "image") {
           button.setCta();
         }
@@ -302,28 +285,12 @@ export class UniversalInsertFileModal extends Modal {
             this.close();
             return;
           case "Enter":
-            if (
-              isVisible(actionIFrame) &&
-              !isVisible(actionImage) &&
-              !isVisible(actionPDF)
-            ) {
+            if (isVisible(actionIFrame) && !isVisible(actionImage)) {
               actionIFrame.buttonEl.click();
               return;
             }
-            if (
-              isVisible(actionImage) &&
-              !isVisible(actionIFrame) &&
-              !isVisible(actionPDF)
-            ) {
+            if (isVisible(actionImage) && !isVisible(actionIFrame)) {
               actionImage.buttonEl.click();
-              return;
-            }
-            if (
-              isVisible(actionPDF) &&
-              !isVisible(actionIFrame) &&
-              !isVisible(actionImage)
-            ) {
-              actionPDF.buttonEl.click();
               return;
             }
             return;

@@ -19,7 +19,6 @@ import {
   isWinCTRLorMacCMD,
   isSHIFT,
 } from "src/utils/modifierkeyHelper";
-import { InsertPDFModal } from "src/shared/Dialogs/InsertPDFModal";
 import { ExportDialog } from "src/shared/Dialogs/ExportDialog";
 import { openExternalLink } from "src/utils/excalidrawViewUtils";
 import { UniversalInsertFileModal } from "src/shared/Dialogs/UniversalInsertFileModal";
@@ -372,17 +371,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
     plugin.insertImageDialog.start(view);
   }
 
-  actionInsertPDF() {
-    const view = this.getView();
-    const plugin = view?.plugin;
-    if (!view || !plugin) {
-      return;
-    }
-    this.props.centerPointer();
-    const insertPDFModal = new InsertPDFModal(plugin, view);
-    insertPDFModal.open();
-  }
-
   actionInsertMarkdown() {
     const view = this.getView();
     const plugin = view?.plugin;
@@ -710,12 +698,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
                     title={t("INSERT_IMAGE")}
                     action={() => this.actionInsertImage()}
                     icon={ICONS.insertImage}
-                  />
-                  <ActionButton
-                    key={"pdf"}
-                    title={t("INSERT_PDF")}
-                    action={() => this.actionInsertPDF()}
-                    icon={ICONS.insertPDF}
                   />
                   <ActionButton
                     key={"insertMD"}

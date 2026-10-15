@@ -239,7 +239,7 @@ export function createExcalidrawRootElement(
           onViewModeChange: (isViewModeEnabled) =>
             view.onViewModeChange(isViewModeEnabled),
           validateEmbeddable: true,
-          renderWebview: DEVICE.isDesktop,
+          renderWebview: false,
           renderEmbeddable: (el, st) => view.renderEmbeddable(el, st),
           renderMermaid: shouldRenderMermaid(),
           showDeprecatedFonts: true,
