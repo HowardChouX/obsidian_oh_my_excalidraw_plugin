@@ -359,8 +359,6 @@ export class AutoexportCoordinator {
       getFileEntries: () => files.entries(),
       getFile: (fileId) => files.get(fileId),
       getMarkdownImage: (fileId) => exportData.markdownImages.get(fileId),
-      getEquationEntries: () => exportData.equations.entries(),
-      getEquation: (fileId) => exportData.equations.get(fileId),
     };
   }
 

@@ -48,7 +48,7 @@ export function liveIdentity(view: ExcalidrawView): string {
     textMode: view.textMode,
     text: [...model.textElements],
     filesMetadata: exportData ? [...exportData.files] : null,
-    markdown: [...model.markdownImages], equations: [...model.equations], mermaids: [...model.mermaids],
+    markdown: [...model.markdownImages],
     stat: view.file.stat, settings: view.plugin.settings,
   });
 }
@@ -78,7 +78,7 @@ export async function diskSnapshot(plugin: ExcalidrawPlugin, file: TFile, isCurr
     else if (!await data.loadData(text, file, getTextMode(text), isCurrent)) throw new CLIError("NOT_READY", "Drawing could not be loaded.");
     if (!isCurrent() || plugin.app.vault.getFileByPath(file.path) !== file || !data.scene) throw new CLIError("NOT_READY", "Drawing changed while reading.");
     return { scene: structuredClone(data.scene), revision: `disk:${fingerprint(text)}`,
-      dependencies: [...(data.equations.size ? ["mathjax" as const] : []), ...(data.mermaids.size ? ["mermaid" as const] : [])],
+      dependencies: [] as ("mathjax" | "mermaid")[],
       assetPaths: data.scene.elements.filter(element => element.type === "image").map(element => data.getFile(element.fileId)?.file?.path).filter(Boolean),
     };
   } finally { data.destroy(); }

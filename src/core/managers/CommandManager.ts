@@ -89,7 +89,6 @@ import type ExcalidrawPlugin from "src/core/main";
 import { UIModeSettings } from "src/shared/Dialogs/UIModeSettings";
 import { PaneTarget } from "src/types/utilTypes";
 import { decompress } from "src/utils/sceneDataUtils";
-import { insertLaTeXToView } from "src/utils/excalidrawViewHelpers";
 import { isMarkdownImageElement } from "src/shared/MarkdownImage";
 import { CLIInstructions } from "src/shared/Dialogs/CLIInstructions";
 
@@ -1399,8 +1398,7 @@ export class CommandManager {
 
         const el = els[0];
         const ef = view.excalidrawData.getFile(el.fileId);
-        const eq = view.excalidrawData.getEquation(el.fileId);
-        if (!ef && !eq) {
+        if (!ef) {
           void view.forceSave();
           new Notice("Please try again.");
           return false;
@@ -1408,9 +1406,6 @@ export class CommandManager {
 
         if (ef) {
           void view.openEmbeddedLinkEditor(el.id);
-        }
-        if (eq) {
-          void view.openLaTeXEditor(el.id);
         }
       },
     });
@@ -2346,24 +2341,6 @@ export class CommandManager {
         const view = this.app.workspace.getActiveViewOfType(ExcalidrawView);
         if (view) {
           void view.insertBackOfTheNoteCard();
-          return true;
-        }
-        return false;
-      },
-    });
-
-    this.addCommand({
-      id: "insert-LaTeX-symbol",
-      name: t("INSERT_LATEX"),
-      checkCallback: (checking: boolean) => {
-        if (checking) {
-          return Boolean(
-            this.app.workspace.getActiveViewOfType(ExcalidrawView),
-          );
-        }
-        const view = this.app.workspace.getActiveViewOfType(ExcalidrawView);
-        if (view) {
-          insertLaTeXToView(view);
           return true;
         }
         return false;

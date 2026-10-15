@@ -20,7 +20,6 @@ import type {
   ExcalidrawAutomate,
   ViewLinkClickHook,
 } from "../../shared/ExcalidrawAutomate";
-import { getMermaidText, shouldRenderMermaid } from "../../utils/mermaidUtils";
 import type ExcalidrawView from "../ExcalidrawView";
 
 /** Runtime dependencies and private view operations needed by link navigation. */
@@ -479,29 +478,6 @@ export class ViewLinkNavigationManager {
                 );
         }
       }
-      if (
-        !markdownImageSource &&
-        this.view.excalidrawData.hasEquation(selectedImage.fileId)
-      ) {
-        this.view.updateScene({ appState: { contextMenu: null } });
-        void this.view.openLaTeXEditor(selectedImage.id);
-        return;
-      }
-      if (
-        !markdownImageSource &&
-        (this.view.excalidrawData.hasMermaid(selectedImage.fileId) ||
-          getMermaidText(imageElement))
-      ) {
-        if (shouldRenderMermaid) {
-          const api = this.view.excalidrawAPI;
-          api.updateScene({
-            appState: { openDialog: { name: "ttd", tab: "mermaid" } },
-            captureUpdate: CaptureUpdateAction.NEVER,
-          });
-        }
-        return;
-      }
-
       if (!markdownImageSource) {
         await this.view.save(false);
       }

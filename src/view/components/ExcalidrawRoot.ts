@@ -8,7 +8,6 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { DEVICE, obsidianToExcalidrawMap } from "../../constants/constants";
 import { t } from "../../lang/helpers";
 import { isMarkdownImageElement } from "../../shared/MarkdownImage";
-import { shouldRenderMermaid } from "../../utils/mermaidUtils";
 import type ExcalidrawView from "../ExcalidrawView";
 import { EmbeddableMenu } from "./menu/EmbeddableActionsMenu";
 import { ObsidianMenu } from "./menu/ObsidianMenu";
@@ -241,7 +240,7 @@ export function createExcalidrawRootElement(
           validateEmbeddable: true,
           renderWebview: false,
           renderEmbeddable: (el, st) => view.renderEmbeddable(el, st),
-          renderMermaid: shouldRenderMermaid(),
+          renderMermaid: false,
           showDeprecatedFonts: true,
           insertLinkAction: DEVICE.isDesktop
             ? undefined

@@ -143,10 +143,6 @@ export async function applyDrawing(cli: ExcalidrawCLI, request: Record<string, u
       const actual = await ea.addImage(number(operation.x, "x", 0, -1000000, 1000000), number(operation.y, "y", 0, -1000000, 1000000), asset, boolean(operation.scale, "scale", true));
       if (plugin.app.vault.getFileByPath(path) !== asset || JSON.stringify(asset.stat) !== stat) throw new CLIError("STALE_REVISION", "Image changed during preparation.", "asset");
       recordId(operation.id, actual);
-    } else if (op === "latex") {
-      const extras = plugin.extrasGateway.getAPI();
-      if (!extras?.features.isActive("mathjax") || !plugin.extrasGateway.checkVersion("mathjax", extras).valid) throw new CLIError("DEPENDENCY_UNAVAILABLE", "Enable a compatible Excalidraw Extras MathJax feature before using latex.");
-      recordId(operation.id, await ea.addLaTex(number(operation.x, "x", 0, -1000000, 1000000), number(operation.y, "y", 0, -1000000, 1000000), string(operation.text, "text"), number(operation.scaleX, "scaleX", 1, 0.1, 4), number(operation.scaleY, "scaleY", 1, 0.1, 4), { throwOnError: true }));
     }
   }
   check();

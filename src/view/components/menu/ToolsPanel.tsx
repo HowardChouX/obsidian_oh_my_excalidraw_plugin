@@ -4,10 +4,7 @@ import * as React from "react";
 import { ActionButton } from "./ActionButton";
 import { ICONS, saveIcon, stringToSVG } from "../../../constants/actionIcons";
 import { DEVICE, SCRIPT_INSTALL_FOLDER } from "../../../constants/constants";
-import {
-  insertLaTeXToView,
-  search,
-} from "../../../utils/excalidrawViewHelpers";
+import { search } from "../../../utils/excalidrawViewHelpers";
 import { TextMode } from "../../../shared/TextMode";
 import type ExcalidrawView from "../../ExcalidrawView";
 import { t } from "../../../lang/helpers";
@@ -390,19 +387,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
     void view.insertBackOfTheNoteCard();
   }
 
-  actionInsertLaTeX(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
-    const view = this.getView();
-    if (!view) {
-      return;
-    }
-    if (isWinALTorMacOPT(e)) {
-      openExternalLink(getYouTubeUrl("r08wk-58DPk"), view.app);
-      return;
-    }
-    this.props.centerPointer();
-    insertLaTeXToView(view);
-  }
-
   actionInsertLink() {
     const view = this.getView();
     const plugin = view?.plugin;
@@ -694,12 +678,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
                     icon={ICONS["add-file"]}
                   />
                   <ActionButton
-                    key={"image"}
-                    title={t("INSERT_IMAGE")}
-                    action={() => this.actionInsertImage()}
-                    icon={ICONS.insertImage}
-                  />
-                  <ActionButton
                     key={"insertMD"}
                     title={t("INSERT_MD")}
                     action={() => this.actionInsertMarkdown()}
@@ -710,12 +688,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
                     title={t("INSERT_CARD")}
                     action={() => this.actionInsertBackOfNote()}
                     icon={ICONS.BackOfNote}
-                  />
-                  <ActionButton
-                    key={"latex"}
-                    title={t("INSERT_LATEX")}
-                    action={(e) => this.actionInsertLaTeX(e)}
-                    icon={ICONS.insertLaTeX}
                   />
                   <ActionButton
                     key={"link"}

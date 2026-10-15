@@ -106,7 +106,6 @@ import { getHighlightColor } from "src/utils/dynamicStyling";
 import { InlineLinkSuggester } from "src/shared/Suggesters/InlineLinkSuggester";
 import { KeyBlocker } from "src/types/excalidrawAutomateTypes";
 import { UIMode } from "src/shared/Dialogs/UIModeSettingComponent";
-import { insertLaTeXToView } from "src/utils/excalidrawViewHelpers";
 import type { MarkdownImageData } from "src/types/markdownImageTypes";
 import { StencilLibraryManager } from "./managers/StencilLibraryManager";
 import type { StencilLibraryData } from "src/types/stencilLibraryTypes";
@@ -1391,7 +1390,7 @@ export default class ExcalidrawPlugin extends Plugin {
 
   //used by obsidianUtils in the Excalidraw Pacakge
   //aweful coding, but does the job
-  public runAction(action: "anyFile" | "LaTeX" | "card") {
+  public runAction(action: "anyFile" | "card") {
     if (!this.activeExcalidrawView) {
       return;
     }
@@ -1399,9 +1398,6 @@ export default class ExcalidrawPlugin extends Plugin {
       case "anyFile":
         this.activeExcalidrawView.setCurrentPositionToCenter();
         new UniversalInsertFileModal(this, this.activeExcalidrawView).open();
-        break;
-      case "LaTeX":
-        insertLaTeXToView(this.activeExcalidrawView, true);
         break;
       case "card":
         void this.activeExcalidrawView.insertBackOfTheNoteCard(true);

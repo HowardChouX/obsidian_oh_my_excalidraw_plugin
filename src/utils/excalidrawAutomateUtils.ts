@@ -986,11 +986,7 @@ export const getImagesMatchingQuery = (
           .getFile(el.fileId)
           ?.file?.basename.toLowerCase()
           .trim();
-        const equation = excalidrawData
-          .getEquation(el.fileId)
-          ?.latex?.toLocaleLowerCase()
-          .trim();
-        const text = filename ?? equation;
+        const text = filename;
         if (!text) {
           return false;
         }

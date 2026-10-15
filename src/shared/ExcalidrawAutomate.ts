@@ -93,8 +93,6 @@ import {
   SceneData,
 } from "@zsviczian/excalidraw/types/excalidraw/types";
 import { EmbeddedFile, EmbeddedFilesLoader } from "./EmbeddedFileLoader";
-import { tex2dataURL } from "./LaTeX";
-import type { MathJaxRenderOptions } from "src/types/mathJaxTypes";
 import {
   LatexSuitePlugin,
   MultiOptionConfirmationPrompt,
@@ -184,7 +182,6 @@ import { EditorView, keymap } from "@codemirror/view";
 import { EditorState, Extension } from "@codemirror/state";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { LRLanguage } from "@codemirror/language";
-import { parser as mathParser } from "./Dialogs/math-only";
 
 type MutableElementMapEntry = Mutable<ExcalidrawElement> &
   Record<string, unknown>;
@@ -2969,79 +2966,6 @@ export class ExcalidrawAutomate {
   }
 
   /**
-   * Adds a LaTeX equation as an image element to the ExcalidrawAutomate instance.
-   * @param {number} topX - The x-coordinate of the top-left corner.
-   * @param {number} topY - The y-coordinate of the top-left corner.
-   * @param {string} tex - The LaTeX equation string.
-   * @param {number} [scaleX=1] - The x-scaling factor (post mathjax creation)
-   * @param {number} [scaleY=1] - The y-scaling factor (post mathjax creation)
-   * @param {MathJaxRenderOptions} [options] - MathJax rendering options. Set `throwOnError` to propagate invalid LaTeX errors.
-   * @returns {Promise<string>} Promise resolving to the ID of the added LaTeX image element.
-   */
-  async addLaTex(
-    topX: number,
-    topY: number,
-    tex: string,
-    scaleX: number = 1,
-    scaleY: number = 1,
-    options?: MathJaxRenderOptions,
-  ): Promise<string> {
-    if (!tex || !scaleX || !scaleY) {
-      return null;
-    }
-    const id = nanoid();
-    const image = await tex2dataURL(tex, 4, this.plugin, options);
-    if (!image) {
-      return null;
-    }
-    this.imagesDict[image.fileId] = {
-      mimeType: image.mimeType,
-      id: image.fileId,
-      dataURL: image.dataURL,
-      created: image.created,
-      file: null,
-      hasSVGwithBitmap: false,
-      latex: tex,
-    };
-    this.elementsDict[id] = this.boxedElement(
-      id,
-      "image",
-      topX,
-      topY,
-      image.size.width * Math.abs(scaleX),
-      image.size.height * Math.abs(scaleY),
-    );
-    const imageElement = this.elementsDict[
-      id
-    ] as Mutable<ExcalidrawImageElement>;
-    imageElement.fileId = image.fileId;
-    this.addAppendUpdateCustomData(id, { latex: tex });
-    imageElement.scale = [Math.sign(scaleX), Math.sign(scaleY)];
-    return id;
-  }
-
-  /**
-   * Returns the base64 dataURL of the LaTeX equation rendered as an SVG.
-   * @param {string} tex - The LaTeX equation string.
-   * @param {number} [scale=4] - The scale factor for the image.
-   * @param {MathJaxRenderOptions} [options] - MathJax rendering options. Set `throwOnError` to propagate invalid LaTeX errors.
-   * @returns {Promise<{mimeType: MimeType; fileId: FileId; dataURL: DataURL; created: number; size: { height: number; width: number };}>} Promise resolving to the LaTeX image data.
-   */
-  async tex2dataURL(
-    tex: string,
-    scale: number = 4, // Default scale value, adjust as needed
-    options?: MathJaxRenderOptions,
-  ): Promise<{
-    mimeType: MimeType;
-    fileId: FileId;
-    dataURL: DataURL;
-    created: number;
-    size: { height: number; width: number };
-  }> {
-    return await tex2dataURL(tex, scale, this.plugin, options);
-  }
-
-  /**
    * Connects two objects with an arrow.
    * @param {string} objectA - The ID of the first object.
    * @param {ConnectionPoint | null} connectionA - The connection point on the first object.
@@ -3741,9 +3665,6 @@ export class ExcalidrawAutomate {
           const ef = this.targetView.excalidrawData.getFile(el.fileId);
           const imageWithRef =
             ef && ef.file && ef.linkParts && ef.linkParts.ref;
-          const equation = this.targetView.excalidrawData.getEquation(
-            el.fileId,
-          );
           const sceneFile = sceneFiles?.[el.fileId];
           this.imagesDict[el.fileId] = {
             mimeType: sceneFile.mimeType,
@@ -3759,14 +3680,6 @@ export class ExcalidrawAutomate {
                     : ef.hyperlink,
                   file: imageWithRef ? null : ef.file,
                   latex: null,
-                }
-              : {}),
-            ...(equation
-              ? {
-                  file: null,
-                  isHyperLink: false,
-                  hyperlink: null,
-                  latex: equation.latex,
                 }
               : {}),
           };
@@ -5353,36 +5266,6 @@ export class ExcalidrawAutomate {
       historyKeymap,
       LRLanguage,
     };
-  }
-
-  /**
-   * Returns the pre-configured CodeMirror 6 extensions used by Excalidraw's native LaTeX editor.
-   * Includes the internal math parser required to trick 'obsidian-latex-suite' into thinking
-   * it is operating inside a math block, along with standard history and default keymaps.
-   * @returns { (LRLanguage | Extension)[]} An array of CodeMirror 6 extensions ready to be passed to EditorState.create().
-   */
-  public getMathEditorExtensions(): (LRLanguage | Extension)[] {
-    const minimalSetup = [
-      history(),
-      keymap.of([...defaultKeymap, ...historyKeymap]),
-    ];
-
-    const language = LRLanguage.define({ parser: mathParser });
-    const extensions = [
-      obsidian_module.editorLivePreviewField.init(() => false),
-      EditorView.editorAttributes.of({ class: "multi-select-container" }),
-      minimalSetup,
-      language,
-    ];
-
-    const latexSuite = this.plugin.app.plugins.plugins[
-      "obsidian-latex-suite"
-    ] as LatexSuitePlugin;
-    if (latexSuite?.editorExtensions) {
-      extensions.push(latexSuite.editorExtensions);
-    }
-
-    return extensions;
   }
 
   /**

@@ -4135,26 +4135,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
   private getExperimentalSpecs(): SettingSpec[] {
     return [
       {
-        name: t("LATEX_DEFAULT_NAME"),
-        desc: fragWithHTML(t("LATEX_DEFAULT_DESC")),
-        aliases: ["LaTeX boilerplate", "default formula"],
-        control: { type: "text", key: "latexBoilerplate" },
-      },
-      {
-        name: t("LATEX_PREAMBLE_NAME"),
-        desc: fragWithHTML(t("LATEX_PREAMBLE_DESC")),
-        aliases: ["LaTeX preamble", "sty file"],
-        control: {
-          type: "text",
-          key: "latexPreambleLocation",
-          placeholder: "e.g.: preamble.sty",
-          vaultPath: {
-            kind: "file",
-            options: { optional: true, extensions: ["sty"] },
-          },
-        },
-      },
-      {
         name: t("FILETYPE_NAME"),
         desc: fragWithHTML(t("FILETYPE_DESC")),
         aliases: ["file type indicator", "drawing icon"],

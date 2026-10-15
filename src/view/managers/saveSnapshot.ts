@@ -133,9 +133,6 @@ const clonePreparedSaveExportData = (
             { ...value },
           ]),
         ),
-        equations: new Map(
-          Array.from(data.equations, ([id, value]) => [id, { ...value }]),
-        ),
         markdownImageRenderDefaults: {
           ...data.markdownImageRenderDefaults,
           border: { ...data.markdownImageRenderDefaults.border },

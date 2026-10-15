@@ -134,7 +134,6 @@ import {
 import { splitFolderAndFilename } from "../utils/fileUtils";
 import {
   GenericInputPrompt,
-  LaTexPrompt,
   MultiOptionConfirmationPrompt,
   NewFileActions,
   linkPrompt,
@@ -147,7 +146,6 @@ import {
   ClipboardData,
   ParsedDataTransferFile,
 } from "@zsviczian/excalidraw/types/excalidraw/clipboard";
-import { updateEquation } from "../shared/LaTeX";
 import {
   EmbeddedFile,
   EmbeddedFilesLoader,
@@ -407,10 +405,6 @@ export const addFiles = async (
         pdfPageViewProps: f.pdfPageViewProps,
         renderScale: f.renderScale,
       });
-    }
-    if (view.excalidrawData.hasEquation(f.id)) {
-      const latex = view.excalidrawData.getEquation(f.id).latex;
-      view.excalidrawData.setEquation(f.id, { latex, isLoaded: true });
     }
   }
   const skipSvgNormalization = new Set<FileId>();
@@ -1466,63 +1460,6 @@ export default class ExcalidrawView
       });
       this.hiddenMobileLeaves = [];
     }
-  }
-
-  async openLaTeXEditor(eqId: string) {
-    if (await this.excalidrawData.syncElements(this.getScene())) {
-      //https://github.com/zsviczian/obsidian-excalidraw-plugin/issues/1994
-      await this.forceSave(true, false);
-    }
-    const el = this.getViewElements().find(
-      (el: ExcalidrawElement) => el.id === eqId && el.type === "image",
-    ) as ExcalidrawImageElement;
-    if (!el) {
-      return;
-    }
-
-    const fileId = el.fileId;
-
-    let equation = this.excalidrawData.getEquation(fileId)?.latex;
-    if (!equation) {
-      await this.save(false);
-      equation = this.excalidrawData.getEquation(fileId)?.latex;
-      if (!equation) {
-        return;
-      }
-    }
-
-    LaTexPrompt.Prompt(this.plugin, this.app, t("ENTER_LATEX"), equation).then(
-      (formula: string) => {
-        void (async () => {
-          if (!formula || formula === equation) {
-            return;
-          }
-          this.excalidrawData.setEquation(fileId, {
-            latex: formula,
-            isLoaded: false,
-          });
-          const ea = getEA(this);
-          ea.copyViewElementsToEAforEditing([el]);
-          ea.addAppendUpdateCustomData(el.id, { latex: formula });
-          const dataurl = await ea.tex2dataURL(equation);
-          if (dataurl && dataurl.size.height > 0 && dataurl.size.width > 0) {
-            ea.addAppendUpdateCustomData(el.id, {
-              latexscale: {
-                scaleX: el.width / dataurl.size.width,
-                scaleY: el.height / dataurl.size.height,
-              },
-            });
-          }
-          await ea.addElementsToView(false, false, false, false);
-          await this.save(false);
-          await updateEquation(formula, fileId, this, (files, view) => {
-            void addFiles(files, view);
-          });
-          this.setDirty();
-        })();
-      },
-      () => {},
-    );
   }
 
   async openEmbeddedLinkEditor(imgId: string) {
@@ -3825,12 +3762,6 @@ export default class ExcalidrawView
                 incomingData.getFile(incomingElement.fileId),
               );
               fileIdsToReload.add(incomingElement.fileId);
-            } else if (incomingData.getEquation(incomingElement.fileId)) {
-              this.excalidrawData.setEquation(
-                incomingElement.fileId,
-                incomingData.getEquation(incomingElement.fileId),
-              );
-              fileIdsToReload.add(incomingElement.fileId);
             }
             break;
         }
@@ -5213,12 +5144,6 @@ export default class ExcalidrawView
               });
           }
         }
-        if (images[k].latex) {
-          this.excalidrawData.setEquation(images[k].id, {
-            latex: images[k].latex,
-            isLoaded: true,
-          });
-        }
       });
     }
 
@@ -6128,31 +6053,6 @@ export default class ExcalidrawView
               el as ExcalidrawTextElement
             ).originalText),
         );
-
-      data.elements
-        .filter(
-          (el): el is Mutable<ExcalidrawImageElement> =>
-            el.type === "image" &&
-            Boolean(
-              (el as ExcalidrawImageWithCustomData<ExcalidrawLatexCustomData>)
-                .customData?.latex,
-            ),
-        )
-        .forEach((image) => {
-          const fileId = image.fileId;
-          const embeddedFile = this.excalidrawData.getFile(fileId);
-          const equation = this.excalidrawData.getEquation(fileId);
-          const mermaid = this.excalidrawData.getMermaid(fileId);
-
-          if (!embeddedFile && !equation && !mermaid) {
-            this.excalidrawData.setEquation(image.fileId, {
-              latex: (
-                image as ExcalidrawImageWithCustomData<ExcalidrawLatexCustomData>
-              ).customData?.latex,
-              isLoaded: true,
-            });
-          }
-        });
     }
     if (data && ea.onPasteHook) {
       try {
@@ -7088,19 +6988,16 @@ export default class ExcalidrawView
     const areElementsSelected = selectedElementIds.length > 0;
 
     if (this.isLinkSelected()) {
-      const isFormula =
-        !this.getSelectedTextElement()?.id &&
-        this.excalidrawData.hasEquation(this.getSelectedImageElement()?.fileId);
       contextMenuActions.push([
         renderContextMenuAction(
           React,
-          isFormula ? t("EDIT_LATEX") : t("OPEN_LINK_CLICK"),
+          t("OPEN_LINK_CLICK"),
           () => {
             const event = emulateKeysForLinkClick("new-tab");
             void this.handleLinkClick(event, true);
           },
           onClose,
-          isFormula ? "editFormula" : "openLink",
+          "openLink",
         ),
       ]);
     }

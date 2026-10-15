@@ -200,8 +200,6 @@ export interface ExcalidrawSettings {
   compareManifestToPluginVersion: boolean;
   showNewVersionNotification: boolean;
   //mathjaxSourceURL: string;
-  latexBoilerplate: string;
-  latexPreambleLocation: string;
   pinnedScripts: string[];
   sidepanelTabs: string[];
   customPens: PenStyle[];
@@ -408,8 +406,6 @@ export const DEFAULT_SETTINGS: ExcalidrawSettings = {
   excalidrawMasteryPromoCollapsed: false,
   compareManifestToPluginVersion: true,
   showNewVersionNotification: true,
-  latexBoilerplate: "e=mc^2",
-  latexPreambleLocation: "preamble.sty",
   pinnedScripts: [],
   sidepanelTabs: [],
   customPens: [

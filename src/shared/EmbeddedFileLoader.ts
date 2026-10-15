@@ -22,7 +22,6 @@ import {
 import { createSVG } from "src/utils/excalidrawAutomateUtils";
 import { ExcalidrawData, getTransclusion } from "./ExcalidrawData";
 import { t } from "../lang/helpers";
-import { tex2dataURL } from "./LaTeX";
 import type ExcalidrawPlugin from "../core/main";
 import type { PdfJsDocumentProxy } from "src/types/pdfJsTypes";
 import {
@@ -55,12 +54,6 @@ import {
   PromisePool,
   svgToBase64,
 } from "../utils/embeddedAssetUtils";
-import {
-  getMermaidImageElements,
-  getMermaidText,
-  shouldRenderMermaid,
-} from "../utils/mermaidUtils";
-import { mermaidToExcalidraw } from "src/constants/constants";
 import { ImageKey, getImageCache } from "./ImageCache";
 import { FILENAMEPARTS, PreviewImageType } from "../types/utilTypes";
 import {
@@ -106,8 +99,6 @@ export interface EmbeddedFilesDataSource {
   getFileEntries: ExcalidrawData["getFileEntries"];
   getFile: ExcalidrawData["getFile"];
   getMarkdownImage: ExcalidrawData["getMarkdownImage"];
-  getEquationEntries: ExcalidrawData["getEquationEntries"];
-  getEquation: ExcalidrawData["getEquation"];
 }
 
 /** View-independent state needed to recreate one embedded-file descriptor. */
@@ -1756,119 +1747,6 @@ export class EmbeddedFilesLoader {
             elementId: element.id,
           },
         );
-      }
-
-      for (const [id, equation] of excalidrawData.getEquationEntries()) {
-        if (fileIDWhiteList && !fileIDWhiteList.has(id)) {
-          continue;
-        }
-        yield createSafeLoadTask(
-          async () => {
-            if (loader.terminate) {
-              return;
-            }
-            if (!excalidrawData.getEquation(id).isLoaded) {
-              const latex = equation.latex;
-              const data = await tex2dataURL(latex, 4, loader.plugin);
-              if (loader.terminate) {
-                return null;
-              }
-              if (data) {
-                const fileData = {
-                  mimeType: data.mimeType,
-                  id,
-                  dataURL: data.dataURL,
-                  created: data.created,
-                  size: data.size,
-                  hasSVGwithBitmap: false,
-                  shouldScale: true,
-                };
-                files[batch].push(fileData);
-              }
-            }
-          },
-          {
-            phase: "equation",
-            fileId: id,
-            latex: equation?.latex,
-          },
-        );
-      }
-
-      if (shouldRenderMermaid()) {
-        const mermaidElements = getMermaidImageElements(
-          excalidrawData.scene.elements,
-        );
-        for (const element of mermaidElements) {
-          yield createSafeLoadTask(
-            async () => {
-              if (loader.terminate) {
-                return;
-              }
-              const data = getMermaidText(element);
-              const result = await mermaidToExcalidraw(data, {
-                themeVariables: { fontSize: "20" },
-              });
-              if (!result || loader.terminate) {
-                return;
-              }
-              if (result?.files) {
-                for (const key in result.files) {
-                  const fileData = {
-                    ...(result.files as Record<string, { dataURL: string }>)[
-                      key
-                    ],
-                    id: element.fileId,
-                    created: Date.now(),
-                    hasSVGwithBitmap: false,
-                    shouldScale: true,
-                    size: await getImageSize(
-                      (result.files as Record<string, { dataURL: string }>)[key]
-                        .dataURL,
-                    ),
-                  } as FileData;
-                  files[batch].push(fileData);
-                }
-                return;
-              }
-              if (result?.elements) {
-                //handle case that mermaidToExcalidraw has implemented this type of diagram in the mean time
-                if (loader.terminate) {
-                  return;
-                }
-                const res = await loader.getExcalidrawSVG({
-                  isDark: loader.isDark,
-                  file: null,
-                  depth,
-                  inFile: null,
-                  hasSVGwithBitmap: false,
-                  elements: result.elements,
-                });
-                if (loader.terminate) {
-                  return;
-                }
-                if (res?.dataURL) {
-                  const size = await getImageSize(res.dataURL);
-                  const fileData: FileData = {
-                    mimeType: "image/svg+xml",
-                    id: element.fileId,
-                    dataURL: res.dataURL,
-                    created: Date.now(),
-                    hasSVGwithBitmap: res.hasSVGwithBitmap,
-                    size,
-                    shouldScale: true,
-                  };
-                  files[batch].push(fileData);
-                }
-              }
-            },
-            {
-              phase: "mermaid",
-              fileId: element.fileId,
-              elementId: element.id,
-            },
-          );
-        }
       }
     }
 
