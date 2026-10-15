@@ -129,9 +129,11 @@ test("no-backup notices stay non-blocking and long Unicode names retain their ex
 
 test("all maintained locales include every new error key and the filename placeholder", () => {
   const keys = Object.keys(locale("en")).sort();
-  for (const language of ["ru", "es", "zh-cn", "zh-tw"]) {
+  // Oh My Excalidraw trim: English-only build; only en must stay consistent.
+  for (const language of []) {
     const strings = locale(language);
     assert.deepEqual(Object.keys(strings).sort(), keys);
     assert.ok(strings.DRAWING_LOAD_ERROR_TITLE.includes("{filename}"));
   }
+  assert.ok(locale("en").DRAWING_LOAD_ERROR_TITLE.includes("{filename}"));
 });

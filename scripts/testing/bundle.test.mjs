@@ -82,7 +82,8 @@ test("compressed Excalidraw retains every published offline font asset", () => {
 
 test("all maintained language payloads inflate and parse synchronously", () => {
   const languages = runInContext("Object.keys(PLUGIN_LANGUAGES).sort()", context);
-  assert.deepEqual(Array.from(languages), ["es", "ru", "zh-cn", "zh-tw"]);
+  // Oh My Excalidraw trim: English-only build, no embedded locale payloads.
+  assert.deepEqual(Array.from(languages), []);
   for (const language of languages) {
     const source = runInContext(`unpackBase64Deflate(PLUGIN_LANGUAGES[${JSON.stringify(language)}])`, context);
     assert.ok(source.startsWith("x="), `Invalid locale payload: ${language}`);
