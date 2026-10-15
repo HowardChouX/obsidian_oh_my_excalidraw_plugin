@@ -71,22 +71,6 @@ const sourceExportData = {
       },
     ],
   ]),
-  markdownImages: new Map([["markdown-1", { markdown: "save-owned" }]]),
-  markdownImageRenderDefaults: {
-    width: 500,
-    paddingBottom: 10,
-    fontFamily: "Cascadia",
-    fontColor: "Black",
-    border: { enabled: false, color: "Black" },
-    css: "",
-    transclusion: {
-      enabled: false,
-      fontFamily: "Cascadia",
-      fontColor: "Black",
-      border: { enabled: false, color: "Black" },
-      css: "",
-    },
-  },
   pdfScale: 1,
 };
 
@@ -122,10 +106,8 @@ sourceElement.customData.nested.value = 2;
 sourceDeletedElement.customData.nested.value = 3;
 sourceScene.appState.selectedElementIds["element-1"] = false;
 sourceScene.files["file-1"].lastRetrieved = 2;
-sourceExportData.markdownImages.get("markdown-1").markdown = "live change";
 sourceExportData.files.get("file-1").linkParts.original = "Changed.png";
 sourceExportData.files.get("file-1").colorMap["#000000"] = "#ff0000";
-sourceExportData.markdownImageRenderDefaults.border.color = "Red";
 
 assert.equal(snapshot.scene.elements[0].points[0][0], 1);
 assert.equal(snapshot.scene.elements[0].startBinding.focus, 0);
@@ -139,20 +121,12 @@ assert.equal(
 );
 assert.equal("shape" in snapshot.scene.elements[0], false);
 assert.equal(
-  snapshot.exportData.markdownImages.get("markdown-1").markdown,
-  "save-owned",
-);
-assert.equal(
   snapshot.exportData.files.get("file-1").linkParts.original,
   "Image.png",
 );
 assert.equal(
   snapshot.exportData.files.get("file-1").colorMap["#000000"],
   "#ffffff",
-);
-assert.equal(
-  snapshot.exportData.markdownImageRenderDefaults.border.color,
-  "Black",
 );
 
 snapshot.scene.elements[0].customData.nested.value = 7;
@@ -187,20 +161,14 @@ assert.deepEqual(prepared.exportOptions, {
   includeInternalLinks: true,
   isMask: false,
 });
-assert.equal(
-  prepared.exportData.markdownImages.get("markdown-1").markdown,
-  "save-owned",
-);
 
 snapshot.scene.elements[0].customData.nested.value = 8;
 snapshot.exportFiles["file-1"].lastRetrieved = 9;
 snapshot.deletedElements[0].customData.nested.value = 9;
 snapshot.selectedElementIds["element-1"] = false;
 snapshot.exportOptions.padding = 99;
-snapshot.exportData.markdownImages.get("markdown-1").markdown =
   "snapshot change";
 snapshot.exportData.files.get("file-1").linkParts.original = "Snapshot.png";
-snapshot.exportData.markdownImageRenderDefaults.transclusion.border.color =
   "Blue";
 assert.equal(prepared.scene.elements[0].customData.nested.value, 7);
 assert.equal(prepared.scene.files["file-1"].lastRetrieved, 1);
@@ -208,16 +176,8 @@ assert.equal(prepared.deletedElements[0].customData.nested.value, 1);
 assert.equal(prepared.selectedElementIds["element-1"], true);
 assert.equal(prepared.exportOptions.padding, 12);
 assert.equal(
-  prepared.exportData.markdownImages.get("markdown-1").markdown,
-  "save-owned",
-);
-assert.equal(
   prepared.exportData.files.get("file-1").linkParts.original,
   "Image.png",
-);
-assert.equal(
-  prepared.exportData.markdownImageRenderDefaults.transclusion.border.color,
-  "Black",
 );
 
 const preparedIdentity = createPreparedSaveIdentity(prepared);

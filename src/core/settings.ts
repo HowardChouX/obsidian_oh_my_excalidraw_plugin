@@ -665,34 +665,7 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
     ];
   }
 
-  private createLibraryStorageDefinition(): SettingDefinition<SettingBindingKey> {
-    return annotateMarkdownDefinition(
-      {
-        name: t("LIBRARY_STORAGE_NAME"),
-        desc: t("LIBRARY_STORAGE_DESC"),
-        aliases: [
-          t("LIBRARY_STORAGE_VAULT"),
-          t("LIBRARY_STORAGE_DATA_JSON"),
-          "stencil library",
-        ],
-        render: (setting) => this.configureLibraryStorageSetting(setting),
-      },
-      { controlType: "dropdown" },
-    );
-  }
 
-  private createLibraryMigrationDefinition(): SettingDefinition<SettingBindingKey> {
-    return annotateMarkdownDefinition(
-      {
-        name: t("LIBRARY_MIGRATE_NOW"),
-        desc: t("LIBRARY_MIGRATE_NOW_DESC"),
-        aliases: [t("LIBRARY_MIGRATION_MIGRATE"), "stencil library"],
-        visible: () => this.isLibraryMigrationAvailable(),
-        render: (setting) => this.configureLibraryMigrationSetting(setting),
-      },
-      { controlType: "action" },
-    );
-  }
 
   private createFilenameInformationDefinition(
     renderState: SettingsRenderState,
@@ -762,22 +735,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
             this.renderSettingSpecs(container, this.getGeneralTrailingSpecs());
             this.renderSettingSpecs(container, this.getGeneralScriptSpecs());
             addYouTubeThumbnail(container, "jgUpYznHP9A", 216);
-          },
-        },
-        {
-          name: t("BASIC_STENCIL_LIBRARY_HEAD"),
-          description: t("BASIC_STENCIL_LIBRARY_DESC"),
-          buildDefinitions: () => [
-            this.createLibraryStorageDefinition(),
-            ...this.toDeclarativeDefinitions(this.getGeneralLibrarySpecs()),
-            this.createLibraryMigrationDefinition(),
-          ],
-          renderLegacy: (container) => {
-            this.configureLibraryStorageSetting(new Setting(container));
-            this.renderSettingSpecs(container, this.getGeneralLibrarySpecs());
-            if (this.isLibraryMigrationAvailable()) {
-              this.configureLibraryMigrationSetting(new Setting(container));
-            }
           },
         },
       ],
@@ -1679,46 +1636,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
     ];
   }
 
-  private getGeneralLibrarySpecs(): SettingSpec[] {
-    const usesLegacyStorage =
-      this.plugin.settings.libraryStorageMode === "data-json";
-    return [
-      {
-        name: t("LIBRARY_FOLDER_NAME"),
-        desc: t("LIBRARY_FOLDER_DESC"),
-        aliases: ["stencil library folder", "library path"],
-        control: {
-          type: "text",
-          key: "libraryFolderPath",
-          after: () => this.plugin.stencilLibraryManager?.invalidate(),
-          reload: true,
-          disabled: () =>
-            this.plugin.settings.libraryStorageMode === "data-json",
-          vaultPath: {
-            kind: "folder",
-            options: {
-              optional: usesLegacyStorage,
-              createFolder: !usesLegacyStorage,
-              validate: !usesLegacyStorage,
-            },
-          },
-        },
-      },
-      {
-        name: t("LIBRARY_FILE_NAME"),
-        desc: t("LIBRARY_FILE_DESC"),
-        aliases: ["stencil library filename"],
-        control: {
-          type: "text",
-          key: "libraryFileName",
-          after: () => this.plugin.stencilLibraryManager?.invalidate(),
-          reload: true,
-          disabled: () =>
-            this.plugin.settings.libraryStorageMode === "data-json",
-        },
-      },
-    ];
-  }
 
   private getGeneralTrailingSpecs(): SettingSpec[] {
     return [
@@ -1780,61 +1697,8 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
     ];
   }
 
-  private configureLibraryStorageSetting(setting: Setting): void {
-    setting
-      .setName(t("LIBRARY_STORAGE_NAME"))
-      .setDesc(t("LIBRARY_STORAGE_DESC"));
-    if (!this.plugin.stencilLibraryManager) {
-      setting.setDisabled(true);
-    }
-    setting.addDropdown((dropdown) =>
-      dropdown
-        .addOption("vault", t("LIBRARY_STORAGE_VAULT"))
-        .addOption("data-json", t("LIBRARY_STORAGE_DATA_JSON"))
-        .setValue(this.plugin.settings.libraryStorageMode)
-        .onChange(async (value) => {
-          const manager = this.plugin.stencilLibraryManager;
-          if (!manager || value === this.plugin.settings.libraryStorageMode) {
-            return;
-          }
-          if (value === "data-json") {
-            await manager.switchToLegacyStorage();
-          } else if (manager.hasLegacyItems()) {
-            await manager.showMigrationPrompt();
-          } else {
-            this.plugin.settings.libraryStorageMode = "vault";
-            this.plugin.settings.libraryMigrationStatus = "completed";
-            this.plugin.settings.libraryMigrationSnoozeUntil = 0;
-            manager.invalidate();
-            await this.plugin.saveSettings();
-          }
-          this.refreshSettingsUI();
-        }),
-    );
-  }
 
-  private isLibraryMigrationAvailable(): boolean {
-    return Boolean(
-      this.plugin.settings.libraryStorageMode === "data-json" &&
-        this.plugin.settings.libraryMigrationStatus !== "opted-out" &&
-        this.plugin.stencilLibraryManager?.hasLegacyItems(),
-    );
-  }
 
-  private configureLibraryMigrationSetting(setting: Setting): void {
-    setting
-      .setName(t("LIBRARY_MIGRATE_NOW"))
-      .setDesc(t("LIBRARY_MIGRATE_NOW_DESC"))
-      .addButton((button) =>
-        button
-          .setCta()
-          .setButtonText(t("LIBRARY_MIGRATION_MIGRATE"))
-          .onClick(async () => {
-            await this.plugin.stencilLibraryManager?.showMigrationPrompt();
-            this.refreshSettingsUI();
-          }),
-      );
-  }
 
   private renderLegacyPages(pages: readonly SettingsPageModel[]): void {
     for (const page of pages) {

@@ -182,8 +182,6 @@ export function createExcalidrawRootElement(
           onChange: (et, st, files) =>
             view.onChange(et as ExcalidrawElement[], st, files),
           onIncrement: (event) => view.onExcalidrawIncrement(event),
-          onLibraryChange: (libraryItems) =>
-            view.onLibraryChange(libraryItems),
           renderTopRightUI: (isMobile: boolean, appState: AppState) =>
             view.renderTopRightUI(isMobile, appState),
           renderEmbeddableMenu: (appState) =>

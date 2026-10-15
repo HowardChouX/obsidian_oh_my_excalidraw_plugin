@@ -1,14 +1,14 @@
 {
   "schemaVersion": "mimosa-hook-status/v1",
-  "recordedAt": "2026-10-15T17:53:02.507Z",
+  "recordedAt": "2026-10-15T17:57:14.593Z",
   "sessionId": "sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc",
   "event": "PostToolUse",
   "toolName": "Write",
-  "file": "scripts/tmp-splice-ea.mjs",
+  "file": "scripts/tmp-splice-stencil.mjs",
   "outcome": "clear",
   "coverage": "complete",
   "findingCount": 0,
-  "durationMs": 2,
+  "durationMs": 4,
   "hostState": "hook_complete",
   "reportHint": ".mimosa/reports/"
 }

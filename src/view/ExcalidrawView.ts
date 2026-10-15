@@ -3803,7 +3803,6 @@ export default class ExcalidrawView
       }
       this.onAfterLoadScene(justloaded);
     } else {
-      const libraryItems = await this.getLibrary();
       if (!isCurrent()) {
         return false;
       }
@@ -3845,7 +3844,7 @@ export default class ExcalidrawView
             this.pendingMigrationBinaryFiles === null
               ? excalidrawData.files
               : {},
-          libraryItems,
+          libraryItems: [],
         },
         isCurrent,
       );
@@ -4456,11 +4455,6 @@ export default class ExcalidrawView
           });
       });
     super.onPaneMenu(menu, source);
-  }
-
-  async getLibrary(): Promise<LibraryItems> {
-    const data = await this.plugin.getStencilLibrary();
-    return data?.library ? data.library : (data?.libraryItems ?? []);
   }
 
   public setCurrentPositionToCenter() {
@@ -5751,19 +5745,6 @@ export default class ExcalidrawView
     }
 
     this.triggerSceneChangeHooks(et, st, files);
-  }
-
-  public onLibraryChange(items: LibraryItems) {
-    void (async () => {
-      const lib: StencilLibraryData = {
-        type: "excalidrawlib",
-        version: 2,
-        source: `${URLs.GITHUB_COM_ZSVICZIAN_OBSIDIAN_EXCALIDRAW_PLUGIN_RELEASES_TAG}/${PLUGIN_VERSION}`,
-        libraryItems: items,
-      };
-
-      await this.plugin.setStencilLibrary(lib);
-    })();
   }
 
   private shouldSaveImportedImageTimer: number = null;

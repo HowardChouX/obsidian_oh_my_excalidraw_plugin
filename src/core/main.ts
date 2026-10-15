@@ -102,8 +102,6 @@ import { getHighlightColor } from "src/utils/dynamicStyling";
 import { InlineLinkSuggester } from "src/shared/Suggesters/InlineLinkSuggester";
 import { KeyBlocker } from "src/types/excalidrawAutomateTypes";
 import { UIMode } from "src/shared/Dialogs/UIModeSettingComponent";
-import { StencilLibraryManager } from "./managers/StencilLibraryManager";
-import type { StencilLibraryData } from "src/types/stencilLibraryTypes";
 import { PluginSettingsManager } from "./managers/PluginSettingsManager";
 import { FooterSafeAreaManager } from "./managers/FooterSafeAreaManager";
 import { FontManager } from "./managers/FontManager";
@@ -170,7 +168,6 @@ export default class ExcalidrawPlugin extends Plugin {
   private startupTimer: StartupTimer;
   private viewMigrationHandoffManager: ViewMigrationHandoffManager;
   private viewPersistenceQueue: ViewPersistenceQueue;
-  public stencilLibraryManager: StencilLibraryManager;
   public eaInstances = new WeakArray<ExcalidrawAutomate>();
   public fourthFontLoaded: boolean = false;
   public excalidrawConfig: ExcalidrawConfig;
@@ -463,7 +460,6 @@ export default class ExcalidrawPlugin extends Plugin {
     this.observerManager = new ObserverManager(this);
     this.monkeyPatchManager = new MonkeyPatchManager(this);
     this.commandManager = new CommandManager(this);
-    this.stencilLibraryManager = new StencilLibraryManager(this);
 
     try {
       initCompressionWorker();
@@ -953,51 +949,9 @@ export default class ExcalidrawPlugin extends Plugin {
     this.settingsTab?.refreshAfterExternalSettingsChange();
   }
 
-  /** Reloads externally changed settings and invalidates cached libraries. */
+  /** Reloads externally changed settings. */
   async onExternalSettingsChange() {
-    const didLoadSettings = await this.settingsManager.loadSettings();
-    if (didLoadSettings) {
-      this.stencilLibraryManager?.invalidate();
-    }
-  }
-
-  public getLegacyStencilLibrary(): StencilLibraryData {
-    if (
-      this.settings.library === "" ||
-      this.settings.library === "deprecated"
-    ) {
-      return this.settings.library2;
-    }
-    return JSON_parse(this.settings.library);
-  }
-
-  public async setLegacyStencilLibrary(
-    library: StencilLibraryData,
-    save: boolean = true,
-  ) {
-    this.settings.library = "deprecated";
-    if (JSON.stringify(this.settings.library2) === JSON.stringify(library)) {
-      return;
-    }
-    this.settings.library2 = library;
-    if (save) {
-      await this.saveSettings();
-    }
-  }
-
-  public getStencilLibrary(): StencilLibraryData | Promise<StencilLibraryData> {
-    return this.stencilLibraryManager.getLibrary().then((libraryItems) => ({
-      type: "excalidrawlib" as const,
-      version: 2,
-      libraryItems,
-    }));
-  }
-
-  public async setStencilLibrary(library: StencilLibraryData) {
-    const data = library;
-    await this.stencilLibraryManager.setLibrary(
-      data.libraryItems ?? data.library ?? [],
-    );
+    await this.settingsManager.loadSettings();
   }
 
   public triggerEmbedUpdates(filepath?: string) {
