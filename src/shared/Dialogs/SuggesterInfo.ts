@@ -15,12 +15,6 @@ const EMBEDDABLE_MDCUSTOMPROPS = `type EmbeddableMDCustomProps = {<br>useObsidia
 
 export const EXCALIDRAW_AUTOMATE_INFO: SuggesterInfo[] = [
   {
-    field: "executeCLI",
-    code: "executeCLI(request: ExcalidrawCLIRequest): Promise<ExcalidrawCLIResult>;",
-    desc: "Runs the versioned native CLI protocol in-process with explicit targets. Does not use this EA's workbench or target view. Check ok, mutation and persistence. Use schema for fields; receipts expire after 15 minutes or plugin reload.",
-    after: "",
-  },
-  {
     field: "help",
     code: "help(target: Function | string)",
     desc: "Utility function that provides help about ExcalidrawAutomate functions and properties. I recommend calling this function from Developer Console to print out help to the console.",

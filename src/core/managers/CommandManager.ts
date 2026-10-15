@@ -90,7 +90,6 @@ import { UIModeSettings } from "src/shared/Dialogs/UIModeSettings";
 import { PaneTarget } from "src/types/utilTypes";
 import { decompress } from "src/utils/sceneDataUtils";
 import { isMarkdownImageElement } from "src/shared/MarkdownImage";
-import { CLIInstructions } from "src/shared/Dialogs/CLIInstructions";
 
 declare const PLUGIN_VERSION: string;
 
@@ -138,11 +137,6 @@ export class CommandManager {
   }
 
   public initialize() {
-    this.plugin.addCommand({
-      id: "show-cli-instructions",
-      name: t("CLI_HELP"),
-      callback: () => new CLIInstructions(this.app).open(),
-    });
     try {
       this.registerCommands();
     } catch (e) {

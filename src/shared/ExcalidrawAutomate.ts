@@ -1,7 +1,6 @@
 import type React from "react";
 import ExcalidrawPlugin from "src/core/main";
 import LZString from "lz-string";
-import type { ExcalidrawCLIRequest, ExcalidrawCLIResult } from "src/types/excalidrawCliTypes";
 import {
   FillStyle,
   StrokeStyle,
@@ -1041,16 +1040,6 @@ export class ExcalidrawAutomate {
     const ea = new ExcalidrawAutomate(this.plugin, view);
     this.plugin.eaInstances.push(ea);
     return ea;
-  }
-
-  /**
-   * Executes the native CLI's JSON protocol in-process. Targets must be explicit;
-   * this method does not use this EA's staged elements or target view. Inspect
-   * `schema` for command fields and check `ok` and `persistence` in the result.
-   * Receipts are session-only and expire after 15 minutes or plugin reload.
-   */
-  public executeCLI(request: ExcalidrawCLIRequest): Promise<ExcalidrawCLIResult> {
-    return this.plugin.executeCLI(request);
   }
 
   /**

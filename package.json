@@ -25,7 +25,6 @@
     "madge": "madge --circular .",
     "doc": "npm run lib && node scripts/generate-script-library.mjs",
     "skill": "npm run lib && node scripts/skill-builder.mjs",
-    "mindmap": "node scripts/deploy-mindmap-builder.mjs",
     "lint": "eslint .",
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx}\" && eslint --max-warnings=0 --ext .ts,.tsx ./src --fix",
     "repo:export": "node scripts/generate-repository-zip.mjs",
