@@ -226,17 +226,10 @@ import { UniversalInsertFileModal } from "../shared/Dialogs/UniversalInsertFileM
 import { createExcalidrawRootElement } from "./components/ExcalidrawRoot";
 import { nanoid } from "nanoid";
 import { CustomMutationObserver, DEBUGGING } from "../utils/debugHelper";
-import {
-  errorHTML,
-  extractCodeBlocks,
-  generateAIText,
-  getJsonErrorMessage,
-} from "../utils/AIUtils";
 import { Mutable } from "@zsviczian/excalidraw/types/common/src/utility-types";
 import { SelectCard } from "../shared/Dialogs/SelectCard";
 import { PackageLease, Packages } from "../types/types";
 import React from "react";
-import { diagramToHTML } from "../utils/matic";
 import { IS_WORKER_SUPPORTED } from "../shared/Workers/compression-worker";
 import {
   AutoexportConfig,
@@ -706,11 +699,6 @@ export default class ExcalidrawView
         CustomEmbeddable,
         REGEX_LINK,
         REG_LINKINDEX_HYPERLINK,
-        diagramToHTML,
-        errorHTML,
-        extractCodeBlocks,
-        generateAIText,
-        getJsonErrorMessage,
         openExternalLink,
         renderWebView,
         useDefaultExcalidrawFrame,
@@ -7719,18 +7707,6 @@ export default class ExcalidrawView
       this.onAfterLoadScene(true);
       this.excalidrawContainer?.focus();
     });
-  }
-
-  public ttdDialog() {
-    return this.excalidrawExtensionRenderer.ttdDialog();
-  }
-
-  public diagramToCode() {
-    return this.excalidrawExtensionRenderer.diagramToCode();
-  }
-
-  public ttdDialogTrigger() {
-    return this.excalidrawExtensionRenderer.ttdDialogTrigger();
   }
 
   public renderWelcomeScreen() {

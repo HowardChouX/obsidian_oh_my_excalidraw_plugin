@@ -133,21 +133,6 @@ import { Mutable } from "@zsviczian/excalidraw/types/common/src/utility-types";
 import PolyBool from "polybooljs";
 import { EmbeddableMDCustomProps } from "./Dialogs/EmbeddableSettings";
 import {
-  postAI as _postAI,
-  postOpenAI as _postOpenAI,
-  getAISettings as _getAISettings,
-  generateAIText as _generateAIText,
-  analyzeAIImage as _analyzeAIImage,
-  generateAIImage as _generateAIImage,
-  transformAIImage as _transformAIImage,
-  maskEditAIImage as _maskEditAIImage,
-  createAIChatSession as _createAIChatSession,
-  extractCodeBlocks as _extractCodeBlocks,
-  getAIUsage as _getAIUsage,
-  formatAIUsageLabel as _formatAIUsageLabel,
-} from "../utils/AIUtils";
-import { AIUsageModal } from "./Dialogs/AIUsageModal";
-import {
   EXCALIDRAW_AUTOMATE_INFO,
   EXCALIDRAW_SCRIPTENGINE_INFO,
 } from "./Dialogs/SuggesterInfo";
@@ -228,7 +213,6 @@ import { ExcalidrawSidepanelView } from "src/view/sidepanel/Sidepanel";
 import { ExcalidrawSidepanelTab } from "src/view/sidepanel/SidepanelTab";
 import { patchMobileView } from "src/utils/customEmbeddableUtils";
 import { ObsidianCanvasNode } from "src/view/managers/CanvasNodeFactory";
-import { AIRequest, ExcalidrawAISettings } from "src/types/AIUtilTypes";
 import { getAspectRatio } from "src/utils/YoutTubeUtils";
 import { getPDFCropRect } from "src/utils/PDFUtils";
 import type { SelectedElementMenuAction } from "src/types/elementActionTypes";
@@ -497,113 +481,6 @@ export class ExcalidrawAutomate {
     if (isMissing) {
       log("Description not available for this function.");
     }
-  }
-
-  /**
-   * Posts an AI request to the currently configured provider and returns the response.
-   * @param {AIRequest} request - The AI request configuration.
-   * @returns {Promise<RequestUrlResponse>} Promise resolving to the provider-normalized API response.
-   */
-  public async postAI(request: AIRequest): Promise<RequestUrlResponse> {
-    return await _postAI(request, { plugin: this.plugin });
-  }
-
-  /**
-   * Posts an AI request to the OpenAI API and returns the response.
-   * @param {AIRequest} request - The AI request configuration.
-   * @returns {Promise<RequestUrlResponse>} Promise resolving to the API response.
-   */
-  public async postOpenAI(request: AIRequest): Promise<RequestUrlResponse> {
-    return await _postOpenAI(request, { plugin: this.plugin });
-  }
-
-  /**
-   * Returns the sanitized Excalidraw AI configuration currently available to scripts.
-   */
-  public getAISettings(): ExcalidrawAISettings | null {
-    return _getAISettings(this.plugin);
-  }
-
-  /**
-   * Sends a text or multimodal chat request to the configured AI text model.
-   */
-  public async generateAIText(request: AIRequest) {
-    return await _generateAIText(request, { plugin: this.plugin });
-  }
-
-  /**
-   * Sends an image-analysis request to the configured multimodal text model.
-   */
-  public async analyzeAIImage(request: AIRequest) {
-    return await _analyzeAIImage(request, { plugin: this.plugin });
-  }
-
-  /**
-   * Generates a new image using the configured AI image model.
-   */
-  public async generateAIImage(request: AIRequest) {
-    return await _generateAIImage(request, { plugin: this.plugin });
-  }
-
-  /**
-   * Applies a prompt-driven edit to an input image using the configured AI image model.
-   */
-  public async transformAIImage(request: AIRequest) {
-    return await _transformAIImage(request, { plugin: this.plugin });
-  }
-
-  /**
-   * Applies a mask-based edit to an input image using the configured AI image model.
-   */
-  public async maskEditAIImage(request: AIRequest) {
-    return await _maskEditAIImage(request, { plugin: this.plugin });
-  }
-
-  /**
-   * Creates a lightweight chat session wrapper that preserves prior messages between calls.
-   */
-  public createAIChatSession(initialRequest: Omit<AIRequest, "messages"> = {}) {
-    return _createAIChatSession(initialRequest, { plugin: this.plugin });
-  }
-
-  /**
-   * Returns the accumulated AI token usage for the current Obsidian session.
-   * Usage is keyed by model identifier and tracks input/output tokens for text
-   * models and generation counts for image models.
-   * Data is not persisted and resets when Obsidian is restarted.
-   */
-  public getAIUsage() {
-    return _getAIUsage();
-  }
-
-  /**
-   * Opens a modal dialog showing per-model AI token usage for the current session.
-   * The dialog includes a "Copy as Markdown" button so the table can be pasted elsewhere.
-   */
-  public showAIUsageModal() {
-    if (!this.plugin?.app) {
-      return;
-    }
-    const usage = _getAIUsage();
-    new AIUsageModal(this.plugin.app, usage).open();
-  }
-
-  /**
-   * Returns a compact label string summarising total session token usage.
-   * Format: "AI Usage: 355k/23k" (input tokens / output tokens).
-   * Appends image generation count when present, e.g. "+ 3 imgs".
-   */
-  public formatAIUsageLabel() {
-    return _formatAIUsageLabel();
-  }
-
-  /**
-   * Extracts code blocks from markdown text.
-   * @param {string} markdown - The markdown string to parse.
-   * @returns {Array<{ data: string, type: string }>} Array of objects containing code block contents and types.
-   */
-  public extractCodeBlocks(markdown: string): { data: string; type: string }[] {
-    return _extractCodeBlocks(markdown);
   }
 
   /**

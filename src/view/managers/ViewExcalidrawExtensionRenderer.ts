@@ -1,13 +1,6 @@
 import type React from "react";
-import type {
-  ExcalidrawElement,
-  ExcalidrawEmbeddableElement,
-  ExcalidrawMagicFrameElement,
-  NonDeletedExcalidrawElement,
-} from "@zsviczian/excalidraw/types/element/src/types";
+import type { ExcalidrawEmbeddableElement } from "@zsviczian/excalidraw/types/element/src/types";
 import type { UIAppState } from "@zsviczian/excalidraw/types/excalidraw/types";
-import type { TTTDDialog } from "@zsviczian/excalidraw/types/excalidraw/components/TTDDialog/types";
-import type { RequestError } from "@zsviczian/excalidraw/types/excalidraw/errors";
 import {
   excalidrawSword,
   ICONS,
@@ -17,7 +10,6 @@ import {
 } from "../../constants/actionIcons";
 import { URLs } from "../../constants/safeUrls";
 import { t } from "../../lang/helpers";
-import { ttdPersistenceAdapter } from "../../shared/TTDDialogPersistanceAdater";
 import { log } from "../../utils/debugHelper";
 import type ExcalidrawView from "../ExcalidrawView";
 
@@ -26,11 +18,6 @@ export interface ViewExcalidrawExtensionRendererDependencies {
   CustomEmbeddable: typeof import("../components/CustomEmbeddable").CustomEmbeddable;
   REGEX_LINK: typeof import("../../shared/ExcalidrawData").REGEX_LINK;
   REG_LINKINDEX_HYPERLINK: typeof import("../../shared/ExcalidrawData").REG_LINKINDEX_HYPERLINK;
-  diagramToHTML: typeof import("../../utils/matic").diagramToHTML;
-  errorHTML: typeof import("../../utils/AIUtils").errorHTML;
-  extractCodeBlocks: typeof import("../../utils/AIUtils").extractCodeBlocks;
-  generateAIText: typeof import("../../utils/AIUtils").generateAIText;
-  getJsonErrorMessage: typeof import("../../utils/AIUtils").getJsonErrorMessage;
   openExternalLink: typeof import("../../utils/excalidrawViewUtils").openExternalLink;
   renderWebView: typeof import("../components/CustomEmbeddable").renderWebView;
   useDefaultExcalidrawFrame: typeof import("../../utils/customEmbeddableUtils").useDefaultExcalidrawFrame;
@@ -52,204 +39,6 @@ export class ViewExcalidrawExtensionRenderer {
     private readonly view: ExcalidrawView,
     private readonly dependencies: ViewExcalidrawExtensionRendererDependencies,
   ) {}
-
-  /** Renders Excalidraw's text-to-diagram dialog with the plugin AI provider. */
-  public ttdDialog() {
-    const systemPrompt =
-      "The user will provide you with a text prompt. Your task is to generate a mermaid diagram based on the prompt. Use the graph, sequenceDiagram, flowchart or classDiagram types based on what best fits the request. Return a single message containing only the mermaid diagram in a codeblock. Avoid the use of `()` parenthesis in the mermaid script.";
-    const instruction =
-      "Return a single message containing only the mermaid diagram in a codeblock.";
-
-    return this.view.packages.react.createElement(
-      this.view.packages.excalidrawLib.TTDDialog,
-      {
-        persistenceAdapter: ttdPersistenceAdapter,
-        onTextSubmit: async (
-          props: Parameters<TTTDDialog.onTextSubmit>[0],
-        ): Promise<TTTDDialog.OnTextSubmitRetValue> => {
-          const {
-            messages = [],
-            onChunk,
-            onStreamCreated,
-            signal,
-          } = props ?? {};
-
-          try {
-            onStreamCreated?.();
-
-            const { response, json, content, rateLimit, rateLimitRemaining } =
-              await this.dependencies.generateAIText(
-                {
-                  systemPrompt,
-                  messages,
-                  instruction,
-                },
-                {
-                  plugin: this.view.plugin,
-                  signal,
-                },
-              );
-
-            if (
-              !response ||
-              response.status < 200 ||
-              response.status >= 300 ||
-              json?.error
-            ) {
-              log(json);
-              return {
-                error: new Error(
-                  this.dependencies.getJsonErrorMessage(json) ??
-                    `Request failed with status ${response?.status ?? 0}`,
-                ) as RequestError,
-                rateLimit,
-                rateLimitRemaining,
-              };
-            }
-
-            if (!content) {
-              log(json);
-              return {
-                error: new Error(
-                  "Generation failed... see console log for details",
-                ) as RequestError,
-                rateLimit,
-                rateLimitRemaining,
-              };
-            }
-
-            let generatedResponse =
-              this.dependencies
-                .extractCodeBlocks(content)
-                .find(
-                  (block) => (block.type ?? "").toLowerCase() === "mermaid",
-                )?.data ??
-              this.dependencies.extractCodeBlocks(content)[0]?.data ??
-              content.trim();
-
-            if (!generatedResponse) {
-              log(json);
-              return {
-                error: new Error(
-                  "Generation failed... see console log for details",
-                ) as RequestError,
-                rateLimit,
-                rateLimitRemaining,
-              };
-            }
-
-            if (generatedResponse.startsWith("mermaid")) {
-              generatedResponse = generatedResponse
-                .replace(/^mermaid/, "")
-                .trim();
-            }
-
-            onChunk?.(generatedResponse);
-
-            return {
-              generatedResponse,
-              error: null,
-              rateLimit,
-              rateLimitRemaining,
-            };
-          } catch (error) {
-            const err = error as { name?: string; message?: string };
-            if (err?.name === "AbortError") {
-              return { error: new Error("Request aborted") as RequestError };
-            }
-            log(error);
-            return {
-              error: new Error(err?.message ?? "Request failed") as RequestError,
-            };
-          }
-        },
-      },
-    );
-  }
-
-  /** Renders Excalidraw's diagram-to-code extension backed by ExcaliAI. */
-  public diagramToCode() {
-    return this.view.packages.react.createElement(
-      this.view.packages.excalidrawLib.DiagramToCodePlugin,
-      {
-        generate: async ({
-          frame,
-          children,
-        }: {
-          frame: ExcalidrawMagicFrameElement;
-          children: readonly ExcalidrawElement[];
-        }) => {
-          const appState = this.view.excalidrawAPI.getAppState();
-          const { theme } = appState as unknown as {
-            theme: "light" | "dark";
-          };
-          const nonDeletedChildren = children.filter(
-            (child): child is NonDeletedExcalidrawElement => !child.isDeleted,
-          );
-          try {
-            const blob =
-              await this.view.packages.excalidrawLib.exportToBlob({
-                elements: nonDeletedChildren,
-                appState: {
-                  ...appState,
-                  exportBackground: true,
-                  viewBackgroundColor: appState.viewBackgroundColor,
-                },
-                exportingFrame: frame,
-                files: this.view.excalidrawAPI.getFiles(),
-                mimeType: "image/jpeg",
-              });
-
-            const dataURL =
-              await this.view.packages.excalidrawLib.getDataURL(blob);
-            const textFromFrameChildren =
-              this.view.packages.excalidrawLib.getTextFromElements(
-                nonDeletedChildren,
-              );
-
-            const response = await this.dependencies.diagramToHTML({
-              image: dataURL,
-              text: textFromFrameChildren,
-              theme,
-            });
-
-            if (!response.ok) {
-              const text =
-                response.error ||
-                this.dependencies.getJsonErrorMessage(response.json) ||
-                "Unknown error during generation";
-              return {
-                html: this.dependencies.errorHTML(text),
-              };
-            }
-
-            if (!response.html) {
-              return {
-                html: this.dependencies.errorHTML("Nothing generated"),
-              };
-            }
-
-            return { html: response.html };
-          } catch (error) {
-            const err = error as { message?: string };
-            return {
-              html: this.dependencies.errorHTML(
-                err?.message ?? "Request failed",
-              ),
-            };
-          }
-        },
-      },
-    );
-  }
-
-  /** Renders the trigger that opens the text-to-diagram dialog. */
-  public ttdDialogTrigger() {
-    return this.view.packages.react.createElement(
-      this.view.packages.excalidrawLib.TTDDialogTrigger,
-      {},
-    );
-  }
 
   /** Renders the optional rank and resource welcome screen. */
   public renderWelcomeScreen() {

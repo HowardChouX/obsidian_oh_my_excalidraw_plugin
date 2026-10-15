@@ -202,7 +202,6 @@ export function createExcalidrawRootElement(
           libraryReturnUrl: "app://obsidian.md",
           autoFocus: true,
           langCode: obsidianToExcalidrawMap[view.plugin.locale] ?? "en-EN",
-          aiEnabled: view.plugin.settings.aiEnabled ?? true,
           onChange: (et, st, files) =>
             view.onChange(et as ExcalidrawElement[], st, files),
           onIncrement: (event) => view.onExcalidrawIncrement(event),
@@ -250,9 +249,6 @@ export function createExcalidrawRootElement(
         },
         view.renderCustomActionsMenu(),
         view.renderWelcomeScreen(),
-        view.ttdDialog(),
-        view.diagramToCode(),
-        view.ttdDialogTrigger(),
       ),
       view.renderToolsPanel(observer),
     ),
