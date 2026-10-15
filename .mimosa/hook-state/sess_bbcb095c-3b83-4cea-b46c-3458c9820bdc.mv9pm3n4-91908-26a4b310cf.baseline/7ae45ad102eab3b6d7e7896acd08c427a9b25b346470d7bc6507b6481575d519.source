@@ -1,0 +1,33 @@
+{
+  "name": "oh-my-excalidraw",
+  "version": "0.1.0",
+  "description": "A minimal, stable Obsidian plugin to view and edit Excalidraw drawings. Compatible with the .excalidraw.md file format of obsidian-excalidraw-plugin.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "test": "tsc -noEmit -skipLibCheck && node --test tests/data.test.mjs"
+  },
+  "keywords": [
+    "obsidian",
+    "excalidraw"
+  ],
+  "author": "Chou",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "builtin-modules": "^4.0.0",
+    "esbuild": "^0.24.0",
+    "obsidian": "1.8.7",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "@excalidraw/excalidraw": "^0.18.1",
+    "@excalidraw/utils": "^0.1.5",
+    "lz-string": "^1.5.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

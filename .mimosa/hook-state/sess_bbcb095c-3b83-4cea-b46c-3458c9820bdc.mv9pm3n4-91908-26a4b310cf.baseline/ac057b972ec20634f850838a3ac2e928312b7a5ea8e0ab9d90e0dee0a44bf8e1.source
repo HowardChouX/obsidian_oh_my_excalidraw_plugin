@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+#
+# 构建 Oh My Excalidraw 并安装到 Obsidian 插件目录。
+#
+# 用法:
+#   ./install-to-vault.sh [插件目录]
+# 不传参数时使用下面的默认 vault 路径。
+#
+# 只覆盖 main.js / manifest.json / styles.css，不动 data.json（设置）。
+
+set -euo pipefail
+
+VAULT_PLUGIN_DIR="${1:-/Users/chou/obsidian_study_notes/.obsidian/plugins/oh-my-excalidraw}"
+
+cd "$(dirname "$0")"
+
+npm run build
+
+mkdir -p "$VAULT_PLUGIN_DIR"
+cp -p main.js manifest.json styles.css "$VAULT_PLUGIN_DIR/"
+
+echo
+echo "已安装到 $VAULT_PLUGIN_DIR"
+echo "在 Obsidian 里：设置 → 第三方插件 → 启用 Oh My Excalidraw（或重载后生效）"
