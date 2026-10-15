@@ -1,14 +1,11 @@
 /**
- * Owns the per-drawing embedded-data registries on `ExcalidrawData`:
- * embedded files and local Markdown images. Each registry mirrors its entries
- * into a matching plugin-wide "master" map
- * (`ExcalidrawPlugin.filesMaster`/`markdownImagesMaster`) so intra-vault
- * copy/paste can restore a fileId's data in a drawing that never natively
- * loaded it. `ExcalidrawData` keeps every method below as a public delegate
- * for compatibility with its existing callers.
+ * Owns the per-drawing embedded-file registry on `ExcalidrawData`. The
+ * registry mirrors its entries into the plugin-wide `filesMaster` map so
+ * intra-vault copy/paste can restore a fileId's data in a drawing that never
+ * natively loaded it. `ExcalidrawData` keeps every method below as a public
+ * delegate for compatibility with its existing callers.
  */
 import type { FileId } from "@zsviczian/excalidraw/types/element/src/types";
-import type { MarkdownImageData } from "src/types/markdownImageTypes";
 import type { EmbeddedFile } from "./EmbeddedFileLoader";
 import type { ExcalidrawData } from "./ExcalidrawData";
 
@@ -132,48 +129,5 @@ export class EmbeddedDataRegistries {
       return true;
     }
     return false;
-  }
-
-  //--------------
-  //Local Markdown images
-  //--------------
-
-  /** Stores a local Markdown-image source and makes it available for intra-vault copy/paste. */
-  public setMarkdownImage(fileId: FileId, data: MarkdownImageData): void {
-    if (!data) {
-      return;
-    }
-    const value = { markdown: data.markdown ?? "" };
-    this.host.markdownImages.set(fileId, value);
-    this.host.plugin.markdownImagesMaster.set(fileId, value);
-  }
-
-  /** Returns local Markdown, restoring it from the intra-vault copy master. */
-  public getMarkdownImage(fileId: FileId): MarkdownImageData | undefined {
-    const local = this.host.markdownImages.get(fileId);
-    if (local) {
-      return local;
-    }
-    const master = this.host.plugin.markdownImagesMaster.get(fileId);
-    if (master) {
-      const value = { ...master };
-      this.host.markdownImages.set(fileId, value);
-      return value;
-    }
-    return undefined;
-  }
-
-  /** Returns whether local Markdown exists, restoring intra-vault clipboard data. */
-  public hasMarkdownImage(fileId: FileId): boolean {
-    return Boolean(this.getMarkdownImage(fileId));
-  }
-
-  /** Removes a local source, optionally discarding its clipboard master entry. */
-  public deleteMarkdownImage(fileId: FileId, clearMaster = false): void {
-    this.host.markdownImages.delete(fileId);
-    if (clearMaster) {
-      this.host.plugin.markdownImagesMaster.delete(fileId);
-    }
-    // Normally retain the master entry for copies already on the clipboard.
   }
 }

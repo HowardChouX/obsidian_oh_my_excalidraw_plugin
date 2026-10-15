@@ -7,7 +7,6 @@ import { ExcalidrawElement } from "@zsviczian/excalidraw/types/element/src/types
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { DEVICE, obsidianToExcalidrawMap } from "../../constants/constants";
 import { t } from "../../lang/helpers";
-import { isMarkdownImageElement } from "../../shared/MarkdownImage";
 import type ExcalidrawView from "../ExcalidrawView";
 import { EmbeddableMenu } from "./menu/EmbeddableActionsMenu";
 import { ObsidianMenu } from "./menu/ObsidianMenu";
@@ -69,27 +68,6 @@ export function createExcalidrawRootElement(
     view.selectedElementActionsMenu = new SelectedElementActionsMenu(
       () => view.excalidrawContainer,
     );
-    view.selectedElementActionsMenu.registerProvider({
-      id: "markdown-image",
-      getActions: (element) =>
-        element.type === "image" && isMarkdownImageElement(view, element)
-          ? [
-              {
-                id: "edit-markdown-image",
-                title: t("EDIT_MARKDOWN_IMAGE"),
-                icon: "pen-line",
-                action: () => void view.openMarkdownImageEditor(element.id),
-              },
-              {
-                id: "convert-markdown-image-to-embeddable",
-                title: t("CONVERT_MARKDOWN_IMAGE_TO_EMBEDDABLE"),
-                icon: "layout-template",
-                action: () =>
-                  void view.convertMarkdownImageToEmbeddable(element.id),
-              },
-            ]
-          : [],
-    });
     const appState = view.excalidrawAPI?.getAppState();
     if (appState) {
       view.selectedElementActionsMenu.update(

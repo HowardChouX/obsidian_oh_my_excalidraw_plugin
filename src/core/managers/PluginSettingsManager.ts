@@ -200,66 +200,6 @@ export class PluginSettingsManager {
         : "not-required";
       didSettingsMigration = true;
     }
-    const savedMarkdownImageSettings = decryptedSettings.markdownImageSettings;
-    if (!savedMarkdownImageSettings) {
-      this.host.settings.markdownImageSettings = {
-        defaults: {
-          ...DEFAULT_SETTINGS.markdownImageSettings.defaults,
-          width: this.host.settings.mdSVGwidth,
-          fontFamily: this.host.settings.mdFont,
-          fontColor: this.host.settings.mdFontColor ?? "#000000",
-          border: {
-            enabled: false,
-            color: this.host.settings.mdBorderColor,
-          },
-          css: "",
-          transclusion: {
-            ...DEFAULT_SETTINGS.markdownImageSettings.defaults.transclusion,
-            border: {
-              ...DEFAULT_SETTINGS.markdownImageSettings.defaults.transclusion
-                .border,
-            },
-          },
-        },
-      };
-      didSettingsMigration = true;
-    } else {
-      this.host.settings.markdownImageSettings = {
-        defaults: {
-          ...DEFAULT_SETTINGS.markdownImageSettings.defaults,
-          ...savedMarkdownImageSettings.defaults,
-          border: {
-            ...DEFAULT_SETTINGS.markdownImageSettings.defaults.border,
-            ...savedMarkdownImageSettings.defaults?.border,
-          },
-          transclusion: {
-            ...DEFAULT_SETTINGS.markdownImageSettings.defaults.transclusion,
-            ...savedMarkdownImageSettings.defaults?.transclusion,
-            border: {
-              ...DEFAULT_SETTINGS.markdownImageSettings.defaults.transclusion
-                .border,
-              ...savedMarkdownImageSettings.defaults?.transclusion?.border,
-            },
-          },
-        },
-      };
-    }
-    const markdownImageDefaults = this.host.settings.markdownImageSettings
-      .defaults as unknown as Record<string, unknown>;
-    if ("theme" in markdownImageDefaults) {
-      delete markdownImageDefaults.theme;
-      didSettingsMigration = true;
-    }
-    const markdownImageDeletionPreference =
-      this.host.settings.markdownImageDeletionPreference;
-    if (
-      markdownImageDeletionPreference !== "ask" &&
-      markdownImageDeletionPreference !== "keep" &&
-      markdownImageDeletionPreference !== "delete"
-    ) {
-      this.host.settings.markdownImageDeletionPreference = "ask";
-      didSettingsMigration = true;
-    }
     const settingsRecord = this.host.settings as unknown as Record<
       string,
       unknown

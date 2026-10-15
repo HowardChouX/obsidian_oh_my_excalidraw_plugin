@@ -122,22 +122,6 @@ const clonePreparedSaveExportData = (
             },
           ]),
         ),
-        markdownImages: new Map(
-          Array.from(data.markdownImages, ([id, value]) => [
-            id,
-            { ...value },
-          ]),
-        ),
-        markdownImageRenderDefaults: {
-          ...data.markdownImageRenderDefaults,
-          border: { ...data.markdownImageRenderDefaults.border },
-          transclusion: {
-            ...data.markdownImageRenderDefaults.transclusion,
-            border: {
-              ...data.markdownImageRenderDefaults.transclusion.border,
-            },
-          },
-        },
         pdfScale: data.pdfScale,
       }
     : null;

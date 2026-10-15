@@ -17,7 +17,6 @@ import {
 } from "obsidian";
 import {
   VIEW_TYPE_EXCALIDRAW,
-  VIEW_TYPE_SIDEPANEL,
   EXCALIDRAW_ICON,
   ICON_NAME,
   SCRIPTENGINE_ICON,
@@ -95,7 +94,6 @@ import { ObserverManager } from "./managers/ObserverManager";
 import { PackageManager } from "./managers/PackageManager";
 import { MonkeyPatchManager } from "./managers/MonkeyPatchManager";
 import ExcalidrawView from "../view/ExcalidrawView";
-import { ExcalidrawSidepanelView } from "../view/sidepanel/Sidepanel";
 import { CommandManager } from "./managers/CommandManager";
 import { EventManager } from "./managers/EventManager";
 import { UniversalInsertFileModal } from "src/shared/Dialogs/UniversalInsertFileModal";
@@ -104,7 +102,6 @@ import { getHighlightColor } from "src/utils/dynamicStyling";
 import { InlineLinkSuggester } from "src/shared/Suggesters/InlineLinkSuggester";
 import { KeyBlocker } from "src/types/excalidrawAutomateTypes";
 import { UIMode } from "src/shared/Dialogs/UIModeSettingComponent";
-import type { MarkdownImageData } from "src/types/markdownImageTypes";
 import { StencilLibraryManager } from "./managers/StencilLibraryManager";
 import type { StencilLibraryData } from "src/types/stencilLibraryTypes";
 import { PluginSettingsManager } from "./managers/PluginSettingsManager";
@@ -196,7 +193,6 @@ export default class ExcalidrawPlugin extends Plugin {
   //A master list of fileIds to facilitate copy / paste
   public filesMaster: Map<FileId, FileMasterInfo> = null; //fileId, path
   public equationsMaster: Map<FileId, string> = null; //fileId, formula
-  public markdownImagesMaster: Map<FileId, MarkdownImageData> = null;
   public mermaidsMaster: Map<FileId, string> = null; //fileId, mermaidText
   public scriptEngine: ScriptEngine;
   private stylesManager: StylesManager;
@@ -263,7 +259,6 @@ export default class ExcalidrawPlugin extends Plugin {
       }
     >();
     this.equationsMaster = new Map<FileId, string>();
-    this.markdownImagesMaster = new Map<FileId, MarkdownImageData>();
     this.mermaidsMaster = new Map<FileId, string>();
 
     //isExcalidraw function is used already is already used by MarkdownPostProcessor in onLoad before onLayoutReady
@@ -397,10 +392,6 @@ export default class ExcalidrawPlugin extends Plugin {
       }
       return new ExcalidrawLoading(leaf, this);
     });
-    this.registerView(
-      VIEW_TYPE_SIDEPANEL,
-      (leaf: WorkspaceLeaf) => new ExcalidrawSidepanelView(leaf, this),
-    );
     //Compatibility mode with .excalidraw files
     this.registerExtensions(["excalidraw"], VIEW_TYPE_EXCALIDRAW);
 
@@ -874,7 +865,6 @@ export default class ExcalidrawPlugin extends Plugin {
   }
 
   onunload() {
-    ExcalidrawSidepanelView.onPluginUnload(this);
     const excalidrawViews = getExcalidrawViews(this.app);
     excalidrawViews.forEach(({ leaf }) => {
       void this.setMarkdownView(leaf);
@@ -927,7 +917,6 @@ export default class ExcalidrawPlugin extends Plugin {
 
     this.fileManager.destroy();
     this.equationsMaster.clear();
-    this.markdownImagesMaster.clear();
     this.filesMaster.clear();
     this.mermaidsMaster.clear();
 
@@ -970,12 +959,6 @@ export default class ExcalidrawPlugin extends Plugin {
     if (didLoadSettings) {
       this.stencilLibraryManager?.invalidate();
     }
-  }
-
-  public async openSidepanel(
-    reveal: boolean = true,
-  ): Promise<ExcalidrawSidepanelView | null> {
-    return ExcalidrawSidepanelView.getOrCreate(this, reveal);
   }
 
   public getLegacyStencilLibrary(): StencilLibraryData {

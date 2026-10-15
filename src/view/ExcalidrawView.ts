@@ -63,7 +63,6 @@ import {
 } from "../shared/ExcalidrawAutomate";
 import type { PaneTarget } from "../types/utilTypes";
 import { TextMode, getTextMode } from "../shared/TextMode";
-import { ExcalidrawSidepanelView } from "./sidepanel/Sidepanel";
 import {
   repositionElementsToCursor,
   cloneElement,
@@ -75,9 +74,6 @@ import {
   REG_LINKINDEX_HYPERLINK,
   REGEX_LINK,
   getExcalidrawMarkdownHeaderSection,
-  parseMarkdownImages,
-  syncMarkdownImagesInHeader,
-  unwrapMarkdownImageBlock,
 } from "../shared/ExcalidrawData";
 import {
   createFileAndAwaitMetacacheUpdate,
@@ -151,22 +147,6 @@ import {
   EmbeddedFilesLoader,
   generateIdFromFile,
 } from "../shared/EmbeddedFileLoader";
-import {
-  convertEmbeddableElementToMarkdownImage,
-  convertMarkdownImageElementToEmbeddable,
-  containsReservedMarkdownImageMarker,
-  getEmbeddableMarkdownImageSource,
-  getLevelOneMarkdownHeadings,
-  getMarkdownImageCustomData,
-  getMarkdownImageSource,
-  isMarkdownImageElement,
-} from "../shared/MarkdownImage";
-import {
-  beginMarkdownImageEditorViewUnload,
-  handleMarkdownImageEditorSelection,
-  handleMarkdownImageEditorViewUnload,
-  openMarkdownImageEditor as openMarkdownImageEditorSidepanel,
-} from "./sidepanel/MarkdownImageEditor";
 import { ScriptInstallPrompt } from "../shared/Dialogs/ScriptInstallPrompt";
 import { ObsidianMenu } from "./components/menu/ObsidianMenu";
 import { ToolsPanel } from "./components/menu/ToolsPanel";
@@ -254,7 +234,6 @@ import {
 import { SameFileEditGate } from "./managers/SameFileEditGate";
 import { OwnWriteReloadGuard } from "./managers/OwnWriteReloadGuard";
 import { shouldRetainLoadedFileAfterReload } from "./textFileViewReloadPolicy";
-import { MarkdownImageController } from "./managers/MarkdownImageController";
 import {
   getVisibleImageFileIds,
   ViewSceneFileManager,
@@ -451,7 +430,6 @@ export default class ExcalidrawView
   private fullscreenManager: ViewFullscreenManager;
   private linkNavigationManager: ViewLinkNavigationManager;
   private excalidrawExtensionRenderer: ViewExcalidrawExtensionRenderer;
-  private markdownImageController: MarkdownImageController;
   private sceneFileManager: ViewSceneFileManager;
   private saveCoordinator: ViewSaveCoordinator;
   private sameFileEditGate: SameFileEditGate;
@@ -652,8 +630,6 @@ export default class ExcalidrawView
       REG_LINKINDEX_HYPERLINK,
       NewFileActions,
       linkPrompt,
-      getMarkdownImageSource,
-      isMarkdownImageElement,
       splitFolderAndFilename,
       getTextElementAtPointer,
       anyModifierKeysPressed,
@@ -691,23 +667,6 @@ export default class ExcalidrawView
         openExportImageDialog: () => this.actionOpenExportImageDialog(),
       },
     );
-    this.markdownImageController = new MarkdownImageController(this, {
-      isMarkdownImageElement,
-      getMarkdownImageCustomData,
-      getEmbeddableMarkdownImageSource,
-      convertEmbeddableElementToMarkdownImage,
-      getMarkdownImageSource,
-      convertMarkdownImageElementToEmbeddable,
-      getLevelOneMarkdownHeadings,
-      containsReservedMarkdownImageMarker,
-      openMarkdownImageEditorSidepanel,
-      parseMarkdownImages,
-      unwrapMarkdownImageBlock,
-      MultiOptionConfirmationPrompt,
-      GenericInputPrompt,
-      insertBackOfTheNoteContent,
-      errorlog,
-    });
     this.sceneFileManager = new ViewSceneFileManager(this, {
       createEmbeddedFilesLoader: (isDark) =>
         new EmbeddedFilesLoader(this.plugin, isDark),
@@ -1040,9 +999,6 @@ export default class ExcalidrawView
     if (!this.isLoaded) {
       return { status: "skipped" };
     }
-    if (this.markdownImageController.markdownImageDeletionPrompt !== null) {
-      await this.markdownImageController.markdownImageDeletionPrompt;
-    }
     if (!bypassSameFileEditGuard && this.isSameFileEditingActive()) {
       return { status: "skipped" };
     }
@@ -1348,9 +1304,9 @@ export default class ExcalidrawView
         this.exportDialog.dirty = false;
       }
 
-      const header = syncMarkdownImagesInHeader(
-        getExcalidrawMarkdownHeaderSection(sourceTextSnapshot, keys),
-        this.excalidrawData.markdownImages,
+      const header = getExcalidrawMarkdownHeaderSection(
+        sourceTextSnapshot,
+        keys,
       );
       const tail = this.plugin.settings.zoteroCompatibility
         ? (RE_TAIL.exec(sourceTextSnapshot)?.[1] ?? "")
@@ -1777,17 +1733,12 @@ export default class ExcalidrawView
           // This also joins an invalidation already started by a leaf switch,
           // preventing its forced save from registering a persistence handoff
           // after the replacement view has already checked the queue.
-          const markdownImageEditorUnload =
-            beginMarkdownImageEditorViewUnload(this);
           const migrationSnapshot = this.captureWindowMigrationSnapshot(
-            markdownImageEditorUnload !== null,
+            false,
           );
           const migrationSaveRequired =
             this.windowMigrationSaveSnapshot !== null;
           this.unmountExcalidrawRoot();
-          if (markdownImageEditorUnload !== null) {
-            await markdownImageEditorUnload;
-          }
           if (migrationSaveRequired) {
             if (mustRefreshMigrationSourceText) {
               // The modify event produced by a same-file Markdown editor is
@@ -2198,7 +2149,6 @@ export default class ExcalidrawView
   async onUnloadFile(): Promise<void> {
     //deliberately not calling super.onUnloadFile() to avoid autosave (saved in unload)
     this.invalidateSetViewDataLoad();
-    await handleMarkdownImageEditorViewUnload(this);
     let counter = 0;
     while (
       (this.isSaveInProgress() || this.isSynchronizing) &&
@@ -2323,13 +2273,6 @@ export default class ExcalidrawView
 
     this.sceneFileManager.terminateActiveLoaders();
     if (this.plugin) {
-      this.plugin.scriptEngine?.removeViewEAs(this);
-      const sidepanel =
-        this.plugin.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEPANEL)[0]?.view;
-      if (sidepanel && sidepanel instanceof ExcalidrawSidepanelView) {
-        sidepanel.removeViewEAs(this);
-      }
-
       if (this.plugin.ea?.targetView === this) {
         this.plugin.ea.targetView = null;
       }
@@ -3398,19 +3341,6 @@ export default class ExcalidrawView
     );
   }
 
-  /** Records a displayed Markdown image for view-local reload deduplication. */
-  public rememberMarkdownImageRender(
-    element: ExcalidrawImageElement,
-    markdown: string,
-    sourceFile: TFile,
-  ): void {
-    this.sceneFileManager.rememberMarkdownImageRender(
-      element,
-      markdown,
-      sourceFile.path,
-    );
-  }
-
   private isSynchronizationTargetCurrent(filePath: string): boolean {
     return Boolean(
       filePath &&
@@ -3606,49 +3536,6 @@ export default class ExcalidrawView
     const fileIdsToReload = new Set<FileId>();
 
     try {
-      const syncMarkdownImageSource = (
-        incomingElement: ExcalidrawImageElement,
-      ): boolean => {
-        const customData = getMarkdownImageCustomData(incomingElement);
-        if (!customData) {
-          return false;
-        }
-        if (customData.source === "local") {
-          const incomingSource = incomingData.getMarkdownImage(
-            incomingElement.fileId,
-          );
-          if (!incomingSource) {
-            return false;
-          }
-          const currentSource = this.excalidrawData.getMarkdownImage(
-            incomingElement.fileId,
-          );
-          if (currentSource?.markdown === incomingSource.markdown) {
-            return false;
-          }
-          this.excalidrawData.setMarkdownImage(
-            incomingElement.fileId,
-            incomingSource,
-          );
-          return true;
-        }
-
-        const incomingFile = incomingData.getFile(incomingElement.fileId);
-        if (!incomingFile) {
-          return false;
-        }
-        const currentFile = this.excalidrawData.getFile(incomingElement.fileId);
-        if (
-          currentFile?.file === incomingFile.file &&
-          currentFile?.hyperlink === incomingFile.hyperlink &&
-          currentFile?.linkParts?.original === incomingFile.linkParts?.original
-        ) {
-          return false;
-        }
-        this.excalidrawData.setFile(incomingElement.fileId, incomingFile);
-        return true;
-      };
-
       const deletedIds = incomingData.deletedElements.map((el) => el.id);
       const mergedElements = this.excalidrawAPI
         .getSceneElementsIncludingDeleted()
@@ -3669,10 +3556,7 @@ export default class ExcalidrawView
             );
             break;
           case "image":
-            if (getMarkdownImageCustomData(incomingElement)) {
-              syncMarkdownImageSource(incomingElement);
-              fileIdsToReload.add(incomingElement.fileId);
-            } else if (incomingData.getFile(incomingElement.fileId)) {
+            if (incomingData.getFile(incomingElement.fileId)) {
               this.excalidrawData.setFile(
                 incomingElement.fileId,
                 incomingData.getFile(incomingElement.fileId),
@@ -3741,15 +3625,6 @@ export default class ExcalidrawView
               sceneElementIds.splice(parentLayer + 1, 0, incomingElement.id);
             }
           } else if (sceneElement && incomingElement.type === "image") {
-            if (getMarkdownImageCustomData(incomingElement)) {
-              if (
-                syncMarkdownImageSource(incomingElement) ||
-                !this.excalidrawAPI.getFiles()[incomingElement.fileId]
-              ) {
-                fileIdsToReload.add(incomingElement.fileId);
-              }
-              return;
-            }
             //https://github.com/zsviczian/obsidian-excalidraw-plugin/issues/632
             const incomingFile = incomingData.getFile(incomingElement.fileId);
             const sceneFile = this.excalidrawData.getFile(
@@ -3780,10 +3655,8 @@ export default class ExcalidrawView
       mergedElements.forEach((element) => {
         if (
           element.type === "image" &&
-          getMarkdownImageCustomData(element) &&
           !loadedFiles[element.fileId]
         ) {
-          syncMarkdownImageSource(element);
           fileIdsToReload.add(element.fileId);
         }
       });
@@ -4234,14 +4107,10 @@ export default class ExcalidrawView
     if (this.semaphores.viewunload) return;
 
     const hookServer = this.getHookServer();
-    const sidepanel = ExcalidrawSidepanelView.getExisting(false);
 
     const currentVersion = this.getSceneVersion(et);
 
-    if (
-      !hookServer?.onSceneChangeHook &&
-      !(sidepanel && sidepanel.hasEATargetingView(this))
-    ) {
+    if (!hookServer?.onSceneChangeHook) {
       this.lastAppState = st;
       this.lastElementsVersion = currentVersion;
       return;
@@ -4266,20 +4135,6 @@ export default class ExcalidrawView
       );
     }
 
-    if (sidepanel) {
-      sidepanel.forEachEATargetingView(this, (ea) => {
-        if (ea.onSceneChangeHook) {
-          this.evaluateSceneChangeHook(
-            ea,
-            et,
-            st,
-            last,
-            files,
-            elementsChanged,
-          );
-        }
-      });
-    }
   }
 
   private evaluateSceneChangeHook(
@@ -4299,12 +4154,6 @@ export default class ExcalidrawView
       (!hook.appStateKeys || hook.appStateKeys.length === 0)
     )
       return;
-
-    const tab = ea.sidepanelTab;
-    if (tab) {
-      const isActiveAndVisible = tab.isActiveTab() && tab.isVisible();
-      if (!isActiveAndVisible && !hook.triggerWhenInvisible) return;
-    }
 
     let hasRelevantChange = false;
 
@@ -5786,18 +5635,6 @@ export default class ExcalidrawView
     if (changedElements.length > 0) {
       this.setDirty();
     }
-    changedElements.forEach((element) => {
-      if (element.type !== "image" || !element.isDeleted) {
-        return;
-      }
-      if (
-        getMarkdownImageCustomData(element)?.source !== "local" ||
-        !this.excalidrawData.markdownImages.has(element.fileId)
-      ) {
-        return;
-      }
-      this.markdownImageController.queueMarkdownImageDeletion(element);
-    });
   }
 
   public onChange(et: ExcalidrawElement[], st: AppState, files: BinaryFiles) {
@@ -5913,7 +5750,6 @@ export default class ExcalidrawView
       this.checkSceneVersion(et);
     }
 
-    handleMarkdownImageEditorSelection(this, et, st.selectedElementIds);
     this.triggerSceneChangeHooks(et, st, files);
   }
 
@@ -6094,21 +5930,6 @@ export default class ExcalidrawView
       }
     }
     if (data.elements) {
-      data.elements
-        .filter(
-          (element): element is ExcalidrawImageElement =>
-            element.type === "image" &&
-            getMarkdownImageCustomData(element)?.source === "local",
-        )
-        .forEach((element) => {
-          if (this.excalidrawData.markdownImages.has(element.fileId)) {
-            return;
-          }
-          const source = this.plugin.markdownImagesMaster.get(element.fileId);
-          if (source) {
-            this.excalidrawData.setMarkdownImage(element.fileId, source);
-          }
-        });
       data.elements
         .filter((el) => el.type === "text" || el.link)
         .forEach((el) =>
@@ -6698,29 +6519,6 @@ export default class ExcalidrawView
     selectCardDialog.start(center);
   }
 
-  /** Opens an image by ID for editing, or inserts a new Markdown image. */
-  public async openMarkdownImageEditor(elementId?: string): Promise<void> {
-    await this.markdownImageController.openMarkdownImageEditor(elementId);
-  }
-
-  /** Converts a Markdown embeddable without changing its scene identity. */
-  public async convertEmbeddableToMarkdownImage(
-    elementId: string,
-  ): Promise<void> {
-    await this.markdownImageController.convertEmbeddableToMarkdownImage(
-      elementId,
-    );
-  }
-
-  /** Converts a Markdown image to an external or back-of-note embeddable. */
-  public async convertMarkdownImageToEmbeddable(
-    elementId: string,
-  ): Promise<void> {
-    await this.markdownImageController.convertMarkdownImageToEmbeddable(
-      elementId,
-    );
-  }
-
   public async moveBackOfTheNoteCardToFile(id?: string) {
     id =
       id ??
@@ -6919,42 +6717,6 @@ export default class ExcalidrawView
     }
 
     if (!appState.viewModeEnabled) {
-      const selectedMarkdownImage =
-        this.getViewSelectedElements().length === 1 &&
-        this.getViewSelectedElements()[0].type === "image" &&
-        isMarkdownImageElement(
-          this,
-          this.getViewSelectedElements()[0] as ExcalidrawImageElement,
-        )
-          ? (this.getViewSelectedElements()[0] as ExcalidrawImageElement)
-          : null;
-      if (selectedMarkdownImage) {
-        contextMenuActions.push([
-          renderContextMenuAction(
-            React,
-            t("EDIT_MARKDOWN_IMAGE"),
-            () => {
-              void this.openMarkdownImageEditor(selectedMarkdownImage.id);
-            },
-            onClose,
-            "editMarkdownImage",
-          ),
-        ]);
-        contextMenuActions.push([
-          renderContextMenuAction(
-            React,
-            t("CONVERT_MARKDOWN_IMAGE_TO_EMBEDDABLE"),
-            () => {
-              void this.convertMarkdownImageToEmbeddable(
-                selectedMarkdownImage.id,
-              );
-            },
-            onClose,
-            "convertMarkdownImageToEmbeddable",
-          ),
-        ]);
-      }
-
       const selectedTextElements = this.getViewSelectedElements().filter(
         (el) => el.type === "text",
       );
@@ -7090,9 +6852,6 @@ export default class ExcalidrawView
           imageEl: ExcalidrawImageElement,
           embeddedFile?: EmbeddedFile,
         ): ImageType | null => {
-          if (isMarkdownImageElement(this, imageEl)) {
-            return "svg";
-          }
           if (!embeddedFile) {
             return null;
           }
@@ -7190,16 +6949,10 @@ export default class ExcalidrawView
                     const imageType =
                       getImageType(editableEl, embeddedFile) ?? img.imageType;
                     if (imageType === "svg" || imageType === "excalidraw") {
-                      const isMarkdownImage = isMarkdownImageElement(
-                        this,
-                        editableEl,
-                      );
                       addAppendUpdateCustomData(editableEl, {
-                        doNotInvertSVGInDarkMode: isMarkdownImage
-                          ? !newInvertState
-                          : newInvertState
-                            ? undefined
-                            : true,
+                        doNotInvertSVGInDarkMode: newInvertState
+                          ? undefined
+                          : true,
                         invertBitmapInDarkmode: undefined,
                       });
                     } else {
@@ -7271,17 +7024,6 @@ export default class ExcalidrawView
         }
       }
 
-      contextMenuActions.push([
-        renderContextMenuAction(
-          React,
-          t("INSERT_MARKDOWN_IMAGE"),
-          () => {
-            void this.openMarkdownImageEditor();
-          },
-          onClose,
-          "insertMarkdownImage",
-        ),
-      ]);
       contextMenuActions.push([
         renderContextMenuAction(
           React,

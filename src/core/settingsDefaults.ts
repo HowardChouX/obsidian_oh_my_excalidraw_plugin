@@ -15,10 +15,6 @@ import { DynamicStyle, GridSettings } from "src/types/types";
 import { PreviewImageType } from "src/types/utilTypes";
 import { PENS } from "src/utils/pens";
 import { EmbeddableMDCustomProps } from "src/shared/Dialogs/EmbeddableSettings";
-import type {
-  MarkdownImageDeletionPreference,
-  MarkdownImageSettings,
-} from "src/types/markdownImageTypes";
 import { ModifierKeySet, ModifierSetType } from "src/utils/modifierkeyHelper";
 import { ANNOTATED_PREFIX, CROPPED_PREFIX } from "src/utils/carveout";
 import { Rank } from "src/constants/actionIcons";
@@ -168,8 +164,6 @@ export interface ExcalidrawSettings {
   mdFontColor: string;
   mdBorderColor: string;
   mdCSS: string;
-  markdownImageSettings: MarkdownImageSettings;
-  markdownImageDeletionPreference: MarkdownImageDeletionPreference;
   scriptEngineSettings: {
     [key: string]: {
       [key: string]: ScriptSettingValue | string | number | boolean;
@@ -363,30 +357,6 @@ export const DEFAULT_SETTINGS: ExcalidrawSettings = {
   mdFontColor: "Black",
   mdBorderColor: "Black",
   mdCSS: "",
-  markdownImageSettings: {
-    defaults: {
-      width: 500,
-      paddingBottom: 10,
-      fontFamily: "Cascadia",
-      fontColor: "Black",
-      border: {
-        enabled: false,
-        color: "Black",
-      },
-      css: "",
-      transclusion: {
-        enabled: false,
-        fontFamily: "Cascadia",
-        fontColor: "Black",
-        border: {
-          enabled: false,
-          color: "Black",
-        },
-        css: "",
-      },
-    },
-  },
-  markdownImageDeletionPreference: "ask",
   scriptEngineSettings: {},
   autostartScripts: {},
   autostartScriptFailures: {},

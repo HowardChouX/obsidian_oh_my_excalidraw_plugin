@@ -21,7 +21,6 @@ import {
   getMarkdownHeadingSubpaths,
   type MarkdownHeadingSubpath,
 } from "src/shared/Suggesters/markdownSubpathSuggester";
-import { insertMarkdownImage } from "src/shared/MarkdownImage";
 import { EmbeddedFile } from "src/shared/EmbeddedFileLoader";
 
 export type UniversalInsertFileAction = "image" | "embeddable";
@@ -241,35 +240,16 @@ export class UniversalInsertFileModal extends Modal {
           button.setCta();
         }
         button.setButtonText(t("UIFM_BTN_IMAGE")).onClick(async () => {
-          const isMarkdown =
-            file &&
-            file.extension === "md" &&
-            !this.plugin.isExcalidrawFile(file);
-          const section = sectionPicker.selectEl.value;
-          if (isMarkdown || (file?.extension === "md" && section)) {
-            await insertMarkdownImage(
-              this.view,
-              section
-                ? new EmbeddedFile(
-                    this.plugin,
-                    this.view.file.path,
-                    `${file.path}${section}`,
-                  )
-                : file,
+          const ea = getEA(this.view);
+          ea.selectElementsInView([
+            await insertImageToView(
+              ea,
               this.center,
-            );
-          } else {
-            const ea = getEA(this.view);
-            ea.selectElementsInView([
-              await insertImageToView(
-                ea,
-                this.center,
-                file,
-                ea.isExcalidrawFile(file) ? !anchorTo100 : undefined,
-              ),
-            ]);
-            ea.destroy();
-          }
+              file,
+              ea.isExcalidrawFile(file) ? !anchorTo100 : undefined,
+            ),
+          ]);
+          ea.destroy();
           this.close();
         });
         actionImage = button;

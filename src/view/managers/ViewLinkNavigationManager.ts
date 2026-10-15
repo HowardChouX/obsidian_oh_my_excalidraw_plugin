@@ -28,8 +28,6 @@ export interface ViewLinkNavigationDependencies {
   REG_LINKINDEX_HYPERLINK: typeof import("../../shared/ExcalidrawData").REG_LINKINDEX_HYPERLINK;
   NewFileActions: typeof import("../../shared/Dialogs/Prompt").NewFileActions;
   linkPrompt: typeof import("../../shared/Dialogs/Prompt").linkPrompt;
-  getMarkdownImageSource: typeof import("../../shared/MarkdownImage").getMarkdownImageSource;
-  isMarkdownImageElement: typeof import("../../shared/MarkdownImage").isMarkdownImageElement;
   splitFolderAndFilename: typeof import("../../utils/fileUtils").splitFolderAndFilename;
   getTextElementAtPointer: typeof import("../../utils/getElementAtPointer").getTextElementAtPointer;
   anyModifierKeysPressed: typeof import("../../utils/modifierkeyHelper").anyModifierKeysPressed;
@@ -443,48 +441,8 @@ export class ViewLinkNavigationManager {
         void this.view.openEmbeddedLinkEditor(selectedImage.id);
         return;
       }
-      const markdownImageSource = this.dependencies.isMarkdownImageElement(
-        this.view,
-        imageElement,
-      )
-        ? await this.dependencies.getMarkdownImageSource(this.view, imageElement)
-        : null;
-      if (markdownImageSource) {
-        const externalSourceLink =
-          markdownImageSource.source === "external" &&
-          markdownImageSource.embeddedFile
-            ? markdownImageSource.embeddedFile.linkParts.original
-            : null;
-        const result = await this.dependencies.linkPrompt(
-          `${externalSourceLink ? `[[${externalSourceLink}]] ` : ""}${markdownImageSource.markdown}`,
-          this.view.app,
-          this.view,
-        );
-        if (!result) {
-          return;
-        }
-        [file, linkText, subpath] = result;
-        if (
-          markdownImageSource.source === "external" &&
-          markdownImageSource.embeddedFile?.file &&
-          linkText
-        ) {
-          file =
-            linkText === markdownImageSource.embeddedFile.linkParts.path
-              ? markdownImageSource.embeddedFile.file
-              : this.view.app.metadataCache.getFirstLinkpathDest(
-                  linkText,
-                  markdownImageSource.embeddedFile.file.path,
-                );
-        }
-      }
-      if (!markdownImageSource) {
-        await this.view.save(false);
-      }
-      if (
-        !markdownImageSource &&
-        this.view.excalidrawData.hasFile(selectedImage.fileId)
-      ) {
+      await this.view.save(false);
+      if (this.view.excalidrawData.hasFile(selectedImage.fileId)) {
         const fileId = selectedImage.fileId;
         const ef = this.view.excalidrawData.getFile(fileId);
         if (

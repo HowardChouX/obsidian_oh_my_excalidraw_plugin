@@ -1077,13 +1077,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
           renderLegacy: (container) =>
             this.renderEmbeddableMarkdownDefaults(container),
         },
-        {
-          name: t("MD_HEAD"),
-          description: t("MD_GROUP_DESC"),
-          buildDefinitions: () => this.getMarkdownImageDefaultDefinitions(),
-          renderLegacy: (container) =>
-            this.renderMarkdownImageDefaultSettings(container),
-        },
       ],
     };
 
@@ -3619,177 +3612,12 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
     ];
   }
 
-  private createMarkdownDimensionDefinition(options: {
-    name: string;
-    desc: string | DocumentFragment;
-    aliases: string[];
-    key: "mdSVGwidth" | "mdSVGmaxHeight";
-    emptyValue: number;
-    placeholder: string;
-  }): SettingDefinition<SettingBindingKey> {
-    return this.createCustomSettingDefinition({
-      name: options.name,
-      desc: options.desc,
-      aliases: options.aliases,
-      controlType: "number input",
-      configure: (setting) =>
-        this.configureIntegerTextSetting(setting, options),
-    });
-  }
 
-  private configureMarkdownFontSetting(setting: Setting): () => void {
-    setting
-      .setName(t("MD_DEFAULT_FONT_NAME"))
-      .setDesc(fragWithHTML(t("MD_DEFAULT_FONT_DESC")));
-    return this.trackFontPicker(
-      new FontPickerComponent(
-        setting.controlEl,
-        this.app,
-        () =>
-          getSelectableFontOptions(
-            this.app,
-            this.plugin.settings.fontAssetsPath,
-          ),
-        (fontFamily) => this.getBuiltInMarkdownFontCss(fontFamily),
-      )
-        .setAriaLabel(t("MD_DEFAULT_FONT_NAME"))
-        .setValue(this.plugin.settings.mdFont)
-        .onChange((value) => {
-          this.requestReloadDrawings = true;
-          this.plugin.settings.mdFont = value;
-          this.applySettingsUpdate(true);
-        }),
-    );
-  }
 
-  private createMarkdownFontDefinition(): SettingDefinition<SettingBindingKey> {
-    return this.createCustomSettingDefinition({
-      name: t("MD_DEFAULT_FONT_NAME"),
-      desc: fragWithHTML(t("MD_DEFAULT_FONT_DESC")),
-      aliases: ["Markdown image font", "embedded Markdown typeface"],
-      controlType: "font picker",
-      configure: (setting) => this.configureMarkdownFontSetting(setting),
-    });
-  }
 
-  private getMarkdownImageStyleSpecs(): SettingSpec[] {
-    return [
-      {
-        name: t("MD_DEFAULT_COLOR_NAME"),
-        desc: fragWithHTML(t("MD_DEFAULT_COLOR_DESC")),
-        aliases: ["Markdown embed font color", "text color"],
-        control: {
-          type: "text",
-          key: "mdFontColor",
-          placeholder: t("DEFAULT_COLOR_MD_DESC"),
-          before: () => {
-            this.requestReloadDrawings = true;
-          },
-          reload: true,
-        },
-      },
-      {
-        name: t("MD_DEFAULT_BORDER_COLOR_NAME"),
-        desc: fragWithHTML(t("MD_DEFAULT_BORDER_COLOR_DESC")),
-        aliases: ["Markdown embed border", "border color"],
-        control: {
-          type: "text",
-          key: "mdBorderColor",
-          placeholder: t("DEFAULT_COLOR_MD_DESC"),
-          before: () => {
-            this.requestReloadDrawings = true;
-          },
-          reload: true,
-        },
-      },
-      {
-        name: t("MD_CSS_NAME"),
-        desc: fragWithHTML(t("MD_CSS_DESC")),
-        aliases: ["Markdown embed CSS", "CSS snippet", "CSS file"],
-        control: {
-          type: "text",
-          key: "mdCSS",
-          placeholder: t("MD_CSS_PLACEHOLDER"),
-          before: () => {
-            this.requestReloadDrawings = true;
-          },
-          reload: true,
-        },
-      },
-    ];
-  }
 
-  private getMarkdownImageDefaultDefinitions(): SettingDefinitionItem<SettingBindingKey>[] {
-    return [
-      ...this.toDeclarativeDefinitions(this.getMarkdownImageDeletionSpecs()),
-      this.createMarkdownDimensionDefinition({
-        name: t("MD_TRANSCLUDE_WIDTH_NAME"),
-        desc: fragWithHTML(t("MD_TRANSCLUDE_WIDTH_DESC")),
-        aliases: ["Markdown embed width", "transclusion width"],
-        key: "mdSVGwidth",
-        emptyValue: 500,
-        placeholder: "Enter a number e.g. 500",
-      }),
-      this.createMarkdownDimensionDefinition({
-        name: t("MD_TRANSCLUDE_HEIGHT_NAME"),
-        desc: fragWithHTML(t("MD_TRANSCLUDE_HEIGHT_DESC")),
-        aliases: ["Markdown embed height", "transclusion maximum height"],
-        key: "mdSVGmaxHeight",
-        emptyValue: 800,
-        placeholder: "Enter a number e.g. 800",
-      }),
-      this.createMarkdownFontDefinition(),
-      ...this.toDeclarativeDefinitions(this.getMarkdownImageStyleSpecs()),
-    ];
-  }
 
-  private renderMarkdownImageDefaultSettings(container: HTMLElement): void {
-    this.renderSettingSpecs(container, this.getMarkdownImageDeletionSpecs());
-    this.configureIntegerTextSetting(new Setting(container), {
-      name: t("MD_TRANSCLUDE_WIDTH_NAME"),
-      desc: fragWithHTML(t("MD_TRANSCLUDE_WIDTH_DESC")),
-      key: "mdSVGwidth",
-      emptyValue: 500,
-      placeholder: "Enter a number e.g. 500",
-    });
-    this.configureIntegerTextSetting(new Setting(container), {
-      name: t("MD_TRANSCLUDE_HEIGHT_NAME"),
-      desc: fragWithHTML(t("MD_TRANSCLUDE_HEIGHT_DESC")),
-      key: "mdSVGmaxHeight",
-      emptyValue: 800,
-      placeholder: "Enter a number e.g. 800",
-    });
-    this.configureMarkdownFontSetting(new Setting(container));
-    this.renderSettingSpecs(container, this.getMarkdownImageStyleSpecs());
-  }
 
-  private getMarkdownImageDeletionSpecs(): SettingSpec[] {
-    return [
-      {
-        name: t("MARKDOWN_IMAGE_DELETE_BEHAVIOR_NAME"),
-        desc: t("MARKDOWN_IMAGE_DELETE_BEHAVIOR_DESC"),
-        aliases: ["local Markdown image deletion", "back-of-note deletion"],
-        control: {
-          type: "dropdown",
-          key: "markdownImageDeletionPreference",
-          options: [
-            {
-              value: "ask",
-              label: t("MARKDOWN_IMAGE_DELETE_BEHAVIOR_ASK"),
-            },
-            {
-              value: "keep",
-              label: t("MARKDOWN_IMAGE_DELETE_BEHAVIOR_KEEP"),
-            },
-            {
-              value: "delete",
-              label: t("MARKDOWN_IMAGE_DELETE_BEHAVIOR_DELETE"),
-            },
-          ],
-        },
-      },
-    ];
-  }
 
   private getNonstandardSpecs(): SettingSpec[] {
     return [

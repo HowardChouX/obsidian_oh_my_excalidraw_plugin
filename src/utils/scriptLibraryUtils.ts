@@ -11,7 +11,6 @@ import { URLs } from "src/constants/safeUrls";
 import { t } from "src/lang/helpers";
 import type { RemoteDirectoryInfo } from "src/types/githubTypes";
 import type { ScriptStoreInstallState } from "src/types/scriptStoreTypes";
-import { ExcalidrawSidepanelView } from "src/view/sidepanel/Sidepanel";
 import { errorlog } from "./coreUtils";
 import { createOrOverwriteFile, getIMGFilename } from "./fileUtils";
 import {
@@ -434,32 +433,6 @@ export const getScriptInstallStates = async (
   return states;
 };
 
-/** Resolves one community script's install/update state. */
-export const getScriptInstallState = async (
-  plugin: ScriptLibraryPluginContext,
-  source: string,
-): Promise<ScriptStoreInstallState> =>
-  (await getScriptInstallStates(plugin, [source])).get(source) ?? "error";
-
-const restartSidepanelTabIfActive = async (
-  plugin: ScriptLibraryPluginContext,
-  scriptFile: TFile,
-): Promise<void> => {
-  const scriptName = plugin.scriptEngine.getScriptName(scriptFile);
-  const spView = ExcalidrawSidepanelView.getExisting(false);
-  if (!spView || !scriptName || !spView.getTabByScript(scriptName)) {
-    return;
-  }
-  try {
-    await spView.restartTabForScript(scriptName);
-  } catch (error: unknown) {
-    errorlog({
-      where: "scriptLibraryUtils.restartSidepanelTabIfActive",
-      error,
-      scriptName,
-    });
-  }
-};
 
 export type InstalledScriptResult = {
   scriptFile: TFile;
@@ -542,7 +515,6 @@ export const installScript = async (
       throw new Error("Script file was not created");
     }
     await plugin.scriptEngine.refreshManagedScriptFile(scriptFile);
-    await restartSidepanelTabIfActive(plugin, scriptFile);
     if (showNotice) {
       new Notice(`${t("SCRIPT_INSTALLED_NOTICE")}: ${scriptFile.basename}`);
     }

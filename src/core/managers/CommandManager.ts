@@ -89,7 +89,6 @@ import type ExcalidrawPlugin from "src/core/main";
 import { UIModeSettings } from "src/shared/Dialogs/UIModeSettings";
 import { PaneTarget } from "src/types/utilTypes";
 import { decompress } from "src/utils/sceneDataUtils";
-import { isMarkdownImageElement } from "src/shared/MarkdownImage";
 
 declare const PLUGIN_VERSION: string;
 
@@ -522,14 +521,6 @@ export class CommandManager {
       id: "excalidraw-download-lib",
       name: t("DOWNLOAD_LIBRARY"),
       callback: () => this.plugin.exportLibrary(),
-    });
-
-    this.addCommand({
-      id: "excalidraw-open-sidepanel",
-      name: t("OPEN_SIDEPANEL"),
-      callback: () => {
-        void this.plugin.openSidepanel();
-      },
     });
 
     this.addCommand({
@@ -2133,44 +2124,6 @@ export class CommandManager {
             ref,
           );
         }
-      },
-    });
-
-    this.addCommand({
-      id: "insert-editable-markdown-image",
-      name: t("INSERT_MARKDOWN_IMAGE"),
-      checkCallback: (checking: boolean) => {
-        const view = this.app.workspace.getActiveViewOfType(ExcalidrawView);
-        if (!view?.excalidrawAPI) {
-          return false;
-        }
-        if (!checking) {
-          void view.openMarkdownImageEditor();
-        }
-        return true;
-      },
-    });
-
-    this.addCommand({
-      id: "edit-selected-markdown-image",
-      name: t("EDIT_MARKDOWN_IMAGE"),
-      checkCallback: (checking: boolean) => {
-        const view = this.app.workspace.getActiveViewOfType(ExcalidrawView);
-        if (!view?.excalidrawAPI) {
-          return false;
-        }
-        const selected = view.getViewSelectedElements();
-        if (
-          selected.length !== 1 ||
-          selected[0].type !== "image" ||
-          !isMarkdownImageElement(view, selected[0])
-        ) {
-          return false;
-        }
-        if (!checking) {
-          void view.openMarkdownImageEditor(selected[0].id);
-        }
-        return true;
       },
     });
 

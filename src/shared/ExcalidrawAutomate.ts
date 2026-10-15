@@ -202,8 +202,6 @@ import { PaneTarget } from "src/types/utilTypes";
 import { CaptureUpdateAction } from "src/constants/constants";
 import { ExcalidrawViewScene } from "src/types/excalidrawViewTypes";
 import { FloatingModal } from "./Dialogs/FloatingModal";
-import { ExcalidrawSidepanelView } from "src/view/sidepanel/Sidepanel";
-import { ExcalidrawSidepanelTab } from "src/view/sidepanel/SidepanelTab";
 import { patchMobileView } from "src/utils/customEmbeddableUtils";
 import { ObsidianCanvasNode } from "src/view/managers/CanvasNodeFactory";
 import { getAspectRatio } from "src/utils/YoutTubeUtils";
@@ -746,7 +744,6 @@ export class ExcalidrawAutomate {
     gridSize: number;
   };
   colorPalette: object;
-  sidepanelTab: ExcalidrawSidepanelTab | null = null;
   private cleanupCallbacks: Array<{ callback: () => void }> = [];
   private destroyed = false;
 
@@ -803,148 +800,6 @@ export class ExcalidrawAutomate {
         this.cleanupCallbacks.splice(index, 1);
       }
     };
-  }
-
-  /**
-   * Return the active sidepanel tab for a script, if one exists.
-   * If scriptName is omitted the function checks ea.activeScript.
-   * At most one sidepanel tab may be open per script. If a tab exists this
-   * returns the corresponding ExcalidrawSidepanelTab; otherwise it returns
-   * undefined.
-   * The returned tab may be hosted by a different ExcalidrawAutomate instance.
-   * To determine whether the tab belongs to the current ea instance compare:
-   * sidepanelTab.getHostEA() === ea.
-   * In this case the script may wish to reuse the existing tab rather than create a new one.
-   * @param scriptName - Optional script name to query. Defaults to ea.activeScript.
-   * @returns The ExcalidrawSidepanelTab for the script, or undefined if none exists.
-   */
-  public checkForActiveSidepanelTabForScript(
-    scriptName?: string,
-  ): ExcalidrawSidepanelTab | null {
-    scriptName = scriptName ?? this.activeScript;
-    if (!scriptName) {
-      return null;
-    }
-    const spView = ExcalidrawSidepanelView.getExisting(false);
-    if (!spView) {
-      return null;
-    }
-    return spView.getTabByScript(scriptName);
-  }
-
-  /**
-   * Creates a new sidepanel tab associated with this ExcalidrawAutomate instance.
-   * If a sidepanel tab already exists for this instance, it will be closed first.
-   * @param title - The title of the sidepanel tab.
-   * @param options
-   * @returns
-   */
-  public async createSidepanelTab(
-    title: string,
-    persist: boolean = false,
-    reveal: boolean = true,
-  ): Promise<ExcalidrawSidepanelTab | null> {
-    const existingSidepanel = ExcalidrawSidepanelView.getExisting(false);
-    if (
-      persist &&
-      this.activeScript &&
-      this.plugin?.scriptEngine?.isViewAutostartExecution(this) &&
-      existingSidepanel?.hasPersistentScript(this.activeScript) &&
-      existingSidepanel.getTabByScript(this.activeScript)
-    ) {
-      log(
-        `Warning: script "${this.activeScript}" attempted to create an already-active persistent sidepanel during view autostart. Consider branching on utils.executionSource === "view-autostart".`,
-      );
-    }
-    if (this.sidepanelTab) {
-      this.sidepanelTab.close();
-    }
-    const scriptName = this.activeScript ?? nanoid(); //random name if no active script
-    const spView = await ExcalidrawSidepanelView.getOrCreate(
-      this.plugin,
-      reveal,
-    );
-    if (!spView) {
-      errorMessage("Unable to open sidepanel", "createSidepanelTab()");
-      return null;
-    }
-    const tab = await spView.createTab({ title, scriptName, hostEA: this });
-    this.sidepanelTab = tab;
-    if (reveal) {
-      tab.reveal();
-    }
-    if (persist && this.activeScript) {
-      this.persistSidepanelTab();
-    }
-    return tab;
-  }
-
-  /**
-   * Returns the WorkspaceLeaf hosting the Excalidraw sidepanel view.
-   * @returns {WorkspaceLeaf | null} The sidepanel leaf or null if not found.
-   */
-  public getSidepanelLeaf(): WorkspaceLeaf | null {
-    return ExcalidrawSidepanelView.getExisting(false)?.leaf ?? null;
-  }
-
-  /**
-   * Queues the script to be skipped once during persisted sidepanel restoration.
-   * This is useful at startup when a script is launched via Command Palette/hotkey
-   * before the sidepanel view has opened and run its restoration sequence.
-   *
-   * The script is queued only if the sidepanel leaf is not yet available.
-   * @param scriptName - Optional script name. Defaults to ea.activeScript.
-   * @returns {boolean} True if a skip marker was queued, false otherwise.
-   */
-  public skipSidepanelScriptRestore(scriptName?: string): boolean {
-    scriptName = scriptName ?? this.activeScript;
-    if (!scriptName) {
-      return false;
-    }
-    if (this.getSidepanelLeaf()) {
-      return false;
-    }
-    ExcalidrawSidepanelView.skipScriptRestore(scriptName);
-    return true;
-  }
-
-  /**
-   * Toggles the visibility of the Excalidraw sidepanel view.
-   * If the sidepanel is not in a leaf attached to the left or right split, no action is taken.
-   */
-  public toggleSidepanelView(): void {
-    const leaf = this.getSidepanelLeaf();
-    if (leaf) {
-      const root = leaf.getRoot();
-      if (root === this.plugin.app.workspace.leftSplit) {
-        this.plugin.app.workspace.leftSplit.toggle();
-        return;
-      }
-      if (root === this.plugin.app.workspace.rightSplit) {
-        this.plugin.app.workspace.rightSplit.toggle();
-      }
-    }
-  }
-
-  /**
-   * Pins the active script's sidepanel tab to be persistent across Obsidian restarts.
-   * @param options
-   * @returns {Promise<ExcalidrawSidepanelTab | null>} The persisted sidepanel tab or null on error.
-   */
-  public persistSidepanelTab(): ExcalidrawSidepanelTab | null {
-    if (!this.activeScript && !this.sidepanelTab) {
-      errorMessage(
-        "No active script and sidepanel tab to persist",
-        "persistSidepanelTab()",
-      );
-      return null;
-    }
-    const spView = ExcalidrawSidepanelView.getExisting();
-    if (!spView) {
-      return;
-    }
-    spView.markTabPersistent(this.sidepanelTab);
-    return this.sidepanelTab;
   }
 
   /**
@@ -3144,7 +2999,6 @@ export class ExcalidrawAutomate {
    * Clears elementsDict and imagesDict, and resets all style values to default.
    */
   reset(): void {
-    this.sidepanelTab?.close();
     this.clear();
     this.activeScript = null;
     this.style = {
@@ -5244,7 +5098,6 @@ export class ExcalidrawAutomate {
         log("ExcalidrawAutomate cleanup failed", error);
       }
     });
-    this.sidepanelTab?.close();
     const targetView = this.targetView;
     try {
       if (targetView?.getHookServer() === this) {

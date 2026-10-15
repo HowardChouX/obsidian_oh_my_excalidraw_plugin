@@ -72,16 +72,6 @@ import {
   isInstanceOfSVGElement,
 } from "src/utils/typechecks";
 import { getSafeFrontmatter, strictArrayBuffer } from "src/utils/obsidianUtils";
-import {
-  MARKDOWN_IMAGE_CUSTOM_DATA_KEY,
-  type MarkdownImageCustomData,
-  type MarkdownImageRenderSettings,
-} from "src/types/markdownImageTypes";
-import {
-  createMarkdownImageRenderCacheEntry,
-  resolveMarkdownImageRenderSettings,
-  type MarkdownImageRenderCacheEntry,
-} from "src/utils/markdownImageUtils";
 import { addAppendUpdateCustomData } from "src/utils/elementCustomDataUtils";
 
 //declared in rollup.config.mjs
@@ -98,7 +88,6 @@ export interface EmbeddedFilesDataSource {
   scene: ExcalidrawData["scene"];
   getFileEntries: ExcalidrawData["getFileEntries"];
   getFile: ExcalidrawData["getFile"];
-  getMarkdownImage: ExcalidrawData["getMarkdownImage"];
 }
 
 /** View-independent state needed to recreate one embedded-file descriptor. */
@@ -159,84 +148,10 @@ type LoadImageOptions = {
   onStaleCacheHit?: (validation: DeferredCacheValidation) => void;
   deferUncachedExcalidraw?: boolean;
   onExcalidrawGenerationDeferred?: () => void;
-  markdownTransclusionRender?: MarkdownImageRenderSettings;
   fileId?: FileId;
   pdfScale?: number;
 };
 
-type MarkdownRenderOverrides = {
-  markdown: string;
-  render: MarkdownImageRenderSettings;
-  fullHeight: boolean;
-  isTransclusion?: boolean;
-};
-
-const waitForMarkdownPostProcessors = (
-  container: HTMLElement,
-): Promise<void> => {
-  if (
-    !container.querySelector(
-      ".mermaid, .dataview, [class*='block-language-']",
-    )
-  ) {
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve) => {
-    const minimumWait = 250;
-    const quietPeriod = 150;
-    const maximumWait = 2000;
-    let minimumElapsed = false;
-    let quietElapsed = false;
-    let quietTimer: number | null = null;
-    let minimumTimer: number | null = null;
-    let maximumTimer: number | null = null;
-
-    const observer = new MutationObserver(() => {
-      quietElapsed = false;
-      if (quietTimer !== null) {
-        window.clearTimeout(quietTimer);
-      }
-      quietTimer = window.setTimeout(() => {
-        quietElapsed = true;
-        finishIfReady();
-      }, quietPeriod);
-    });
-    const cleanup = () => {
-      observer.disconnect();
-      [quietTimer, minimumTimer, maximumTimer].forEach((timer) => {
-        if (timer !== null) {
-          window.clearTimeout(timer);
-        }
-      });
-    };
-    const finish = () => {
-      cleanup();
-      resolve();
-    };
-    const finishIfReady = () => {
-      if (minimumElapsed && quietElapsed) {
-        finish();
-      }
-    };
-
-    observer.observe(container, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      characterData: true,
-    });
-    quietTimer = window.setTimeout(() => {
-      quietElapsed = true;
-      finishIfReady();
-    }, quietPeriod);
-    minimumTimer = window.setTimeout(() => {
-      minimumElapsed = true;
-      finishIfReady();
-    }, minimumWait);
-    maximumTimer = window.setTimeout(finish, maximumWait);
-  });
-};
 
 const waitForDocumentFonts = async (doc: Document): Promise<void> => {
   const fontSet = doc.fonts;
@@ -378,34 +293,7 @@ const snapshotRenderedCanvases = (container: HTMLElement): void => {
   });
 };
 
-const getTransclusionRenderSettings = (
-  render: MarkdownImageRenderSettings,
-): MarkdownImageRenderSettings =>
-  render.transclusion.enabled
-    ? {
-        ...render,
-        fontFamily: render.transclusion.fontFamily,
-        fontColor: render.transclusion.fontColor,
-        border: { ...render.transclusion.border },
-        css: render.transclusion.css,
-      }
-    : render;
-
 type LoadSceneEmitPolicy = "all" | "changed-only";
-
-export type MarkdownSVGRenderResult = {
-  dataURL: DataURL;
-  hasSVGwithBitmap: boolean;
-  size: Size;
-};
-
-const emptyMarkdownSVGRenderResult = (
-  width: number,
-): MarkdownSVGRenderResult => ({
-  dataURL: "" as DataURL,
-  hasSVGwithBitmap: false,
-  size: { width, height: 0 },
-});
 
 const getPDFCacheId = (linkParts: LinkParts, pageNum: number): string => {
   // Different crops of the same PDF page must not overwrite each other in cache,
@@ -814,43 +702,6 @@ export class EmbeddedFilesLoader {
     this.pdfDocsMap.clear();
   }
 
-  /**
-   * Renders an in-memory Markdown fragment using the same SVG pipeline as
-   * Markdown file embeds. Unlike ordinary embeds, the returned image is never
-   * height-clipped.
-   */
-  public async renderMarkdownToSVG(
-    sourceFile: TFile,
-    markdown: string,
-    render: MarkdownImageRenderSettings,
-  ): Promise<MarkdownSVGRenderResult> {
-    if (this.isDark !== false) {
-      const lightThemeLoader = new EmbeddedFilesLoader(this.plugin, false);
-      try {
-        return await lightThemeLoader.renderMarkdownToSVG(
-          sourceFile,
-          markdown,
-          render,
-        );
-      } finally {
-        lightThemeLoader.terminate = true;
-      }
-    }
-    try {
-      const linkParts = getLinkParts(sourceFile.path);
-      linkParts.width = render.width;
-      linkParts.height = Number.MAX_SAFE_INTEGER;
-      const result = await this.convertMarkdownToSVG(
-        this.plugin,
-        sourceFile,
-        linkParts,
-        { markdown, render, fullHeight: true },
-      );
-      return result;
-    } finally {
-      this.emptyPDFDocsMap();
-    }
-  }
 
   public async getObsidianImage(
     inFile: TFile | EmbeddedFile,
@@ -1272,48 +1123,13 @@ export class EmbeddedFilesLoader {
             : file?.extension === "md"
               ? null
               : await getDataURL(ab, mimeType)));
-      let renderedMarkdownSize: Size | null = null;
       if (this.terminate) {
         return null;
       }
 
-      if (!isHyperLink && !dataURL && !isLocalLink) {
-        markdownRendererRecursionWatcthdog.add(file);
-        try {
-          const markdownTransclusionRender =
-            options?.markdownTransclusionRender;
-          const transclusion = markdownTransclusionRender
-            ? await getTransclusion(linkParts, this.plugin.app, file)
-            : null;
-          const result = await this.convertMarkdownToSVG(
-            this.plugin,
-            file,
-            linkParts,
-            markdownTransclusionRender
-              ? {
-                  markdown:
-                    (transclusion.leadingHashes ?? "") +
-                    transclusion.contents,
-                  render: markdownTransclusionRender,
-                  fullHeight: true,
-                  isTransclusion: true,
-                }
-              : undefined,
-            options?.pdfScale,
-          );
-          dataURL = result.dataURL;
-          hasSVGwithBitmap = result.hasSVGwithBitmap;
-          renderedMarkdownSize = result.size;
-        } finally {
-          markdownRendererRecursionWatcthdog.delete(file);
-        }
-      }
-
       const size = isPDF
         ? pdfSize
-        : (excalidrawSize ??
-          renderedMarkdownSize ??
-          (await getImageSize(dataURL)));
+        : (excalidrawSize ?? (await getImageSize(dataURL)));
 
       if (this.terminate) {
         return null;
@@ -1376,9 +1192,6 @@ export class EmbeddedFilesLoader {
     sceneElements,
     waitForRender,
     prioritizedFileIds,
-    markdownImageRenderCache,
-    loadedMarkdownImageFileIds,
-    markdownImageRenderDefaults,
     pdfScale,
   }: {
     excalidrawData: EmbeddedFilesDataSource;
@@ -1397,9 +1210,6 @@ export class EmbeddedFilesLoader {
     sceneElements?: readonly ExcalidrawElement[];
     waitForRender?: () => Promise<void>;
     prioritizedFileIds?: ReadonlySet<FileId>;
-    markdownImageRenderCache?: Map<FileId, MarkdownImageRenderCacheEntry>;
-    loadedMarkdownImageFileIds?: ReadonlySet<FileId>;
-    markdownImageRenderDefaults?: MarkdownImageRenderSettings;
     pdfScale?: number;
   }) {
     this.terminalState = "running";
@@ -1428,38 +1238,6 @@ export class EmbeddedFilesLoader {
           Number(prioritizedFileIds.has(fileIdB)) -
           Number(prioritizedFileIds.has(fileIdA)),
       );
-    }
-    const markdownImageElements = (
-      sceneElements ?? excalidrawData.scene.elements
-    ).filter(
-      (element: ExcalidrawElement) =>
-        element.type === "image" &&
-        Boolean(element.customData?.[MARKDOWN_IMAGE_CUSTOM_DATA_KEY]),
-    ) as ExcalidrawImageElement[];
-    const markdownImageFileIds = new Set(
-      markdownImageElements.map((element) => element.fileId),
-    );
-    // Ordinary copies of a local Markdown image intentionally share one
-    // fileId. Render and publish that shared binary once while retaining all
-    // elements for per-element metadata normalization below.
-    const markdownImageElementsByFileId = new Map<
-      FileId,
-      ExcalidrawImageElement[]
-    >();
-    for (const element of markdownImageElements) {
-      const elements = markdownImageElementsByFileId.get(element.fileId);
-      if (elements) {
-        elements.push(element);
-      } else {
-        markdownImageElementsByFileId.set(element.fileId, [element]);
-      }
-    }
-    if (markdownImageRenderCache) {
-      for (const fileId of markdownImageRenderCache.keys()) {
-        if (!markdownImageFileIds.has(fileId)) {
-          markdownImageRenderCache.delete(fileId);
-        }
-      }
     }
     //debug({where:"EmbeddedFileLoader.loadSceneFiles",uid:this.uid,isDark:this.isDark,sceneTheme:excalidrawData.scene.appState.theme});
     let onLoadTaskSettled: (() => void) | null = null;
@@ -1496,47 +1274,6 @@ export class EmbeddedFilesLoader {
     const deferredDependencyGraphContext =
       createNestedFileDependencyGraphContext(true);
     const deferredGenerationEntries: typeof entries = [];
-    const renderedMarkdownImageCacheEntries = new Map<
-      FileId,
-      MarkdownImageRenderCacheEntry
-    >();
-    const normalizeMarkdownImageElement = (
-      element: ExcalidrawImageElement,
-    ) => {
-      const customData = element.customData?.[
-        MARKDOWN_IMAGE_CUSTOM_DATA_KEY
-      ] as MarkdownImageCustomData | undefined;
-      if (!customData) {
-        return null;
-      }
-      const render = resolveMarkdownImageRenderSettings(
-        markdownImageRenderDefaults ??
-          this.plugin.settings.markdownImageSettings.defaults,
-        customData.render,
-      );
-      const legacyRender = customData.render as MarkdownImageRenderSettings & {
-        theme?: unknown;
-      };
-      if ("theme" in legacyRender) {
-        const migratedRender = { ...legacyRender };
-        delete migratedRender.theme;
-        addAppendUpdateCustomData(element, {
-          [MARKDOWN_IMAGE_CUSTOM_DATA_KEY]: {
-            ...customData,
-            render: migratedRender as MarkdownImageRenderSettings,
-          },
-        });
-      }
-      if (
-        typeof element.customData?.doNotInvertSVGInDarkMode !== "boolean"
-      ) {
-        addAppendUpdateCustomData(element, {
-          doNotInvertSVGInDarkMode: false,
-        });
-      }
-      return { customData, render };
-    };
-
     function* loadIterator(
       loader: EmbeddedFilesLoader,
       embeddedEntries: typeof entries = entries,
@@ -1544,9 +1281,6 @@ export class EmbeddedFilesLoader {
       includeAdditionalAssets = true,
     ): Generator<Promise<void>> {
       for (const entry of embeddedEntries) {
-        if (markdownImageFileIds.has(entry[0])) {
-          continue;
-        }
         if (fileIDWhiteList && !fileIDWhiteList.has(entry[0])) {
           continue;
         }
@@ -1657,97 +1391,6 @@ export class EmbeddedFilesLoader {
         return;
       }
 
-      for (const [id, elements] of markdownImageElementsByFileId) {
-        if (fileIDWhiteList && !fileIDWhiteList.has(id)) {
-          continue;
-        }
-        const element = elements[0];
-        yield createSafeLoadTask(
-          async () => {
-            if (loader.terminate) {
-              return;
-            }
-            const normalized = normalizeMarkdownImageElement(element);
-            if (!normalized) {
-              return;
-            }
-            const { customData, render } = normalized;
-            // Copies sharing this fileId need the same legacy metadata
-            // normalization even though only one SVG is generated.
-            for (const copy of elements.slice(1)) {
-              normalizeMarkdownImageElement(copy);
-            }
-            let sourceFile = excalidrawData.file;
-            let markdown: string | undefined;
-            if (customData.source === "external") {
-              const embeddedFile = excalidrawData.getFile(id);
-              if (
-                !embeddedFile?.file ||
-                embeddedFile.file.extension.toLowerCase() !== "md"
-              ) {
-                return;
-              }
-              sourceFile = embeddedFile.file;
-              const transclusion = await getTransclusion(
-                embeddedFile.linkParts,
-                loader.plugin.app,
-                sourceFile,
-              );
-              markdown =
-                (transclusion.leadingHashes ?? "") + transclusion.contents;
-            } else {
-              markdown = excalidrawData.getMarkdownImage(id)?.markdown;
-            }
-            if (markdown === undefined) {
-              return;
-            }
-            const currentCustomData = element.customData?.[
-              MARKDOWN_IMAGE_CUSTOM_DATA_KEY
-            ] as MarkdownImageCustomData | undefined;
-            if (!currentCustomData) {
-              return;
-            }
-            const cacheEntry = createMarkdownImageRenderCacheEntry(
-              markdown,
-              sourceFile.path,
-              currentCustomData,
-              render,
-            );
-            const cached = markdownImageRenderCache?.get(id);
-            if (
-              !forceReloadFileIDs?.has(id) &&
-              loadedMarkdownImageFileIds?.has(id) &&
-              cached?.markdown === cacheEntry.markdown &&
-              cached.configuration === cacheEntry.configuration
-            ) {
-              return;
-            }
-            const rendered = await loader.renderMarkdownToSVG(
-              sourceFile,
-              markdown,
-              render,
-            );
-            if (!rendered.dataURL || loader.terminate) {
-              return;
-            }
-            files[batch].push({
-              mimeType: "image/svg+xml",
-              id,
-              dataURL: rendered.dataURL,
-              created: Date.now(),
-              size: rendered.size,
-              hasSVGwithBitmap: rendered.hasSVGwithBitmap,
-              shouldScale: true,
-            });
-            renderedMarkdownImageCacheEntries.set(id, cacheEntry);
-          },
-          {
-            phase: "markdown-image",
-            fileId: id,
-            elementId: element.id,
-          },
-        );
-      }
     }
 
     const runLoadPool = async (
@@ -1801,14 +1444,6 @@ export class EmbeddedFilesLoader {
       }
       try {
         addFiles(batchFiles, this.isDark, final);
-        if (batchFiles && markdownImageRenderCache) {
-          for (const file of batchFiles) {
-            const cacheEntry = renderedMarkdownImageCacheEntries.get(file.id);
-            if (cacheEntry) {
-              markdownImageRenderCache.set(file.id, cacheEntry);
-            }
-          }
-        }
       } catch (e: unknown) {
         errorlog({ where: "EmbeddedFileLoader.loadSceneFiles", error: e });
       }
@@ -2250,576 +1885,6 @@ export class EmbeddedFilesLoader {
       });
       return [null, null, null, null, false];
     }
-  }
-
-  private async convertMarkdownToSVG(
-    plugin: ExcalidrawPlugin,
-    file: TFile,
-    linkParts: LinkParts,
-    overrides?: MarkdownRenderOverrides,
-    pdfScale?: number,
-  ): Promise<MarkdownSVGRenderResult> {
-    if (this.terminate) {
-      return emptyMarkdownSVGRenderResult(linkParts.width);
-    }
-    //1.
-    //get the markdown text
-    let hasSVGwithBitmap = false;
-    const transclusion = overrides
-      ? null
-      : await getTransclusion(linkParts, plugin.app, file);
-    if (this.terminate) {
-      return emptyMarkdownSVGRenderResult(linkParts.width);
-    }
-    let text = overrides
-      ? overrides.markdown
-      : (transclusion.leadingHashes ?? "") + transclusion.contents;
-    if (text === "") {
-      text = overrides
-        ? `*${t("MARKDOWN_IMAGE_EMPTY_PLACEHOLDER")}*`
-        : "# Empty markdown file\nCTRL+Click here to open the file for editing in the current active pane, or CTRL+SHIFT+Click to open it in an adjacent pane.";
-    }
-
-    //2.
-    //get styles
-
-    const fileCache = plugin.app.metadataCache.getFileCache(file);
-    let fontDef: string;
-    let fontName = overrides?.render.fontFamily ?? plugin.settings.mdFont;
-    const safeFrontmatter = getSafeFrontmatter(fileCache?.frontmatter);
-    if (!overrides && safeFrontmatter[FRONTMATTER_KEYS.font.name]) {
-      fontName = safeFrontmatter[FRONTMATTER_KEYS.font.name];
-    }
-    switch (fontName) {
-      case "Virgil":
-        fontDef = await getCSSFontDefinition(1);
-        break;
-      case "Cascadia":
-        fontDef = await getCSSFontDefinition(3);
-        break;
-      case "Assistant":
-      case "Helvetica":
-        fontDef = await getCSSFontDefinition(2); //retruns empty string
-        break;
-      case "Excalifont":
-        fontDef = await getCSSFontDefinition(5);
-        break;
-      case "Nunito":
-        fontDef = await getCSSFontDefinition(6);
-        break;
-      case "Lilita One":
-        fontDef = await getCSSFontDefinition(7);
-        break;
-      case "Comic Shanns":
-        fontDef = await getCSSFontDefinition(8);
-        break;
-      case "Liberation Sans":
-        fontDef = await getCSSFontDefinition(9);
-        break;
-      case "":
-        fontDef = "";
-        break;
-      default: {
-        const font = await getFontDataURL(plugin.app, fontName, file.path);
-        fontDef = font.fontDef;
-        fontName = font.fontName;
-      }
-    }
-
-    if (fileCache?.frontmatter && fileCache.frontmatter.banner !== null) {
-      text = text.replace(/banner:\s*.*/, ""); //patch https://github.com/zsviczian/obsidian-excalidraw-plugin/issues/814
-    }
-
-    const fmFontColor = safeFrontmatter[FRONTMATTER_KEYS["font-color"].name];
-    const fontColor =
-      overrides?.render.fontColor ?? fmFontColor ?? plugin.settings.mdFontColor;
-    const markdownImageThemeCSS = overrides
-      ? `.excalidraw-md-host.theme-light{color-scheme:light;--background-primary:#ffffff;--background-secondary:#f5f5f5;--text-normal:#2e3338;--text-muted:#6b6b6b;--link-color:#086ddd}.excalidraw-md-host.theme-light a{color:var(--link-color)}.excalidraw-md-host.theme-light th{background-color:#dedede}.excalidraw-md-host.theme-light pre[class*=language-],.excalidraw-md-host.theme-light :not(pre)>code[class*=language-]{color:#393a34;background-color:#f5f5f5;border-color:#ddd}.excalidraw-md-host.theme-light blockquote{background-color:rgba(0,0,0,.06)}`
-      : "";
-    let style: string = overrides
-      ? `${DEFAULT_MD_EMBED_CSS}\n${ISOLATED_MARKDOWN_RENDER_CSS}\n${markdownImageThemeCSS}\n${overrides.render.css}`
-      : (safeFrontmatter[FRONTMATTER_KEYS["md-css"].name] ?? "");
-
-    let frontmatterCSSisAfile = false;
-    if (!overrides && style && style !== "") {
-      const f = plugin.app.metadataCache.getFirstLinkpathDest(style, file.path);
-      if (f) {
-        style = await plugin.app.vault.read(f);
-        frontmatterCSSisAfile = true;
-      }
-    }
-    if (!overrides && !frontmatterCSSisAfile) {
-      if (plugin.settings.mdCSS && plugin.settings.mdCSS !== "") {
-        const f = plugin.app.metadataCache.getFirstLinkpathDest(
-          plugin.settings.mdCSS,
-          file.path,
-        );
-        style += f
-          ? `\n${await plugin.app.vault.read(f)}`
-          : DEFAULT_MD_EMBED_CSS;
-      } else {
-        style += DEFAULT_MD_EMBED_CSS;
-      }
-    }
-    if (!style.includes(ISOLATED_MARKDOWN_RENDER_CSS)) {
-      style = `${ISOLATED_MARKDOWN_RENDER_CSS}\n${style}`;
-    }
-
-    const borderColor: string = overrides
-      ? overrides.render.border.enabled
-        ? overrides.render.border.color
-        : ""
-      : (safeFrontmatter[FRONTMATTER_KEYS["border-color"].name] ??
-        plugin.settings.mdBorderColor);
-    const drawBorder = Boolean(
-      borderColor && (overrides || !style.match(/svg/i)),
-    );
-
-    //3.
-    //SVG helper functions
-    //the SVG will first have ~infinite height. After sizing this will be reduced
-    let svgHeight = 100000;
-    const svg = (
-      xml: string,
-      xmlFooter: string,
-      style?: string,
-      includeBorder: boolean = false,
-    ) => {
-      const hasInsetBorder = includeBorder && drawBorder;
-      const inset = hasInsetBorder ? 2 : 0;
-      const width = Math.max(0, linkParts.width - inset * 2);
-      const height = Math.max(0, svgHeight - inset * 2);
-      const safeBorderColor = borderColor.replace(/[<>"']/g, "");
-      const border = hasInsetBorder
-        ? `<rect class="excalidraw-md-border" x="1" y="1" width="${Math.max(0, linkParts.width - 2)}" height="${Math.max(0, svgHeight - 2)}" fill="none" stroke="${safeBorderColor}" stroke-width="2"/>`
-        : "";
-      const svgClass = overrides?.isTransclusion
-        ? ' class="excalidraw-md-transclusion"'
-        : "";
-      
-      // FIX: Added viewBox="0 0 ${linkParts.width} ${svgHeight}" 
-      // This is mandatory for Safari to respect the width/height of the SVG when loaded as an image.
-      return `<svg xmlns="http://www.w3.org/2000/svg"${svgClass} width="${linkParts.width}px" height="${svgHeight}px" viewBox="0 0 ${linkParts.width} ${svgHeight}">${
-        style ? `<style>${style}</style>` : ""
-      }<foreignObject x="${inset}" y="${inset}" width="${width}px" height="${height}px">${xml}${
-        xmlFooter 
-      }</foreignObject>${border}${
-        fontDef !== "" ? `<defs><style>${fontDef}</style></defs>` : ""
-      }</svg>`;
-    };
-
-    //4.
-    //create document div - this will be the contents of the foreign object
-    let mdDIV = createDiv();
-    mdDIV.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
-    mdDIV.setAttribute(
-      "class",
-      `excalidraw-md-host ${MARKDOWN_TO_SVG_RENDER_CLASS} ${this.isDark ? "theme-dark" : "theme-light"}`,
-    );
-    if (fontName !== "") {
-      setStyle(mdDIV, { fontFamily: fontName });
-    }
-    const markdownImagePaddingBottom =
-      overrides && !overrides.isTransclusion
-        ? overrides.render.paddingBottom
-        : 0;
-    setStyle(mdDIV, {
-      overflow: "hidden",
-      display: "block",
-      color: fontColor && fontColor !== "" ? fontColor : "initial",
-      paddingBottom: undefined,
-    });
-
-    const renderHost = mainDocument.body.createDiv();
-    renderHost.setAttribute("aria-hidden", "true");
-    setStyle(renderHost, {
-      position: "fixed",
-      left: "-100000px",
-      top: "0",
-      width: `${linkParts.width}px`,
-      opacity: "0",
-      pointerEvents: "none",
-      zIndex: "-1",
-    });
-    renderHost.appendChild(mdDIV);
-    const isolatedRenderStyleEl = deliberateCreateElement(
-      mainDocument,
-      "style",
-    ) as HTMLStyleElement;
-    setStyleText(
-      isolatedRenderStyleEl,
-      ISOLATED_MARKDOWN_RENDER_CSS.replaceAll(
-        ".excalidraw-md-host",
-        `.${MARKDOWN_TO_SVG_RENDER_CLASS}`,
-      ),
-    );
-    mainDocument.head.appendChild(isolatedRenderStyleEl);
-    const isolatedFontStyleEl =
-      fontDef !== ""
-        ? (deliberateCreateElement(mainDocument, "style") as HTMLStyleElement)
-        : null;
-    if (isolatedFontStyleEl) {
-      setStyleText(isolatedFontStyleEl, fontDef);
-      mainDocument.head.appendChild(isolatedFontStyleEl);
-      await waitForDocumentFonts(mainDocument);
-    }
-    const renderComponent = new Component();
-    renderComponent.load();
-    let renderedDIV: HTMLDivElement | null = null;
-    try {
-      //await MarkdownRenderer.renderMarkdown(text, mdDIV, file.path, plugin);
-      await MarkdownRenderer.render(
-        this.plugin.app,
-        text,
-        mdDIV,
-        file.path,
-        renderComponent,
-      );
-      await waitForMarkdownPostProcessors(mdDIV);
-      snapshotRenderedCanvases(mdDIV);
-      renderedDIV = mdDIV.cloneNode(true) as HTMLDivElement;
-    } finally {
-      renderComponent.unload();
-      renderHost.remove();
-      isolatedRenderStyleEl.remove();
-      isolatedFontStyleEl?.remove();
-    }
-    if (renderedDIV) {
-      mdDIV = renderedDIV;
-    }
-    appendMarkdownBottomSpacer(mdDIV, markdownImagePaddingBottom);
-    if (this.terminate) {
-      return emptyMarkdownSVGRenderResult(linkParts.width);
-    }
-
-    // MathJax typesetting may complete asynchronously after MarkdownRenderer.render() resolves.
-    // Awaiting typesetPromise ensures all mjx-container elements are fully populated before
-    // we clone the DOM into the iframe or serialize to SVG.
-    const mjx = window.MathJax;
-    if (mjx?.typesetPromise) {
-      try {
-        await mjx.typesetPromise([mdDIV]);
-      } catch (e: unknown) {
-        errorlog({
-          where: "EmbeddedFileLoader.convertMarkdownToSVG",
-          message:
-            "Non-fatal: proceed with whatever state MathJax left the DOM in.",
-          error: e,
-        });
-      }
-    }
-
-    // Capture the MathJax CHTML stylesheet AFTER typesetting so all per-glyph rules
-    // are present. We pass the live <style> element (not textContent) because MathJax
-    // adds rules via sheet.insertRule(), which updates sheet.cssRules but never
-    // reflects in textContent — reading textContent would miss every glyph except
-    // any that happened to be in the element's original authored content.
-    const mjxCHtmlStyleContent = await scopeAndInlineMathJaxCSS(
-      mainDocument.getElementById(
-        "MJX-CHTML-styles",
-      ) as HTMLStyleElement | null,
-      ".excalidraw-md-host",
-    );
-
-    mdDIV
-      .querySelectorAll(":scope > *[class^='frontmatter']")
-      .forEach((el) => mdDIV.removeChild(el));
-
-    await replaceBlobWithBase64(mdDIV); //because image cache returns a blob
-    if (this.terminate) {
-      return emptyMarkdownSVGRenderResult(linkParts.width);
-    }
-    const internalEmbeds = Array.from(
-      mdDIV.querySelectorAll<HTMLElement>("span.internal-embed[src]"),
-    );
-    for (let i = 0; i < internalEmbeds.length; i++) {
-      if (this.terminate) {
-        return emptyMarkdownSVGRenderResult(linkParts.width);
-      }
-      const el = internalEmbeds[i];
-      const src = el.getAttribute("src");
-      if (!src) {
-        continue;
-      }
-      const width = el.getAttribute("width");
-      const height = el.getAttribute("height");
-      const requestedWidth = width ? Number.parseFloat(width) : NaN;
-      const requestedHeight = height ? Number.parseFloat(height) : NaN;
-      const availableWidth = Math.max(1, linkParts.width - 20);
-      const ef = new EmbeddedFile(plugin, file.path, src);
-      //const f = app.metadataCache.getFirstLinkpathDest(src.split("#")[0],file.path);
-      if (!ef.file) {
-        continue;
-      }
-      const inheritMarkdownImageAppearance = Boolean(
-        overrides &&
-          ef.file.extension.toLowerCase() === "md" &&
-          !plugin.isExcalidrawFile(ef.file),
-      );
-      if (inheritMarkdownImageAppearance) {
-        ef.linkParts.width = Number.isFinite(requestedWidth)
-          ? requestedWidth
-          : availableWidth;
-        ef.linkParts.height = Number.isFinite(requestedHeight)
-          ? requestedHeight
-          : Number.MAX_SAFE_INTEGER;
-      }
-      const embeddedFile = await this._getObsidianImage(
-        ef,
-        1,
-        inheritMarkdownImageAppearance
-          ? {
-              markdownTransclusionRender: getTransclusionRenderSettings(
-                overrides.render,
-              ),
-              pdfScale,
-            }
-          : pdfScale === undefined
-            ? undefined
-            : { pdfScale },
-      );
-      if (this.terminate) {
-        return emptyMarkdownSVGRenderResult(linkParts.width);
-      }
-      if (!embeddedFile?.dataURL) {
-        continue;
-      }
-      const img = createEl("img");
-      const intrinsicWidth = embeddedFile.size?.width ?? 0;
-      const intrinsicHeight = embeddedFile.size?.height ?? 0;
-      const aspectRatio =
-        intrinsicWidth > 0 && intrinsicHeight > 0
-          ? intrinsicWidth / intrinsicHeight
-          : 0;
-      let renderedWidth = Number.isFinite(requestedWidth)
-        ? requestedWidth
-        : intrinsicWidth;
-      let renderedHeight = Number.isFinite(requestedHeight)
-        ? requestedHeight
-        : intrinsicHeight;
-      if (Number.isFinite(requestedWidth) && !Number.isFinite(requestedHeight)) {
-        renderedHeight = aspectRatio > 0 ? requestedWidth / aspectRatio : 0;
-      }
-      if (Number.isFinite(requestedHeight) && !Number.isFinite(requestedWidth)) {
-        renderedWidth = aspectRatio > 0 ? requestedHeight * aspectRatio : 0;
-      }
-      if (renderedWidth > availableWidth) {
-        const scale = availableWidth / renderedWidth;
-        renderedWidth = availableWidth;
-        renderedHeight *= scale;
-      }
-      if (renderedWidth > 0) {
-        img.setAttribute("width", String(Math.round(renderedWidth)));
-      }
-      if (renderedHeight > 0) {
-        img.setAttribute("height", String(Math.round(renderedHeight)));
-      }
-      img.alt = el.getAttribute("alt") ?? ef.file.name;
-      setStyle(img, {
-        display: "block",
-        maxWidth: "100%",
-        objectFit: "contain",
-      });
-      img.src = embeddedFile.dataURL;
-      try {
-        await img.decode();
-      } catch {
-        // Explicit dimensions still make the image measurable if decode fails.
-      }
-      el.replaceWith(img);
-    }
-    await replaceBlobWithBase64(mdDIV);
-    if (this.terminate) {
-      return emptyMarkdownSVGRenderResult(linkParts.width);
-    }
-
-    //5.1
-    //get SVG size.
-    //First I need to create a fully self contained copy of the document to convert
-    //blank styles into inline styles using computedStyle
-    const iframeHost = mainDocument.body.createDiv();
-    // Use a fixed off-screen container with STRICT width boundaries to defeat iOS iframe flattening.
-    setStyle(iframeHost, {
-      position: "fixed",
-      left: "-100000px",
-      top: "0",
-      width: `${linkParts.width}px`,
-      height: "10000px", // Give it plenty of room to render without scrollbars
-      overflow: "hidden",
-      visibility: "hidden",
-      pointerEvents: "none",
-    });
-    let xmlINiframe = "";
-    let xmlFooter = "";
-    let iframeContentHeight = 0;
-    let iframeFooterHeight = 0;
-    try {
-      const iframe = iframeHost.createEl("iframe");
-      // FIX: Lock the iframe's internal dimensions
-      setStyle(iframe, {
-        width: `${linkParts.width}px`,
-        height: "100%",
-        border: "none",
-        margin: "0",
-        padding: "0"
-      });
-
-      const iframeDoc = iframe.contentWindow.document;
-      const iframeWindow = iframe.contentWindow;
-
-      // FIX: Force the iframe's body to respect the target width and prevent text inflation
-      // Removed `overflow: hidden !important` so we don't accidentally clip valid heights on iOS measurement.
-      const bodyReset = deliberateCreateElement(iframeDoc, "style") as HTMLStyleElement;
-      setStyleText(bodyReset, `
-        html, body {
-          margin: 0 !important;
-          padding: 0 !important;
-          width: ${linkParts.width}px !important;
-          max-width: ${linkParts.width}px !important;
-          overflow: visible !important;
-          -webkit-text-size-adjust: none !important;
-          text-size-adjust: none !important;
-        }
-      `);
-      iframeDoc.head.appendChild(bodyReset);
-
-      if (style) {
-        // Obsidian style.css does not good in this case, yet the code scanner enforces it
-        const styleEl = deliberateCreateElement(iframeDoc, "style") as HTMLStyleElement;
-        setStyleText(styleEl, style);
-        iframeDoc.head.appendChild(styleEl);
-      }
-      if (fontDef !== "") {
-        const fontStyleEl = deliberateCreateElement(
-          iframeDoc,
-          "style",
-        ) as HTMLStyleElement;
-        setStyleText(fontStyleEl, fontDef);
-        iframeDoc.head.appendChild(fontStyleEl);
-      }
-      // Inject the MathJax CHTML stylesheet into the iframe so that mjx-* custom elements
-      // are styled correctly when measuring scroll height and computing inline styles.
-      if (mjxCHtmlStyleContent) {
-        const mjxStyleEl = deliberateCreateElement(iframeDoc, "style") as HTMLStyleElement;
-        setStyleText(mjxStyleEl, mjxCHtmlStyleContent);
-        iframeDoc.head.appendChild(mjxStyleEl);
-      }
-      const stylingDIV = iframeDoc.importNode(mdDIV, true);
-      iframeDoc.body.appendChild(stylingDIV);
-      const footerDIV = createDiv();
-      footerDIV.setAttribute("class", "excalidraw-md-footer");
-      iframeDoc.body.appendChild(footerDIV);
-      await waitForDocumentFonts(iframeDoc);
-
-      iframeDoc.body.querySelectorAll("*").forEach((el: HTMLElement) => {
-        const elementStyle = el.style;
-        const computedStyle = iframeWindow.getComputedStyle(el);
-        let style = "";
-        for (const [prop] of Object.entries(elementStyle)) {
-          if (Object.hasOwn(elementStyle ?? {}, prop)) {
-            const value = computedStyle.getPropertyValue(prop);
-            style += `${prop}: ${value};`;
-          }
-        }
-        el.setAttribute("style", style);
-      });
-
-      iframeContentHeight = measureRenderedContentHeight(stylingDIV);
-      iframeFooterHeight = measureRenderedContentHeight(footerDIV);
-
-      xmlINiframe = new XMLSerializer().serializeToString(stylingDIV);
-      xmlFooter = new XMLSerializer().serializeToString(footerDIV);
-    } finally {
-      if (iframeHost.parentElement) {
-        mainDocument.body.removeChild(iframeHost);
-      }
-    }
-
-    //5.2
-    //get SVG size
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(
-      svg(
-        xmlINiframe,
-        xmlFooter,
-        undefined,
-        drawBorder,
-      ),
-      "image/svg+xml",
-    );
-    const svgEl = doc.firstElementChild;
-    const host = createDiv();
-    let footerHeight = 0;
-    try {
-      host.appendChild(svgEl);
-      mainDocument.body.appendChild(host);
-      footerHeight = Math.max(
-        measureRenderedContentHeight(svgEl.querySelector(".excalidraw-md-footer")),
-        iframeFooterHeight,
-      );
-      const contentHeight = Math.max(
-        measureRenderedContentHeight(svgEl.querySelector(".excalidraw-md-host")),
-        iframeContentHeight,
-      );
-      const borderHeight = drawBorder ? 4 : 0;
-      // Safari on iOS under-reports foreignObject content height intermittently.
-      const iOSSafetyPadding = DEVICE.isIOS ? 1 : 0;
-      const measuredHeight = Math.ceil(
-        contentHeight + footerHeight + borderHeight + iOSSafetyPadding,
-      );
-      svgHeight = overrides?.fullHeight
-        ? measuredHeight
-        : measuredHeight <= linkParts.height
-          ? measuredHeight
-          : linkParts.height;
-    } finally {
-      if (host.parentElement) {
-        mainDocument.body.removeChild(host);
-      }
-    }
-
-    //finalize SVG
-    const borderHeight = drawBorder ? 4 : 0;
-    setStyle(mdDIV, {
-      height: `${Math.max(0, svgHeight - footerHeight - borderHeight)}px`,
-      overflow: "hidden",
-    });
-
-    const imageList = mdDIV.querySelectorAll(
-      "img:not([src^='data:image/svg+xml'])",
-    );
-    if (imageList.length > 0) {
-      hasSVGwithBitmap = true;
-    }
-    if (hasSVGwithBitmap && this.isDark) {
-      imageList.forEach((img) => {
-        if (isInstanceOfHTMLImageElement(img)) {
-          setStyle(img, { filter: THEME_FILTER });
-        }
-      });
-    }
-
-    const xml = new XMLSerializer().serializeToString(mdDIV);
-    // Prepend the MathJax CHTML stylesheet to the SVG's embedded <style> block so that
-    // mjx-container elements inside the <foreignObject> render correctly.
-    const finalStyle = mjxCHtmlStyleContent
-      ? mjxCHtmlStyleContent + "\n" + style
-      : style;
-    const finalSVG = svg(
-      xml,
-      '<div class="excalidraw-md-footer"></div>',
-      finalStyle,
-      true,
-    );
-    plugin.ea.mostRecentMarkdownSVG = parser.parseFromString(
-      finalSVG,
-      "image/svg+xml",
-    ).firstElementChild as SVGSVGElement;
-    return {
-      dataURL: svgToBase64(finalSVG) as DataURL,
-      hasSVGwithBitmap,
-      size: { width: linkParts.width, height: svgHeight },
-    };
   }
 }
 

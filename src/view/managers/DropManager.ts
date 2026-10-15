@@ -44,7 +44,6 @@ import { Position } from "src/types/excalidrawViewTypes";
 import { setStyle } from "src/utils/styleUtils";
 import { ObsidianDraggable } from "src/types/types";
 import type React from "react";
-import { insertMarkdownImage } from "src/shared/MarkdownImage";
 
 /*
 static getDropAction(event: DragEvent): string {
@@ -260,22 +259,6 @@ export class DropManager {
               let counter: number = 0;
               const ids: string[] = [];
               for (const f of draggable.files) {
-                if (
-                  internalDragAction === "image" &&
-                  f.extension.toLowerCase() === "md" &&
-                  !this.plugin.isExcalidrawFile(f)
-                ) {
-                  const element = await insertMarkdownImage(this.view, f, {
-                    x: this.currentPosition.x + counter * 50,
-                    y: this.currentPosition.y + counter * 50,
-                  });
-                  if (element) {
-                    ids.push(element.id);
-                    counter++;
-                    ea.selectElementsInView(ids);
-                  }
-                  continue;
-                }
                 if (IMAGE_TYPES.contains(f.extension) || f.extension === "md") {
                   ids.push(
                     await ea.addImage(

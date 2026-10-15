@@ -68,13 +68,6 @@ import { URLs } from "src/constants/safeUrls";
 import { errorlog } from "src/utils/coreUtils";
 import { log } from "src/utils/debugHelper";
 import {
-  MARKDOWN_IMAGE_CUSTOM_DATA_KEY,
-  MARKDOWN_IMAGE_EMBEDDED_FILE_TOKEN,
-  type MarkdownImageCustomData,
-  type MarkdownImageData,
-  type MarkdownImageRenderSettings,
-} from "src/types/markdownImageTypes";
-import {
   changeThemeOfExcalidrawMD,
   DRAWING_COMPRESSED_REG,
   getExcalidrawMarkdownHeader,
@@ -82,13 +75,10 @@ import {
   getJSON,
   getMarkdownDrawingSection,
   getMarkdownDrawingSectionAsync,
-  parseMarkdownImages,
   RE_EXCALIDRAWDATA_FALLBACK_2,
   RE_EXCALIDRAWDATA_NOSECTION_OK,
   RE_TEXTELEMENTS_FALLBACK_2,
   RE_TEXTELEMENTS_NOSECTION_OK,
-  syncMarkdownImagesInHeader,
-  unwrapMarkdownImageBlock,
 } from "./excalidrawMarkdownParsing";
 
 export {
@@ -99,9 +89,6 @@ export {
   getJSON,
   getMarkdownDrawingSection,
   getMarkdownDrawingSectionAsync,
-  parseMarkdownImages,
-  syncMarkdownImagesInHeader,
-  unwrapMarkdownImageBlock,
 };
 
 type SceneDataWithFiles = SceneData & { files: BinaryFiles };
@@ -252,8 +239,6 @@ type TextElementData = {
 export interface ExcalidrawDataExportState {
   sourceFilePath: string;
   files: ReadonlyMap<FileId, EmbeddedFileExportState>;
-  markdownImages: ReadonlyMap<FileId, MarkdownImageData>;
-  markdownImageRenderDefaults: MarkdownImageRenderSettings;
   pdfScale: number;
 }
 
@@ -271,7 +256,6 @@ export interface ExcalidrawDataMigrationState {
   loaded: boolean;
   elementLinks: ReadonlyMap<string, string>;
   files: ReadonlyMap<FileId, EmbeddedFile>;
-  markdownImages: ReadonlyMap<FileId, MarkdownImageData>;
   compatibilityMode: boolean;
   textElementCommentedOut: boolean;
   selectedElementIds: Readonly<Record<string, boolean>>;
@@ -292,7 +276,6 @@ export class ExcalidrawData {
   public loaded: boolean = false;
   public elementLinks: Map<string, string> = null;
   public files: Map<FileId, EmbeddedFile> = null; //fileId, path
-  public markdownImages: Map<FileId, MarkdownImageData> = null;
   private compatibilityMode: boolean = false;
   private textElementCommentedOut: boolean = false;
   selectedElementIds: { [key: string]: boolean } = {}; //https://github.com/zsviczian/obsidian-excalidraw-plugin/issues/609
@@ -305,7 +288,6 @@ export class ExcalidrawData {
   ) {
     this.app = this.plugin.app;
     this.files = new Map<FileId, EmbeddedFile>();
-    this.markdownImages = new Map<FileId, MarkdownImageData>();
     this.embeddedDataRegistries = new EmbeddedDataRegistries(this, EmbeddedFile);
   }
 
@@ -324,7 +306,6 @@ export class ExcalidrawData {
     this.elementLinks = null;
     this.embeddedDataRegistries = null;
     this.files = null;
-    this.markdownImages = null;
     this.compatibilityMode = null;
     this.textElementCommentedOut = null;
     this.selectedElementIds = null;
@@ -332,12 +313,7 @@ export class ExcalidrawData {
 
   /** Captures only the data registries needed by a prepared save export. */
   public exportPreparedSaveData(): ExcalidrawDataExportState | null {
-    if (
-      !this.loaded ||
-      !this.file ||
-      !this.files ||
-      !this.markdownImages
-    ) {
+    if (!this.loaded || !this.file || !this.files) {
       return null;
     }
     return {
@@ -348,25 +324,6 @@ export class ExcalidrawData {
           value.exportPreparedSaveState(),
         ]),
       ),
-      markdownImages: new Map(
-        Array.from(this.markdownImages, ([id, value]) => [
-          id,
-          { ...value },
-        ]),
-      ),
-      markdownImageRenderDefaults: {
-        ...this.plugin.settings.markdownImageSettings.defaults,
-        border: {
-          ...this.plugin.settings.markdownImageSettings.defaults.border,
-        },
-        transclusion: {
-          ...this.plugin.settings.markdownImageSettings.defaults.transclusion,
-          border: {
-            ...this.plugin.settings.markdownImageSettings.defaults.transclusion
-              .border,
-          },
-        },
-      },
       pdfScale: this.plugin.settings.pdfScale,
     };
   }
@@ -386,8 +343,7 @@ export class ExcalidrawData {
       !this.scene ||
       !this.textElements ||
       !this.elementLinks ||
-      !this.files ||
-      !this.markdownImages
+      !this.files
     ) {
       return null;
     }
@@ -411,12 +367,6 @@ export class ExcalidrawData {
       loaded: this.loaded,
       elementLinks: new Map(this.elementLinks),
       files: new Map(this.files),
-      markdownImages: new Map(
-        Array.from(this.markdownImages, ([id, value]) => [
-          id,
-          { ...value },
-        ]),
-      ),
       compatibilityMode: this.compatibilityMode,
       textElementCommentedOut: this.textElementCommentedOut,
       selectedElementIds: { ...this.selectedElementIds },
@@ -450,9 +400,6 @@ export class ExcalidrawData {
     this.loaded = state.loaded;
     this.elementLinks = new Map(state.elementLinks);
     this.files = new Map(state.files);
-    this.markdownImages = new Map(
-      Array.from(state.markdownImages, ([id, value]) => [id, { ...value }]),
-    );
     this.compatibilityMode = state.compatibilityMode;
     this.textElementCommentedOut = state.textElementCommentedOut;
     this.selectedElementIds = { ...state.selectedElementIds };
@@ -738,7 +685,6 @@ export class ExcalidrawData {
       { raw: string; parsed: string; hasTextLink: boolean }
     >();
     this.elementLinks = new Map<string, string>();
-    this.markdownImages.clear();
     if (this.file !== file) {
       //this is a reload - files will take care of reloading when needed
       this.files.clear();
@@ -754,15 +700,6 @@ export class ExcalidrawData {
     this.setembeddableThemePreference();
 
     this.scene = parsedScene;
-
-    // https://github.com/zsviczian/obsidian-excalidraw-plugin/issues/396
-    const parsedMarkdownImages = parseMarkdownImages(data);
-    // A missing block is local to this drawing. Do not delete the shared
-    // clipboard source: another open drawing may still own valid Markdown for
-    // the same copied fileId.
-    parsedMarkdownImages.forEach((value, fileId) =>
-      this.setMarkdownImage(fileId, value),
-    );
 
     this.deletedElements = this.scene.elements.filter(
       (el: ExcalidrawElement) => el.isDeleted,
@@ -1594,10 +1531,7 @@ export class ExcalidrawData {
       }
     }
 
-    outString +=
-      this.files.size > 0 || this.markdownImages.size > 0
-        ? "## Embedded Files\n"
-        : "";
+    outString += this.files.size > 0 ? "## Embedded Files\n" : "";
     if (this.files.size > 0) {
       for (const key of this.files.keys()) {
         const PATHREG = /(^[^#|]*)/;
@@ -1617,12 +1551,6 @@ export class ExcalidrawData {
         }
       }
     }
-    if (this.markdownImages.size > 0) {
-      for (const key of this.markdownImages.keys()) {
-        outString += `${key}: ${MARKDOWN_IMAGE_EMBEDDED_FILE_TOKEN}\n\n`;
-      }
-    }
-
     const sceneJSONstring = JSON.stringify(
       {
         type: this.scene.type,
@@ -1744,16 +1672,9 @@ export class ExcalidrawData {
       FileId,
       Mutable<ExcalidrawImageElement>[]
     >();
-    const localMarkdownFileIds = new Set<FileId>();
     for (const element of scene.elements) {
       if (element.type !== "image") {
         continue;
-      }
-      const markdownImageData = element.customData?.[
-        MARKDOWN_IMAGE_CUSTOM_DATA_KEY
-      ] as MarkdownImageCustomData | undefined;
-      if (markdownImageData?.source === "local") {
-        localMarkdownFileIds.add(element.fileId);
       }
       images.push(element);
       fileIds.push(element.fileId);
@@ -1770,24 +1691,6 @@ export class ExcalidrawData {
         this.files.delete(key);
         dirty = true;
       }
-    });
-
-    this.markdownImages.forEach((value, key) => {
-      if (!fileIdSet.has(key)) {
-        this.markdownImages.delete(key);
-        dirty = true;
-      }
-    });
-
-    // The element metadata is authoritative for source type. A local Markdown
-    // image may retain stale per-view entries after changing its source. Clear
-    // those incompatible entries, but do not restore from the plugin-wide
-    // clipboard registry here: onPaste owns clipboard import, while an ordinary
-    // reload must respect Markdown text deliberately removed from the note.
-    // This is registry bookkeeping within an already-authorized save and does
-    // not require loadDrawing() to republish the unchanged scene files.
-    localMarkdownFileIds.forEach((fileId) => {
-      this.files.delete(fileId);
     });
 
     //check if there are any images that need to be processed in the new scene
@@ -1807,13 +1710,9 @@ export class ExcalidrawData {
     const processedIds = new Set<string>();
     fileIds.forEach((fileId, idx) => {
       if (processedIds.has(fileId)) {
-        if (localMarkdownFileIds.has(fileId)) {
-          return;
-        }
         const embeddedFile = this.getFile(fileId);
-        const markdownImage = this.getMarkdownImage(fileId);
 
-        //images should have a single reference, but markdown embeds should have as many as instances of the file in the scene
+        //images should have a single reference
         if (
           embeddedFile &&
           (embeddedFile.isHyperLink ||
@@ -1822,9 +1721,6 @@ export class ExcalidrawData {
               (embeddedFile.file.extension !== "md" ||
                 this.plugin.isExcalidrawFile(embeddedFile.file))))
         ) {
-          return;
-        }
-        if (markdownImage) {
           return;
         }
 
@@ -1867,9 +1763,6 @@ export class ExcalidrawData {
       const fileData = scene.files[key] as (typeof scene.files)[string] & {
         name?: string;
       };
-      if (localMarkdownFileIds.has(fileId)) {
-        continue;
-      }
       const hasKnownSource = this.hasFile(fileId);
       if (!hasKnownSource) {
         dirty = true;
@@ -2203,30 +2096,6 @@ export class ExcalidrawData {
   //Image copy/paste support
   public hasFile(fileId: FileId): boolean {
     return this.embeddedDataRegistries.hasFile(fileId);
-  }
-
-  //--------------
-  //Local Markdown images
-  //--------------
-
-  /** Stores a local Markdown-image source and makes it available for intra-vault copy/paste. */
-  public setMarkdownImage(fileId: FileId, data: MarkdownImageData): void {
-    this.embeddedDataRegistries.setMarkdownImage(fileId, data);
-  }
-
-  /** Returns local Markdown, restoring it from the intra-vault copy master. */
-  public getMarkdownImage(fileId: FileId): MarkdownImageData | undefined {
-    return this.embeddedDataRegistries.getMarkdownImage(fileId);
-  }
-
-  /** Returns whether local Markdown exists, restoring intra-vault clipboard data. */
-  public hasMarkdownImage(fileId: FileId): boolean {
-    return this.embeddedDataRegistries.hasMarkdownImage(fileId);
-  }
-
-  /** Removes a local source, optionally discarding its clipboard master entry. */
-  public deleteMarkdownImage(fileId: FileId, clearMaster = false): void {
-    this.embeddedDataRegistries.deleteMarkdownImage(fileId, clearMaster);
   }
 }
 

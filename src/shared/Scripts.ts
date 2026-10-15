@@ -114,12 +114,7 @@ export class ScriptEngine {
     this.eaInstances.forEach((ea) => {
       if (ea.targetView === view) {
         eas.add(ea);
-        if (ea.sidepanelTab) {
-          ea.targetView = null;
-          ea.sidepanelTab.onExcalidrawViewClosed();
-        } else {
-          ea.destroy();
-        }
+        ea.destroy();
       }
     });
     this.eaInstances.removeObjects(eas);
