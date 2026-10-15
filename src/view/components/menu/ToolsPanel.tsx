@@ -9,8 +9,6 @@ import { TextMode } from "../../../shared/TextMode";
 import type ExcalidrawView from "../../ExcalidrawView";
 import { t } from "../../../lang/helpers";
 import { ReleaseNotes } from "../../../shared/Dialogs/ReleaseNotes";
-import { ScriptIconMap } from "../../../shared/Scripts";
-import { ScriptInstallPrompt } from "src/shared/Dialogs/ScriptInstallPrompt";
 import {
   isWinALTorMacOPT,
   isWinCTRLorMacCMD,
@@ -43,7 +41,6 @@ export type PanelState = {
   isDirty: boolean;
   isFullscreen: boolean;
   isPreviewMode: boolean;
-  scriptIconMap: ScriptIconMap | null;
 };
 
 const TOOLS_PANEL_WIDTH = () => REM_VALUE * 14.4;
@@ -68,7 +65,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
     if (this.containerRef.current) {
       this.props.observer.deref()?.unobserve(this.containerRef.current);
     }
-    this.setState({ scriptIconMap: null });
     this.containerRef = null;
   }
 
@@ -86,14 +82,7 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
       isDirty: false,
       isFullscreen: false,
       isPreviewMode: true,
-      scriptIconMap: {},
     };
-  }
-
-  updateScriptIconMap(scriptIconMap: ScriptIconMap) {
-    this.setState(() => {
-      return { scriptIconMap };
-    });
   }
 
   setPreviewMode(isPreviewMode: boolean) {
@@ -195,14 +184,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
               : left,
       };
     });
-  }
-
-  actionOpenScriptInstallDialog() {
-    const view = this.getView();
-    if (!view) {
-      return;
-    }
-    new ScriptInstallPrompt(view.plugin).open();
   }
 
   actionOpenReleaseNotes() {
@@ -414,52 +395,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
     );
   }
 
-  async actionRunScript(key: string) {
-    const view = this.getView();
-    const plugin = view?.plugin;
-    if (!view || !plugin) {
-      return;
-    }
-    const f = plugin.app.vault.getAbstractFileByPath(key);
-    if (f && f instanceof TFile) {
-      void plugin.scriptEngine.executeScriptFile(
-        view,
-        f,
-        plugin.scriptEngine.getScriptName(f),
-      );
-    }
-  }
-
-  async actionPinScript(key: string, scriptName: string) {
-    const view = this.getView();
-    const plugin = view?.plugin;
-    if (!view || !plugin) {
-      return;
-    }
-    const api = view.excalidrawAPI;
-    await plugin.loadSettings();
-    const index = plugin.settings.pinnedScripts.indexOf(key);
-    if (index > -1) {
-      plugin.settings.pinnedScripts.splice(index, 1);
-      api?.setToast({
-        message: `Pin removed: ${scriptName}`,
-        duration: 3000,
-        closable: true,
-      });
-    } else {
-      plugin.settings.pinnedScripts.push(key);
-      api?.setToast({
-        message: `Pinned: ${scriptName}`,
-        duration: 3000,
-        closable: true,
-      });
-    }
-    await plugin.saveSettings();
-    getExcalidrawViews(plugin.app, true).forEach((excalidrawView) =>
-      excalidrawView.updatePinnedScripts(),
-    );
-  }
-
   private islandOnClick(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
     event.preventDefault();
     if (
@@ -550,12 +485,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
               <fieldset>
                 <legend>Utility actions</legend>
                 <div className="buttonList buttonListIcon">
-                  <ActionButton
-                    key={"scriptEngine"}
-                    title={t("INSTALL_SCRIPT_BUTTON")}
-                    action={() => this.actionOpenScriptInstallDialog()}
-                    icon={ICONS.scriptEngine}
-                  />
                   <ActionButton
                     key={"release-notes"}
                     title={t("READ_RELEASE_NOTES")}
@@ -709,8 +638,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
                   />
                 </div>
               </fieldset>
-              {this.renderScriptButtons(false)}
-              {this.renderScriptButtons(true)}
             </div>
           </div>
         </div>
@@ -718,71 +645,4 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
     );
   }
 
-  private renderScriptButtons(isDownloaded: boolean) {
-    if (Object.keys(this.state.scriptIconMap).length === 0) {
-      return "";
-    }
-
-    const view = this.getView();
-    const plugin = view?.plugin;
-    if (!view || !plugin) {
-      return null;
-    }
-
-    if (!plugin._loaded) {
-      return null;
-    }
-
-    const downloadedScriptsRoot = `${plugin.settings.scriptFolderPath}/${SCRIPT_INSTALL_FOLDER}/`;
-
-    const filterCondition = (key: string): boolean =>
-      isDownloaded
-        ? key.startsWith(downloadedScriptsRoot)
-        : !key.startsWith(downloadedScriptsRoot);
-
-    if (
-      Object.keys(this.state.scriptIconMap).filter((k) => filterCondition(k))
-        .length === 0
-    ) {
-      return "";
-    }
-
-    const groups = new Set<string>();
-
-    Object.keys(this.state.scriptIconMap)
-      .filter((k) => filterCondition(k))
-      .forEach((k) => groups.add(this.state.scriptIconMap[k].group));
-
-    const scriptlist = Array.from(groups).sort((a, b) => (a > b ? 1 : -1));
-    scriptlist.push(scriptlist.shift());
-    return (
-      <>
-        {scriptlist.map((group, index) => (
-          <fieldset key={`${group}-${index}`}>
-            <legend>
-              {isDownloaded ? group : group === "" ? "User" : `User/${group}`}
-            </legend>
-            <div className="buttonList buttonListIcon">
-              {Object.entries(this.state.scriptIconMap)
-                .filter(([_, v]) => v.group === group)
-                .sort()
-                .map(([key, value]) => (
-                  <ActionButton
-                    key={key}
-                    title={value.name}
-                    action={() => void this.actionRunScript(key)}
-                    longpress={() => void this.actionPinScript(key, value.name)}
-                    icon={new WeakRef(
-                      value.svgString
-                        ? stringToSVG(value.svgString)
-                        : ICONS.cog,
-                    ).deref()}
-                  />
-                ))}
-            </div>
-          </fieldset>
-        ))}
-      </>
-    );
-  }
 }

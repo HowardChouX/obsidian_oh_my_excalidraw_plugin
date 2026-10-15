@@ -55,7 +55,6 @@ import {
   setExcalidrawView,
 } from "../utils/obsidianUtils";
 import { FileId } from "@zsviczian/excalidraw/types/element/src/types";
-import { ScriptEngine } from "../shared/Scripts";
 import {
   hoverEvent,
   initializeMarkdownPostProcessor,
@@ -191,7 +190,6 @@ export default class ExcalidrawPlugin extends Plugin {
   public filesMaster: Map<FileId, FileMasterInfo> = null; //fileId, path
   public equationsMaster: Map<FileId, string> = null; //fileId, formula
   public mermaidsMaster: Map<FileId, string> = null; //fileId, mermaidText
-  public scriptEngine: ScriptEngine;
   private stylesManager: StylesManager;
   public editorHandler: EditorHandler;
   //if set, the next time this file is opened it will be opened as markdown
@@ -500,7 +498,6 @@ export default class ExcalidrawPlugin extends Plugin {
     this.updateFooterSafeAreaPadding();
 
     try {
-      this.scriptEngine = new ScriptEngine(this);
     } catch (e) {
       new Notice("Error initializing script engine", 6000);
       console.error("Error initializing script engine", e);
@@ -559,14 +556,6 @@ export default class ExcalidrawPlugin extends Plugin {
 
     void this.fileManager.initialize(); //fileManager will preLoad the filecache
     void this.eventManager.initialize(); //eventManager also adds event listner to filecache
-
-    try {
-      void this.runStartupScript();
-    } catch (e) {
-      new Notice("Error running startup script", 6000);
-      console.error("Error running startup script", e);
-    }
-    this.logStartupEvent("Startup script run");
 
     try {
       this.editorHandler = new EditorHandler(this);
@@ -778,37 +767,6 @@ export default class ExcalidrawPlugin extends Plugin {
     new Notice(`Converted ${files.length} files.`);
   }
 
-  /**
-   * Loads the startup script that will add event hooks to ExcalidrawAutomate (if provided by the user)
-   * Because of file operations, this must be run after the Obsidian Layout is ready
-   * @returns
-   */
-  private async runStartupScript() {
-    if (
-      !this.settings.startupScriptPath ||
-      this.settings.startupScriptPath === ""
-    ) {
-      return;
-    }
-    const path = this.scriptEngine.resolveStartupScriptPath(
-      this.settings.startupScriptPath,
-    );
-    if (!path) {
-      new Notice(t("STARTUP_SCRIPT_JS_DISABLED"));
-      return;
-    }
-    const f = this.app.vault.getFileByPath(path);
-    if (!f || !(f instanceof TFile)) {
-      new Notice(`Startup script not found: ${path}`);
-      return;
-    }
-    try {
-      await this.scriptEngine.executeStartupScript(f, this.ea);
-    } catch (e) {
-      new Notice(`Error running startup script: ${e}`);
-    }
-  }
-
   public async activeLeafChangeEventHandler(leaf: WorkspaceLeaf) {
     await this.eventManager.onActiveLeafChangeHandler(leaf);
   }
@@ -870,10 +828,6 @@ export default class ExcalidrawPlugin extends Plugin {
       window.clearTimeout(versionUpdateCheckTimer);
     }
 
-    if (this.scriptEngine) {
-      this.scriptEngine.destroy();
-      this.scriptEngine = null;
-    }
 
     if (getImageCache()) {
       getImageCache().destroy();

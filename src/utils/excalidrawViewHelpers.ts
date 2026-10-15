@@ -22,8 +22,8 @@ export const search = async (view: ExcalidrawView) => {
   if (elements.length === 0) {
     return;
   }
-  const { ScriptEngine } = await import("src/shared/Scripts");
-  let text = await ScriptEngine.inputPrompt(
+  const { inputPrompt } = await import("./promptUtils");
+  let text = await inputPrompt(
     view,
     view.plugin,
     view.plugin.app,

@@ -1,7 +1,7 @@
 import { Notice } from "obsidian";
 import { t } from "src/lang/helpers";
 import { NamedExcalidrawFrameElement } from "src/types/excalidrawElementTypes";
-import { ScriptEngine } from "../Scripts";
+import { inputPrompt } from "src/utils/promptUtils";
 import ExcalidrawView from "src/view/ExcalidrawView";
 
 /**
@@ -155,7 +155,7 @@ export async function copyLinkToSelectedElementToClipboard(
 
   let alias: string;
   try {
-    alias = await ScriptEngine.inputPrompt(
+    alias = await inputPrompt(
       view,
       view.plugin,
       view.app,

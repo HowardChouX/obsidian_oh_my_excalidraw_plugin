@@ -10,7 +10,7 @@ import { AppState } from "@zsviczian/excalidraw/types/excalidraw/types";
 import { ActionButton } from "./ActionButton";
 import { ICONS } from "../../../constants/actionIcons";
 import { t } from "src/lang/helpers";
-import { ScriptEngine } from "../../../shared/Scripts";
+import { suggester } from "src/utils/promptUtils";
 import {
   MD_EX_SECTIONS,
   ROOTELEMENTSIZE,
@@ -135,7 +135,7 @@ export class EmbeddableMenu {
     );
     const display = [t("DO_NOT_PIN_VIEW")].concat(views.map((b: string) => b));
 
-    const newSubpath = await ScriptEngine.suggester(
+    const newSubpath = await suggester(
       this.view.app,
       display,
       values,

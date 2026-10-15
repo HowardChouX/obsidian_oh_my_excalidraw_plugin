@@ -35,7 +35,7 @@ import {
   getURLImageExtension,
   importFileToVault,
 } from "src/utils/fileUtils";
-import { ScriptEngine } from "src/shared/Scripts";
+import { suggester } from "src/utils/promptUtils";
 import {
   UniversalInsertFileModal,
   type UniversalInsertFileAction,
@@ -487,7 +487,7 @@ export class DropManager {
                   );
                   let file = maybeFile instanceof TFile ? maybeFile : null;
                   if (file) {
-                    const action = await ScriptEngine.suggester(
+                    const action = await suggester(
                       this.app,
                       [
                         "Use the file already in the Vault instead of importing",

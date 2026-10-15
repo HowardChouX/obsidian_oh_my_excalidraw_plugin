@@ -1,7 +1,7 @@
 import { resolveSubpath, type App, type TFile } from "obsidian";
 import { MD_EX_SECTIONS, nanoid } from "src/constants/constants";
 import { t } from "src/lang/helpers";
-import { ScriptEngine } from "src/shared/Scripts";
+import { suggester } from "src/utils/promptUtils";
 import { cleanSectionHeading } from "src/utils/pathUtils";
 
 type BlockCacheEntry = Awaited<
@@ -91,7 +91,7 @@ export async function selectMarkdownHeadingSubpath(
     values.unshift("");
     display.unshift(t("SHOW_ENTIRE_FILE"));
   }
-  const selected = await ScriptEngine.suggester(
+  const selected = await suggester(
     app,
     display,
     values,
@@ -125,7 +125,7 @@ export async function selectMarkdownBlockSubpath(
         `${entry.node.id ? `#^${entry.node.id}: ` : ""}${entry.display.trim()}`,
     ),
   );
-  const selected = await ScriptEngine.suggester(
+  const selected = await suggester(
     app,
     display,
     values,

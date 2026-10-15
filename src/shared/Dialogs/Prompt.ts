@@ -25,7 +25,7 @@ import {
   REG_LINKINDEX_INVALIDCHARS,
 } from "src/constants/constants";
 import { REGEX_LINK, REGEX_TAGS } from "../ExcalidrawData";
-import { ScriptEngine } from "../Scripts";
+import { suggester } from "src/utils/promptUtils";
 import {
   openExternalLink,
   openTagSearch,
@@ -1311,7 +1311,7 @@ export async function linkPrompt(
 
   await sleep(10); //obsidian modal link click immediately refocuses the editor, so we need to wait a bit
   if (items.length > 1) {
-    parts = await ScriptEngine.suggester(app, itemsDisplay, items, message);
+    parts = await suggester(app, itemsDisplay, items, message);
     if (!parts) {
       return;
     }

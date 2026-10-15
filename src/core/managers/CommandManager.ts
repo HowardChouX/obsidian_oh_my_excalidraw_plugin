@@ -65,8 +65,6 @@ import {
   FileId,
 } from "@zsviczian/excalidraw/types/element/src/types";
 import { ReleaseNotes } from "../../shared/Dialogs/ReleaseNotes";
-import { AutostartScriptsModal } from "../../shared/Dialogs/AutostartScriptsSettingsComponent";
-import { ScriptInstallPrompt } from "../../shared/Dialogs/ScriptInstallPrompt";
 import {
   emulateCTRLClickForLinks,
   linkClickModifierType,
@@ -875,20 +873,6 @@ export class CommandManager {
           return true;
         }
         return false;
-      },
-    });
-
-    this.addCommand({
-      id: "scriptengine-store",
-      name: t("INSTALL_SCRIPT_BUTTON"),
-      checkCallback: (checking: boolean) => {
-        if (checking) {
-          return Boolean(
-            this.app.workspace.getActiveViewOfType(ExcalidrawView),
-          );
-        }
-        new ScriptInstallPrompt(this.plugin).open();
-        return true;
       },
     });
 
@@ -2200,14 +2184,6 @@ export class CommandManager {
         }
         new ReleaseNotes(this.app, this.plugin, PLUGIN_VERSION).open();
         return true;
-      },
-    });
-
-    this.addCommand({
-      id: "view-autostart-scripts",
-      name: t("AUTOSTART_SCRIPTS_HEAD"),
-      callback: () => {
-        new AutostartScriptsModal(this.plugin).open();
       },
     });
 

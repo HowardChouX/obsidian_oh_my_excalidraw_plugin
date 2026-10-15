@@ -21,7 +21,6 @@ export interface ViewExcalidrawExtensionRendererDependencies {
   openExternalLink: typeof import("../../utils/excalidrawViewUtils").openExternalLink;
   useDefaultExcalidrawFrame: typeof import("../../utils/customEmbeddableUtils").useDefaultExcalidrawFrame;
   openUIModeSettings: () => void;
-  openScriptInstallPrompt: () => void;
   openExportImageDialog: () => void;
 }
 
@@ -161,12 +160,6 @@ export class ViewExcalidrawExtensionRenderer {
           void this.view.forceSave();
         },
         children: t("TRAY_SAVE"),
-      }),
-      React.createElement(MainMenu.Item, {
-        icon: ICONS.scriptEngine,
-        "aria-label": t("TRAY_SCRIPT_LIBRARY_ARIA"),
-        onSelect: () => this.dependencies.openScriptInstallPrompt(),
-        children: t("TRAY_SCRIPT_LIBRARY"),
       }),
       React.createElement(MainMenu.Item, {
         icon: ICONS.ExportImage,

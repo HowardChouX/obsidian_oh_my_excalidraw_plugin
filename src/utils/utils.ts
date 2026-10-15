@@ -51,7 +51,6 @@ import { getEmptyDrawingElementsRuntime } from "src/constants/emptydrawing";
 import { makeEntitiesXmlSafe, sanitizedFragment } from "./htmlUtils";
 import { URLs } from "src/constants/safeUrls";
 import { isInstanceOfSVGSVGElement } from "./typechecks";
-import { getInstalledScriptUpdates } from "./scriptLibraryUtils";
 export { arrayToMap };
 export { errorlog, getDataURL } from "./coreUtils";
 export { addAppendUpdateCustomData } from "./elementCustomDataUtils";
@@ -141,8 +140,6 @@ export async function checkExcalidrawVersion() {
       new Notice(`${t("UPDATE_AVAILABLE")} ${latestVersion}`);
     }
 
-    // Check for script updates
-    await checkScriptUpdates();
   } catch (e) {
     log({ where: "Utils/checkExcalidrawVersion", error: e });
   }
@@ -152,23 +149,6 @@ export async function checkExcalidrawVersion() {
   }, 28800000); //reset after 8 hours
 }
 
-async function checkScriptUpdates() {
-  try {
-    if (!EXCALIDRAW_PLUGIN?.settings?.scriptFolderPath) {
-      return;
-    }
-
-    const updates = await getInstalledScriptUpdates(EXCALIDRAW_PLUGIN);
-    if (updates.length > 0) {
-      const message = `${t("SCRIPT_UPDATES_AVAILABLE")}\n\n${updates.join("\n")}`;
-      const timeout = Math.min(60_000, 30_000 + updates.length * 2_000);
-      new Notice(message, timeout);
-      log(message);
-    }
-  } catch (e: unknown) {
-    log({ where: "Utils/checkScriptUpdates", error: e });
-  }
-}
 
 const random = new Random(Date.now());
 export function randomInteger() {

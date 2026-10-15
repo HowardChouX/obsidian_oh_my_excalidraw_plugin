@@ -3035,6 +3035,8 @@ export class ExcalidrawAutomate {
   }
 
   targetView: ExcalidrawView | null = null; //the view currently edited
+  /** Retained for compatibility; script execution was removed. Always null. */
+  public activeScript: string = null;
   /**
    * Sets the target view for EA. All view operations and all access to the Excalidraw API
    * will be performed on this view.
@@ -3848,12 +3850,6 @@ export class ExcalidrawAutomate {
         id,
         getActions,
       });
-    if (this.activeScript) {
-      this.plugin.scriptEngine.trackElementActionProvider(
-        this.activeScript,
-        unregister,
-      );
-    }
     // registerProvider() primes the menu to recompute actions on its next
     // update(), but nothing else calls update() until the next genuine
     // selection/scene change. If an eligible element is already selected
@@ -3924,16 +3920,6 @@ export class ExcalidrawAutomate {
     if (decision === "allow" || decision === "deny") {
       autostartScripts[scriptName] = decision;
       await this.plugin.saveSettings();
-      if (decision === "allow") {
-        // A freshly granted "allow" should attach the script to every other
-        // currently-open view immediately, not only the next time each view
-        // is opened (that ongoing case is handled separately by
-        // ScriptEngine.runAutostartScripts() at view-mount time).
-        this.plugin.scriptEngine.attachAutostartScriptToOpenViews(
-          scriptName,
-          this.targetView,
-        );
-      }
       return decision;
     }
     return "pending";
@@ -4410,63 +4396,6 @@ export class ExcalidrawAutomate {
         el.frameId === frameElement.id ||
         (shouldIncludeFrame && el.id === frameElement.id),
     );
-  }
-
-  /**
-   * Sets the active script for the ScriptEngine.
-   * @param {string} scriptName - The name of the active script.
-   */
-  activeScript: string = null;
-
-  /**
-   * Gets the script settings for the active script.
-   * Saves settings in plugin settings, under the activeScript key.
-   * @returns {Object} The script settings.
-   */
-  getScriptSettings(): object {
-    if (!this.activeScript) {
-      return null;
-    }
-    return this.plugin.settings.scriptEngineSettings[this.activeScript] ?? {};
-  }
-
-  /**
-   * Sets the script settings for the active script.
-   * @param {Object} settings - The script settings to set.
-   * @returns {Promise<void>} Promise resolving when the settings are saved.
-   */
-  async setScriptSettings(settings: Record<string, unknown>): Promise<void> {
-    if (!this.activeScript) {
-      return null;
-    }
-    this.plugin.settings.scriptEngineSettings[this.activeScript] = settings;
-    await this.plugin.saveSettings();
-    this.plugin.refreshSettingsTab();
-  }
-
-  public setScriptSettingValue(key: string, value: ScriptSettingValue): void {
-    const settings = ensureActiveScriptSettingsObject(this);
-    if (!settings) {
-      return;
-    }
-    settings[key] = value;
-  }
-
-  public getScriptSettingValue(
-    key: string,
-    defaultValue: ScriptSettingValue,
-  ): ScriptSettingValue {
-    const settings = ensureActiveScriptSettingsObject(this);
-    if (!settings) {
-      return defaultValue;
-    }
-    return settings[key] ?? defaultValue;
-  }
-
-  public async saveScriptSettings(): Promise<void> {
-    ensureActiveScriptSettingsObject(this);
-    await this.plugin.saveSettings();
-    this.plugin.refreshSettingsTab();
   }
 
   /**

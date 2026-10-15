@@ -54,7 +54,7 @@ import {
   getFrameBasedOnFrameNameOrId,
   sceneRemoveInternalLinks,
 } from "./excalidrawViewUtils";
-import { ScriptEngine } from "src/shared/Scripts";
+import { inputPrompt } from "./promptUtils";
 import { ColorMap, FileData } from "src/types/embeddedFileLoaderTypes";
 import { ExportSettings } from "src/types/exportUtilTypes";
 import type { StrokeWidthKey } from "@zsviczian/excalidraw/types/common/src/constants";
@@ -833,7 +833,7 @@ export const search = async (view: ExcalidrawView) => {
   if (elements.length === 0) {
     return;
   }
-  let text = await ScriptEngine.inputPrompt(
+  let text = await inputPrompt(
     view,
     view.plugin,
     view.plugin.app,

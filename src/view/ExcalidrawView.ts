@@ -147,11 +147,10 @@ import {
   EmbeddedFilesLoader,
   generateIdFromFile,
 } from "../shared/EmbeddedFileLoader";
-import { ScriptInstallPrompt } from "../shared/Dialogs/ScriptInstallPrompt";
 import { ObsidianMenu } from "./components/menu/ObsidianMenu";
 import { ToolsPanel } from "./components/menu/ToolsPanel";
 import { SelectedElementActionsMenu } from "./components/menu/SelectedElementActionsMenu";
-import { ScriptEngine } from "../shared/Scripts";
+import { inputPrompt } from "src/utils/promptUtils";
 import {
   getTextElementAtPointer,
   getImageElementAtPointer,
@@ -410,7 +409,7 @@ const warningUnknowSeriousError = () => {
   new Notice(t("WARNING_SERIOUS_ERROR"), 60000);
 };
 
-type ActionButtons = "save" | "isRaw" | "link" | "scriptInstall";
+type ActionButtons = "save" | "isRaw" | "link";
 
 interface SetViewDataLoad {
   readonly promise: Promise<void>;
@@ -663,7 +662,6 @@ export default class ExcalidrawView
           const uiModes = new UIModeSettings(this.plugin);
           uiModes.open();
         },
-        openScriptInstallPrompt: () => this.actionOpenScriptInstallPrompt(),
         openExportImageDialog: () => this.actionOpenExportImageDialog(),
       },
     );
@@ -1643,13 +1641,6 @@ export default class ExcalidrawView
   addTabTitlebarButtons() {
     this.actionButtons = this.plugin.settings.showTabTitlebarButtons
       ? {
-          scriptInstall: this.addAction(
-            SCRIPTENGINE_ICON_NAME,
-            !DEVICE.isMobile ? t("INSTALL_SCRIPT_BUTTON") : "",
-            () => {
-              new ScriptInstallPrompt(this.plugin).open();
-            },
-          ),
           save: this.addAction(
             DISK_ICON_NAME,
             !DEVICE.isMobile ? t("FORCE_SAVE") : "",
@@ -3179,58 +3170,6 @@ export default class ExcalidrawView
           }
         }
 
-        const script = this.excalidrawData.getOnLoadScript();
-        if (script) {
-          const scriptname = `${targetFile.basename}-onlaod-script`;
-          const runScript = async () => {
-            if (!isCurrentLoad()) {
-              return;
-            }
-            if (!this.excalidrawAPI) {
-              //need to wait for Excalidraw to initialize
-              window.setTimeout((): void => {
-                void runScript();
-              }, 200);
-              return;
-            }
-            void plugin.scriptEngine.executeScript(
-              this,
-              script,
-              scriptname,
-              targetFile,
-              "drawing-onload",
-            );
-          };
-          let allowOnloadScript: boolean | null =
-            plugin.settings.enableOnloadScripts;
-          if (!allowOnloadScript) {
-            const onloadScriptPromptButtons = new Map<string, boolean | null>([
-              [t("ENABLE_ONLOAD_SCRIPTS_CONFIRM_DENY"), null],
-              [t("ENABLE_ONLOAD_SCRIPTS_CONFIRM_ENABLE"), true],
-            ]);
-            const confirmationPrompt = new MultiOptionConfirmationPrompt(
-              this.plugin,
-              `<strong>${t("ENABLE_ONLOAD_SCRIPTS_NAME")}</strong><br>${t("ENABLE_ONLOAD_SCRIPTS_CONFIRMATION")}` +
-                `<br><br>${t("ENABLE_ONLOAD_SCRIPTS_DESC")}`,
-              onloadScriptPromptButtons,
-              t("ENABLE_ONLOAD_SCRIPTS_CONFIRM_DENY"),
-            );
-            allowOnloadScript = await confirmationPrompt.waitForClose;
-            if (!isCurrentLoad()) {
-              return;
-            }
-            if (allowOnloadScript) {
-              plugin.settings.enableOnloadScripts = true;
-              await plugin.saveSettings();
-              if (!isCurrentLoad()) {
-                return;
-              }
-            }
-          }
-          if (allowOnloadScript) {
-            await runScript();
-          }
-        }
         if (!isCurrentLoad()) {
           return;
         }
@@ -4065,15 +4004,8 @@ export default class ExcalidrawView
       return;
     }
     const st = api.getAppState();
-    //since Obsidian 1.6.0 onLayoutReady calls happen asynchronously compared to starting Excalidraw view
-    //these validations are just to make sure that initialization is complete
-    let counter = 0;
-    while (!this.plugin.scriptEngine && counter++ < 50) {
-      await sleep(50);
-    }
-
     const panel = this.toolsPanelRef?.current;
-    if (!panel || !this.plugin.scriptEngine) {
+    if (!panel) {
       return;
     }
 
@@ -4082,7 +4014,6 @@ export default class ExcalidrawView
     panel.setPreviewMode(
       this.compatibilityMode ? null : this.textMode === TextMode.parsed,
     );
-    panel.updateScriptIconMap(this.plugin.scriptEngine.scriptIconMap);
   }
 
   //Compatibility mode with .excalidraw files
@@ -4445,15 +4376,6 @@ export default class ExcalidrawView
           })
           .setSection("pane");
       })
-      .addItem((item) => {
-        item
-          .setTitle(t("INSTALL_SCRIPT_BUTTON"))
-          .setIcon(SCRIPTENGINE_ICON_NAME)
-          .setSection("pane")
-          .onClick(() => {
-            new ScriptInstallPrompt(this.plugin).open();
-          });
-      });
     super.onPaneMenu(menu, source);
   }
 
@@ -6528,7 +6450,7 @@ export default class ExcalidrawView
       child.subpath.replaceAll("#", ""),
       folder,
     );
-    let path = await ScriptEngine.inputPrompt(
+    let path = await inputPrompt(
       this,
       this.plugin,
       this.app,
@@ -7140,10 +7062,6 @@ export default class ExcalidrawView
         className: "context-menu-item-separator",
       }),
     );
-  }
-
-  private actionOpenScriptInstallPrompt() {
-    new ScriptInstallPrompt(this.plugin).open();
   }
 
   private actionOpenExportImageDialog() {

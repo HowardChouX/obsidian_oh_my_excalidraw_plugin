@@ -212,57 +212,6 @@ export class ObsidianMenu {
     api.setActiveTool({ type: "freedraw" });
   }
 
-  private actionScriptButtonPointerUp(index: number, key: string) {
-    if (this.longpressTimeout[index]) {
-      this.view.ownerWindow.clearTimeout(this.longpressTimeout[index]);
-      this.longpressTimeout[index] = 0;
-      void (async () => {
-        const f = this.view.app.vault.getAbstractFileByPath(key);
-        if (f && f instanceof TFile) {
-          await this.plugin.scriptEngine.executeScriptFile(
-            this.view,
-            f,
-            this.plugin.scriptEngine.getScriptName(f),
-          );
-        }
-      })();
-    }
-  }
-
-  private actionScriptButtonPointerDown(
-    index: number,
-    key: string,
-    name: string,
-  ) {
-    const now = Date.now();
-    if (this.longpressTimeout[index] > 0) {
-      this.view.ownerWindow.clearTimeout(this.longpressTimeout[index]);
-      this.longpressTimeout[index] = 0;
-    }
-    if (now - this.prevClickTimestamp >= 500) {
-      this.longpressTimeout[index] = this.view.ownerWindow.setTimeout(() => {
-        this.longpressTimeout[index] = 0;
-        void (async () => {
-          await this.plugin.loadSettings();
-          const index = this.plugin.settings.pinnedScripts.indexOf(key);
-          if (index > -1) {
-            this.plugin.settings.pinnedScripts.splice(index, 1);
-            this.view.excalidrawAPI?.setToast({
-              message: `Pin removed: ${name}`,
-              duration: 3000,
-              closable: true,
-            });
-          }
-          await this.plugin.saveSettings();
-          getExcalidrawViews(this.plugin.app, true).forEach((excalidrawView) =>
-            excalidrawView.updatePinnedScripts(),
-          );
-        })();
-      }, 1500);
-    }
-    this.prevClickTimestamp = now;
-  }
-
   private actionShowHideMenu(isMobile: boolean, appState: AppState) {
     this.toolsRef.current.setTheme(appState.theme);
     this.toolsRef.current.toggleVisibility(appState.zenModeEnabled || isMobile);
@@ -374,39 +323,6 @@ export class ObsidianMenu {
     });
   }
 
-  public renderPinnedScriptButtons(isMobile: boolean, appState: AppState) {
-    return appState?.pinnedScripts?.map((key, index) => {
-      //pinned scripts
-      const scriptProp = this.plugin.scriptEngine.scriptIconMap[key];
-      const name = scriptProp?.name ?? "";
-      const icon = scriptProp?.svgString
-        ? stringToSVG(scriptProp.svgString)
-        : ICONS.cog;
-      if (!this.longpressTimeout[index]) {
-        this.longpressTimeout[index] = 0;
-      }
-      return (
-        <label
-          key={index}
-          className={clsx("ToolIcon", "ToolIcon_size_medium", {
-            "is-mobile": isMobile,
-          })}
-          onPointerUp={() => this.actionScriptButtonPointerUp(index, key)}
-          onPointerDown={() =>
-            this.actionScriptButtonPointerDown(index, key, name)
-          }
-        >
-          <div
-            className="ToolIcon__icon"
-            aria-label={DEVICE.isDesktop ? name : undefined}
-          >
-            {icon}
-          </div>
-        </label>
-      );
-    });
-  }
-
   public renderButton(isMobile: boolean, appState: AppState) {
     const isFullscreen = this.view.isFullscreen();
     return (
@@ -450,7 +366,6 @@ export class ObsidianMenu {
           </div>
         </label>
         {this.renderCustomPens(isMobile, appState)}
-        {this.renderPinnedScriptButtons(isMobile, appState)}
       </>
     );
   }
@@ -469,6 +384,5 @@ export class ObsidianMenu {
     this.clickTimestamp = null;
     this.renderButton = null;
     this.renderCustomPens = null;
-    this.renderPinnedScriptButtons = null;
   }
 }

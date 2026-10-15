@@ -75,7 +75,6 @@ export function createExcalidrawRootElement(
         appState,
       );
     }
-    view.plugin.scriptEngine.runAutostartScripts(view);
     return () => {
       view.obsidianMenu.destroy();
       view.obsidianMenu = null;
