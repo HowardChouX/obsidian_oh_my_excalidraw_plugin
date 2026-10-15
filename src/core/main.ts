@@ -1388,10 +1388,6 @@ export default class ExcalidrawPlugin extends Plugin {
     return this.viewPersistenceQueue.acquireWriteLease(filePath);
   }
 
-  get taskbone() {
-    return this.commandManager?.taskbone;
-  }
-
   get insertImageDialog() {
     return this.commandManager?.insertImageDialog;
   }

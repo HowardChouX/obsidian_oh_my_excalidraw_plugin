@@ -1147,14 +1147,7 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
       description: t("EXPERIMENTAL_DESC"),
       buildDefinitions: () => this.getExperimentalDefinitions(),
       renderLegacy: (container) => this.renderExperimentalSettings(container),
-      children: [
-        {
-          name: t("TASKBONE_HEAD"),
-          description: t("TASKBONE_GROUP_DESC"),
-          buildDefinitions: () => this.getTaskboneDefinitions(),
-          renderLegacy: (container) => this.renderTaskboneSettings(container),
-        },
-      ],
+      children: [],
     };
 
     const automatePage: SettingsPageModel = {
@@ -4916,78 +4909,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
   private renderExperimentalSettings(container: HTMLElement): void {
     addYouTubeThumbnail(container, "r08wk-58DPk");
     this.renderSettingSpecs(container, this.getExperimentalSpecs());
-  }
-
-  private getTaskboneDefinitions(): SettingDefinitionItem<SettingBindingKey>[] {
-    return [
-      this.createRenderedDefinition({
-        name: `${t("TASKBONE_HEAD")} · information`,
-        searchable: false,
-        omitFromMarkdown: true,
-        render: (container) => {
-          container.createDiv({
-            text: t("TASKBONE_DESC"),
-            cls: "setting-item-description",
-          });
-        },
-      }),
-      this.createYouTubeDefinition(t("TASKBONE_HEAD"), "7gu4ETx7zro"),
-      this.createRenderedDefinition({
-        name: `${t("TASKBONE_HEAD")} · settings`,
-        aliases: [
-          t("TASKBONE_ENABLE_NAME"),
-          t("TASKBONE_APIKEY_NAME"),
-          "OCR API key",
-        ],
-        controlType: "Taskbone settings",
-        render: (container) => this.renderTaskboneControls(container),
-      }),
-    ];
-  }
-
-  private renderTaskboneSettings(container: HTMLElement): void {
-    container.createDiv({
-      text: t("TASKBONE_DESC"),
-      cls: "setting-item-description",
-    });
-    addYouTubeThumbnail(container, "7gu4ETx7zro");
-    this.renderTaskboneControls(container);
-  }
-
-  private renderTaskboneControls(container: HTMLElement): void {
-    let taskboneAPIKeyText: TextComponent;
-    this.buildSetting(container, {
-      name: t("TASKBONE_ENABLE_NAME"),
-      desc: fragWithHTML(t("TASKBONE_ENABLE_DESC")),
-      control: {
-        type: "toggle",
-        key: "taskboneEnabled",
-        before: (value) => {
-          taskboneAPIKeyText.setDisabled(!value);
-        },
-        after: async () => {
-          if (this.plugin.settings.taskboneAPIkey === "") {
-            const apiKey = await this.plugin.taskbone.initialize(false);
-            if (apiKey) {
-              taskboneAPIKeyText.setValue(apiKey);
-            }
-          }
-        },
-      },
-    });
-    this.buildSetting(container, {
-      name: t("TASKBONE_APIKEY_NAME"),
-      desc: fragWithHTML(t("TASKBONE_APIKEY_DESC")),
-      control: {
-        type: "text",
-        key: "taskboneAPIkey",
-        disabled: () => !this.plugin.settings.taskboneEnabled,
-        capture: (text) => {
-          taskboneAPIKeyText = text;
-          configurePasswordTextInput(text);
-        },
-      },
-    });
   }
 
   private getAutomateSpecs(): SettingSpec[] {

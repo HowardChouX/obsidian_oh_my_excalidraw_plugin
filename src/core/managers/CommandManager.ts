@@ -67,7 +67,6 @@ import {
 import { ReleaseNotes } from "../../shared/Dialogs/ReleaseNotes";
 import { AutostartScriptsModal } from "../../shared/Dialogs/AutostartScriptsSettingsComponent";
 import { ScriptInstallPrompt } from "../../shared/Dialogs/ScriptInstallPrompt";
-import Taskbone from "../../shared/OCR/Taskbone";
 import {
   emulateCTRLClickForLinks,
   linkClickModifierType,
@@ -106,7 +105,6 @@ export class CommandManager {
   public insertImageDialog: InsertImageDialog;
   public importSVGDialog: ImportSVGDialog;
   public insertMDDialog: InsertMDDialog;
-  public taskbone: Taskbone;
   public forceSaveCommand: Command;
 
   get settings(): ExcalidrawSettings {
@@ -148,7 +146,6 @@ export class CommandManager {
       callback: () => new CLIInstructions(this.app).open(),
     });
     try {
-      this.taskbone = new Taskbone(this.plugin);
       this.registerCommands();
     } catch (e) {
       new Notice("Error registering commands", 6000);
@@ -170,10 +167,6 @@ export class CommandManager {
     this.insertImageDialog = null;
     this.insertMDDialog.destroy();
     this.insertMDDialog = null;
-    if (this.taskbone) {
-      this.taskbone.destroy();
-      this.taskbone = null;
-    }
     this.forceSaveCommand = null;
   }
 
@@ -714,70 +707,6 @@ export class CommandManager {
         }
         void insertDrawingToDoc("popout-window");
         return true;
-      },
-    });
-
-    this.addCommand({
-      id: "run-ocr",
-      name: t("RUN_OCR"),
-      checkCallback: (checking: boolean) => {
-        const view = this.app.workspace.getActiveViewOfType(ExcalidrawView);
-        if (checking) {
-          return Boolean(view);
-        }
-        if (view) {
-          if (!this.settings.taskboneEnabled) {
-            new Notice(t("TASKBONE_NOT_ENABLED"), 4000);
-            return true;
-          }
-          void this.taskbone.getTextForView(view, { forceReScan: false });
-          return true;
-        }
-        return false;
-      },
-    });
-
-    this.addCommand({
-      id: "rerun-ocr",
-      name: t("RERUN_OCR"),
-      checkCallback: (checking: boolean) => {
-        const view = this.app.workspace.getActiveViewOfType(ExcalidrawView);
-        if (checking) {
-          return Boolean(view);
-        }
-        if (view) {
-          if (!this.settings.taskboneEnabled) {
-            new Notice(t("TASKBONE_NOT_ENABLED"), 4000);
-            return true;
-          }
-          void this.taskbone.getTextForView(view, { forceReScan: true });
-          return true;
-        }
-        return false;
-      },
-    });
-
-    this.addCommand({
-      id: "run-ocr-selectedelements",
-      name: t("RUN_OCR_ELEMENTS"),
-      checkCallback: (checking: boolean) => {
-        const view = this.app.workspace.getActiveViewOfType(ExcalidrawView);
-        if (checking) {
-          return Boolean(view);
-        }
-        if (view) {
-          if (!this.settings.taskboneEnabled) {
-            new Notice(t("TASKBONE_NOT_ENABLED"), 4000);
-            return true;
-          }
-          void this.taskbone.getTextForView(view, {
-            forceReScan: false,
-            selectedElementsOnly: true,
-            addToFrontmatter: false,
-          });
-          return true;
-        }
-        return false;
       },
     });
 

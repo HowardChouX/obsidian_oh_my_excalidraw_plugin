@@ -155,7 +155,6 @@ export const encryptProviderProfiles = (
 
 type PersistedSettingsWithAPIKeys = {
   aiProviderProfiles?: Record<string, AIProviderProfile>;
-  taskboneAPIkey?: string;
 };
 
 export const decryptPersistedAPIKeys = <T extends PersistedSettingsWithAPIKeys>(
@@ -166,12 +165,6 @@ export const decryptPersistedAPIKeys = <T extends PersistedSettingsWithAPIKeys>(
   if (nextSettings.aiProviderProfiles) {
     nextSettings.aiProviderProfiles = decryptProviderProfiles(
       nextSettings.aiProviderProfiles,
-    );
-  }
-
-  if (typeof nextSettings.taskboneAPIkey === "string") {
-    nextSettings.taskboneAPIkey = decryptStoredAPIKey(
-      nextSettings.taskboneAPIkey,
     );
   }
 
@@ -186,12 +179,6 @@ export const encryptPersistedAPIKeys = <T extends PersistedSettingsWithAPIKeys>(
   if (nextSettings.aiProviderProfiles) {
     nextSettings.aiProviderProfiles = encryptProviderProfiles(
       nextSettings.aiProviderProfiles,
-    );
-  }
-
-  if (typeof nextSettings.taskboneAPIkey === "string") {
-    nextSettings.taskboneAPIkey = encryptStoredAPIKey(
-      nextSettings.taskboneAPIkey,
     );
   }
 

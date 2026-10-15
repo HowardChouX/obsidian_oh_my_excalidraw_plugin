@@ -304,22 +304,6 @@ export const ICONS = {
   insertLaTeX: getIconAsJSX("sigma"),
   insertLink: getIconAsJSX("link"),
   search: getIconAsJSX("search"),
-  ocr: (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--icon-fill-color)"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="svg-icon lucide-scan-line-2"
-    >
-      <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7.5,17l4.05,-9.7a.5,.5 0 0 1 .9,0l4.05,9.7M8.8,14h6.4" />
-    </svg>
-  ),
   scriptEngine: (
     <svg
       xmlns="http://www.w3.org/2000/svg"

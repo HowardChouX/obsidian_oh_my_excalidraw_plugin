@@ -209,8 +209,6 @@ export interface ExcalidrawSettings {
   //mathjaxSourceURL: string;
   latexBoilerplate: string;
   latexPreambleLocation: string;
-  taskboneEnabled: boolean;
-  taskboneAPIkey: string;
   pinnedScripts: string[];
   sidepanelTabs: string[];
   customPens: PenStyle[];
@@ -664,8 +662,6 @@ export const DEFAULT_SETTINGS: ExcalidrawSettings = {
   showNewVersionNotification: true,
   latexBoilerplate: "e=mc^2",
   latexPreambleLocation: "preamble.sty",
-  taskboneEnabled: false,
-  taskboneAPIkey: "",
   pinnedScripts: [],
   sidepanelTabs: [],
   customPens: [

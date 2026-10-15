@@ -273,21 +273,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
     void search(view);
   }
 
-  actionOCR(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
-    const view = this.getView();
-    const plugin = view?.plugin;
-    if (!view || !plugin) {
-      return;
-    }
-    if (!plugin.settings.taskboneEnabled) {
-      new Notice(t("TASKBONE_NOT_ENABLED"), 4000);
-      return;
-    }
-    void plugin.taskbone.getTextForView(view, {
-      forceReScan: isWinCTRLorMacCMD(e),
-    });
-  }
-
   actionOpenLink(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
     const view = this.getView();
     if (!view) {
@@ -661,12 +646,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
                     title={t("SEARCH")}
                     action={() => this.actionSearch()}
                     icon={ICONS.search}
-                  />
-                  <ActionButton
-                    key={"ocr"}
-                    title={t("RUN_OCR")}
-                    action={(e) => this.actionOCR(e)}
-                    icon={ICONS.ocr}
                   />
                   <ActionButton
                     key={"openLink"}
