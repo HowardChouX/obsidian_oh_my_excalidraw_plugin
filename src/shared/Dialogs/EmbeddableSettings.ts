@@ -12,12 +12,6 @@ import {
   splitFolderAndFilename,
 } from "src/utils/fileUtils";
 import { addAppendUpdateCustomData, fragWithHTML } from "src/utils/utils";
-import {
-  getYouTubeStartAt,
-  isValidYouTubeStart,
-  isYouTube,
-  updateYouTubeStartTime,
-} from "src/utils/YoutTubeUtils";
 import { EmbeddalbeMDFileCustomDataSettingsComponent } from "./EmbeddableMDFileCustomDataSettingsComponent";
 import { isWinCTRLorMacCMD, labelCTRL } from "src/utils/modifierkeyHelper";
 import { CaptureUpdateAction } from "src/constants/constants";
@@ -40,8 +34,6 @@ export class EmbeddableSettings extends Modal {
   private ea: ExcalidrawAutomate;
   private updatedFilepath: string = null;
   private zoomValue: number;
-  private isYouTube: boolean;
-  private youtubeStart: string = null;
   private isMDFile: boolean;
   private notExcalidrawIsInternal: boolean;
   private isLocalURI: boolean;
@@ -59,14 +51,10 @@ export class EmbeddableSettings extends Modal {
     this.ea = getEA(this.view);
     this.ea.copyViewElementsToEAforEditing([this.element]);
     this.zoomValue = element.scale[0];
-    this.isYouTube = isYouTube(this.element.link);
     this.notExcalidrawIsInternal =
       this.file && !this.view.plugin.isExcalidrawFile(this.file);
     this.isMDFile = this.file && this.file.extension.toLowerCase() === "md"; // && !this.view.plugin.isExcalidrawFile(this.file);
     this.isLocalURI = this.element.link.startsWith("file://");
-    if (isYouTube) {
-      this.youtubeStart = getYouTubeStartAt(this.element.link);
-    }
 
     this.mdCustomData = (element.customData?.mdProps ??
       view.plugin.settings
@@ -139,17 +127,6 @@ export class EmbeddableSettings extends Modal {
             zoomSetting.setDesc(zoomValue());
           }),
       );
-
-    if (this.isYouTube) {
-      new Setting(this.contentEl)
-        .setName(t("ES_YOUTUBE_START"))
-        .setDesc(t("ES_YOUTUBE_START_DESC"))
-        .addText((text) =>
-          text.setValue(this.youtubeStart).onChange(async (value) => {
-            this.youtubeStart = value;
-          }),
-        );
-    }
 
     if (this.isMDFile || this.notExcalidrawIsInternal) {
       this.contentEl.createEl("h3", { text: t("ES_EMBEDDABLE_SETTINGS") });
@@ -230,17 +207,6 @@ export class EmbeddableSettings extends Modal {
             new Notice(`File rename failed. ${e}`, 10000);
           }
         }
-      }
-    }
-    if (
-      this.isYouTube &&
-      this.youtubeStart !== getYouTubeStartAt(this.element.link)
-    ) {
-      dirty = true;
-      if (this.youtubeStart === "" || isValidYouTubeStart(this.youtubeStart)) {
-        el.link = updateYouTubeStartTime(el.link, this.youtubeStart);
-      } else {
-        new Notice(t("ES_YOUTUBE_START_INVALID"));
       }
     }
     if (

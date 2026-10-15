@@ -19,7 +19,6 @@ export interface ViewExcalidrawExtensionRendererDependencies {
   REGEX_LINK: typeof import("../../shared/ExcalidrawData").REGEX_LINK;
   REG_LINKINDEX_HYPERLINK: typeof import("../../shared/ExcalidrawData").REG_LINKINDEX_HYPERLINK;
   openExternalLink: typeof import("../../utils/excalidrawViewUtils").openExternalLink;
-  renderWebView: typeof import("../components/CustomEmbeddable").renderWebView;
   useDefaultExcalidrawFrame: typeof import("../../utils/customEmbeddableUtils").useDefaultExcalidrawFrame;
   openUIModeSettings: () => void;
   openScriptInstallPrompt: () => void;
@@ -199,7 +198,7 @@ export class ViewExcalidrawExtensionRenderer {
     );
   }
 
-  /** Renders Obsidian links, web views, and custom content as embeddables. */
+  /** Renders Obsidian links and custom content as embeddables. */
   public renderEmbeddable(
     element: ExcalidrawEmbeddableElement,
     appState: UIAppState,
@@ -219,18 +218,12 @@ export class ViewExcalidrawExtensionRenderer {
         return null;
       }
 
+      // Live web/iframe embeds were removed in the Oh My Excalidraw trim:
+      // hyperlinks fall through to the default static frame rendering.
       if (
         element.link.match(this.dependencies.REG_LINKINDEX_HYPERLINK) ||
         element.link.startsWith("data:")
       ) {
-        if (!useExcalidrawFrame) {
-          return this.dependencies.renderWebView(
-            element.link,
-            this.view,
-            element.id,
-            appState,
-          );
-        }
         return null;
       }
 
@@ -242,14 +235,6 @@ export class ViewExcalidrawExtensionRenderer {
       const linkText = this.dependencies.REGEX_LINK.getLink(res);
 
       if (linkText.match(this.dependencies.REG_LINKINDEX_HYPERLINK)) {
-        if (!useExcalidrawFrame) {
-          return this.dependencies.renderWebView(
-            linkText,
-            this.view,
-            element.id,
-            appState,
-          );
-        }
         return null;
       }
 

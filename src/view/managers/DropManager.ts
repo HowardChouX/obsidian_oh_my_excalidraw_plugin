@@ -21,7 +21,6 @@ import {
 import {
   errorlog,
   hyperlinkIsImage,
-  hyperlinkIsYouTubeLink,
 } from "src/utils/utils";
 import { InsertPDFModal } from "src/shared/Dialogs/InsertPDFModal";
 import { ExcalidrawAutomate } from "src/shared/ExcalidrawAutomate";
@@ -652,22 +651,6 @@ export class DropManager {
           /^(blob:)?(http|https):\/\/[^\s/$.?#].[^\s]*$/.test(text)
         ) {
           return true;
-        }
-        if (
-          text &&
-          externalDragAction === "image-url" &&
-          hyperlinkIsYouTubeLink(text)
-        ) {
-          void this.view.addYouTubeThumbnail(text);
-          return false;
-        }
-        if (
-          uriText &&
-          externalDragAction === "image-url" &&
-          hyperlinkIsYouTubeLink(uriText)
-        ) {
-          void this.view.addYouTubeThumbnail(uriText);
-          return false;
         }
         if (
           text &&

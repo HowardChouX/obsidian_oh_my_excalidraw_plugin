@@ -503,66 +503,6 @@ function setupPdfViewEnhancements(
 }
 
 //--------------------------------------------------------------------------------
-//Render webview for anything other than Vimeo and Youtube
-//Vimeo and Youtube are rendered by Excalidraw because of the window messaging
-//required to control the video
-//--------------------------------------------------------------------------------
-export function renderWebView(
-  src: string,
-  view: ExcalidrawView,
-  id: string,
-  _: UIAppState,
-): React.JSX.Element {
-  let isAllowed = false;
-  try {
-    const url = new URL(src);
-    // Explicitly allow safe protocols to prevent execution of
-    // javascript:, vbscript:, file:, etc.
-    isAllowed = ["http:", "https:", "data:"].includes(url.protocol);
-  } catch {
-    // If URL parsing fails, consider it unsafe
-    isAllowed = false;
-  }
-
-  const safeSrc = isAllowed ? src : "about:blank";
-
-  const isDataURL = safeSrc.startsWith("data:");
-  const srcDoc = isDataURL ? getSandboxedDataUrlSrcDoc(safeSrc) : null;
-  if (DEVICE.isDesktop && !isDataURL) {
-    return (
-      <webview
-        ref={(ref) => view.updateEmbeddableRef(id, ref)}
-        className="excalidraw__embeddable"
-        title="Excalidraw Embedded Content"
-        allowFullScreen={true}
-        src={safeSrc}
-        webpreferences="autoplayPolicy=document-user-activation-required"
-        style={{
-          overflow: "hidden",
-          borderRadius: "var(--embeddable-radius)",
-        }}
-      />
-    );
-  }
-  return (
-    <iframe
-      ref={(ref) => view.updateEmbeddableRef(id, ref)}
-      className="excalidraw__embeddable"
-      title="Excalidraw Embedded Content"
-      allowFullScreen={true}
-      allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      sandbox={isDataURL ? DATA_URL_IFRAME_SANDBOX : undefined}
-      src={isDataURL ? null : safeSrc}
-      style={{
-        overflow: "hidden",
-        borderRadius: "var(--embeddable-radius)",
-      }}
-      srcDoc={srcDoc}
-    />
-  );
-}
-
-//--------------------------------------------------------------------------------
 //Render WorkspaceLeaf or CanvasNode
 //--------------------------------------------------------------------------------
 function RenderObsidianView({
