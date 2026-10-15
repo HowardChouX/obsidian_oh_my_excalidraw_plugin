@@ -19,11 +19,6 @@ import {
   type SaveOperationContext,
 } from "./saveSnapshot";
 
-/** Side effects selected for one save request. */
-export interface SaveSideEffectPolicy {
-  triggerAutoexport: boolean;
-}
-
 /** Terminal outcome reported by the view-owned persistence implementation. */
 export type SaveExecutionStatus =
   | "persisted"
@@ -57,22 +52,14 @@ export interface ViewSaveMigrationState {
 /** Side effects selected for one forced-save request. */
 export interface ForceSavePolicy {
   refreshSceneFiles: boolean;
-  triggerAutoexport: boolean;
 }
-
-export const DIRECT_SAVE_SIDE_EFFECT_POLICY: Readonly<SaveSideEffectPolicy> = {
-  triggerAutoexport: true,
-};
 
 export const PUBLIC_FORCE_SAVE_POLICY: Readonly<ForceSavePolicy> = {
   refreshSceneFiles: true,
-  triggerAutoexport: true,
 };
 
 export const WINDOW_BLUR_FORCE_SAVE_POLICY: Readonly<ForceSavePolicy> = {
   refreshSceneFiles: false,
-  // Autoexport is a documented save-time contract, including for blur-triggered saves.
-  triggerAutoexport: true,
 };
 
 /** Private view operations retained by the composition root during the
@@ -83,7 +70,6 @@ export interface ViewSaveCoordinatorDependencies {
     suppressReloadFromOwnWrite: boolean,
     forcePersistence: boolean,
     bypassSameFileEditGuard: boolean,
-    sideEffectPolicy: Readonly<SaveSideEffectPolicy>,
   ) => Promise<SaveExecutionResult>;
   requestSave: (
     suppressReloadFromOwnWrite?: boolean,
@@ -98,14 +84,12 @@ export interface ViewSaveCoordinatorDependencies {
   getFreedrawLastActiveTimestamp: () => number;
   markDirtyVisuals: () => void;
   clearDirtyVisuals: () => void;
-  beginAutoexportSaveActivity: () => () => void;
 }
 
 interface SaveRequest {
   suppressReloadFromOwnWrite: boolean;
   forcePersistence: boolean;
   bypassSameFileEditGuard: boolean;
-  sideEffectPolicy: Readonly<SaveSideEffectPolicy>;
   revision: number;
 }
 
@@ -178,7 +162,6 @@ export class ViewSaveCoordinator {
         request.suppressReloadFromOwnWrite,
         request.forcePersistence,
         request.bypassSameFileEditGuard,
-        request.sideEffectPolicy,
       );
     } finally {
       this.saveInProgress = false;
@@ -195,7 +178,6 @@ export class ViewSaveCoordinator {
       suppressReloadFromOwnWrite,
       forcePersistence,
       bypassSameFileEditGuard,
-      sideEffectPolicy: DIRECT_SAVE_SIDE_EFFECT_POLICY,
       revision: this.currentRevision,
     });
   }
@@ -207,7 +189,6 @@ export class ViewSaveCoordinator {
       suppressReloadFromOwnWrite: false,
       forcePersistence: true,
       bypassSameFileEditGuard: false,
-      sideEffectPolicy: DIRECT_SAVE_SIDE_EFFECT_POLICY,
       revision: requestedRevision,
     });
     return {
@@ -233,14 +214,11 @@ export class ViewSaveCoordinator {
       return this.saveLoopPromise;
     }
 
-    const endAutoexportSaveActivity =
-      this.dependencies.beginAutoexportSaveActivity();
     const loop = Promise.resolve().then(() => this.drainSaveQueue());
     const trackedLoop = loop.finally(() => {
       if (this.saveLoopPromise === trackedLoop) {
         this.saveLoopPromise = null;
       }
-      endAutoexportSaveActivity();
     });
     this.saveLoopPromise = trackedLoop;
     return trackedLoop;
@@ -259,11 +237,6 @@ export class ViewSaveCoordinator {
       forcePersistence: current.forcePersistence || incoming.forcePersistence,
       bypassSameFileEditGuard:
         current.bypassSameFileEditGuard || incoming.bypassSameFileEditGuard,
-      sideEffectPolicy: {
-        triggerAutoexport:
-          current.sideEffectPolicy.triggerAutoexport ||
-          incoming.sideEffectPolicy.triggerAutoexport,
-      },
       revision: Math.max(current.revision, incoming.revision),
     };
   }
@@ -333,7 +306,6 @@ export class ViewSaveCoordinator {
       suppressReloadFromOwnWrite: true,
       forcePersistence: false,
       bypassSameFileEditGuard: false,
-      sideEffectPolicy: DIRECT_SAVE_SIDE_EFFECT_POLICY,
       revision: this.currentRevision,
     };
     this.pendingSaveRequest = this.pendingSaveRequest
@@ -394,9 +366,6 @@ export class ViewSaveCoordinator {
         suppressReloadFromOwnWrite: false,
         forcePersistence: true,
         bypassSameFileEditGuard: true,
-        sideEffectPolicy: {
-          triggerAutoexport: policy.triggerAutoexport,
-        },
         revision: this.currentRevision,
       });
       if (
@@ -485,7 +454,6 @@ export class ViewSaveCoordinator {
       suppressReloadFromOwnWrite: true,
       forcePersistence: true,
       bypassSameFileEditGuard: true,
-      sideEffectPolicy: DIRECT_SAVE_SIDE_EFFECT_POLICY,
       revision: this.currentRevision,
     });
   }

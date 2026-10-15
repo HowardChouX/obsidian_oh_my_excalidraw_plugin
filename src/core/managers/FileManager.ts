@@ -47,7 +47,7 @@ import {
   isObsidianThemeDark,
   openLeaf,
 } from "src/utils/obsidianUtils";
-import { errorlog, getExportTheme } from "src/utils/utils";
+import { errorlog } from "src/utils/utils";
 import { getImageCache } from "src/shared/ImageCache";
 import { PaneTarget } from "src/types/utilTypes";
 import { t } from "src/lang/helpers";
@@ -234,19 +234,7 @@ export class PluginFileManager {
       }
 
       //embed image
-      let theme = this.settings.autoExportLightAndDark
-        ? getExportTheme(
-            this.plugin,
-            file,
-            this.settings.exportWithTheme
-              ? isObsidianThemeDark()
-                ? "dark"
-                : "light"
-              : "light",
-          )
-        : "";
-
-      theme = theme === "" ? "" : `${theme}.`;
+      const theme: string = "";
 
       const exportExtension = theme + this.settings.embedType.toLowerCase();
       let imageFullpath = getIMGFilename(file.path, exportExtension);
@@ -362,7 +350,7 @@ export class PluginFileManager {
       const otherTheme = theme === "dark." ? "light." : "dark.";
       //if the hook tinkers with the extension, then I cannot predict the other theme's extension
       //it would become a messy heuristic to try to guess the other theme's extension
-      const otherImageRelativePath =
+      const otherImageRelativePath: string | null =
         theme === "" || !imageRelativePath.endsWith(exportExtension)
           ? null
           : imageRelativePath.substring(
@@ -619,56 +607,6 @@ export class PluginFileManager {
     }
 
     await this.moveBAKFile(oldPath, file.path);
-
-    if (!this.settings.keepInSync) {
-      return;
-    }
-    const imgMap = new Map<
-      string,
-      { oldImgPath: string; newImgPath: string }
-    >();
-    [EXPORT_TYPES, "excalidraw"].flat().forEach((ext) => {
-      let oldImgPath = getIMGFilename(oldPath, ext);
-      let newImgPath = getIMGFilename(file.path, ext);
-      if (this.plugin.ea?.onImageExportPathHook) {
-        try {
-          oldImgPath =
-            this.plugin.ea.onImageExportPathHook({
-              exportFilepath: oldImgPath,
-              exportExtension: ext,
-              excalidrawFile: file,
-              oldExcalidrawPath: oldPath,
-              action: "move",
-            }) ?? oldImgPath;
-          newImgPath =
-            this.plugin.ea.onImageExportPathHook({
-              exportFilepath: newImgPath,
-              exportExtension: ext,
-              excalidrawFile: file,
-              action: "export",
-            }) ?? newImgPath;
-        } catch (e: unknown) {
-          errorlog({
-            where: "FileManager.renameEventHandler",
-            fn: "plugin.ea.onImageExportPathHook",
-            error: e,
-          });
-        }
-      }
-      imgMap.set(ext, { oldImgPath, newImgPath });
-    });
-
-    imgMap.forEach((path) => {
-      const imgFile = this.app.vault.getFileByPath(
-        normalizePath(path.oldImgPath),
-      );
-      if (imgFile) {
-        void this.app.fileManager.renameFile(
-          imgFile,
-          normalizePath(path.newImgPath),
-        );
-      }
-    });
   }
 
   public async modifyEventHandler(file: TAbstractFile) {
@@ -808,40 +746,5 @@ export class PluginFileManager {
     }
 
     void this.removeBAKFromCache(file.path);
-
-    //delete PNG and SVG files as well
-    if (this.settings.keepInSync) {
-      const imgMap = new Map<string, string>();
-      [EXPORT_TYPES, "excalidraw"].flat().forEach((ext) => {
-        let imgPath = getIMGFilename(file.path, ext);
-        if (this.plugin.ea?.onImageExportPathHook) {
-          try {
-            imgPath =
-              this.plugin.ea.onImageExportPathHook({
-                exportFilepath: imgPath,
-                exportExtension: ext,
-                excalidrawFile: file,
-                action: "delete",
-              }) ?? imgPath;
-          } catch (e: unknown) {
-            errorlog({
-              where: "FileManager.deleteEventHandler",
-              fn: "plugin.ea.onImageExportPathHook",
-              error: e,
-            });
-          }
-        }
-        imgMap.set(ext, imgPath);
-      });
-
-      window.setTimeout(() => {
-        imgMap.forEach((imgPath: string) => {
-          const imgFile = this.app.vault.getFileByPath(normalizePath(imgPath));
-          if (imgFile) {
-            void this.app.fileManager.trashFile(imgFile);
-          }
-        });
-      }, 500);
-    }
   }
 }

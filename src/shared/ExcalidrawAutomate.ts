@@ -200,10 +200,7 @@ import {
 } from "src/types/exportUtilTypes";
 import { PaneTarget } from "src/types/utilTypes";
 import { CaptureUpdateAction } from "src/constants/constants";
-import {
-  AutoexportConfig,
-  ExcalidrawViewScene,
-} from "src/types/excalidrawViewTypes";
+import { ExcalidrawViewScene } from "src/types/excalidrawViewTypes";
 import { FloatingModal } from "./Dialogs/FloatingModal";
 import { ExcalidrawSidepanelView } from "src/view/sidepanel/Sidepanel";
 import { ExcalidrawSidepanelTab } from "src/view/sidepanel/SidepanelTab";
@@ -4251,34 +4248,6 @@ export class ExcalidrawAutomate {
     oldExcalidrawPath?: string; // The old path of the Excalidraw file, if it was moved/renamed.
     action: "export" | "move" | "delete";
   }) => string | null = null;
-
-  /**
-   * Excalidraw supports auto-export of Excalidraw files to .png, .svg, and .excalidraw formats.
-   *
-   * Auto-export of Excalidraw files can be controlled at multiple levels.
-   * 1) In plugin settings where you can set up default auto-export applicable to all your Excalidraw files.
-   * 2) However, if you do not want to auto-export every file, you can also control auto-export
-   *    at the file level using the 'excalidraw-autoexport' frontmatter property.
-   * 3) This hook gives you an additional layer of control over the auto-export process.
-   *
-   * This hook is triggered when an Excalidraw file is being saved.
-   *
-   * interface AutoexportConfig {
-   *   png: boolean; // Whether to auto-export to PNG
-   *   svg: boolean; // Whether to auto-export to SVG
-   *   excalidraw: boolean; // Whether to auto-export to Excalidraw format
-   *   theme: "light" | "dark" | "both"; // The theme to use for the export
-   * }
-   *
-   * @param {Object} data - The data for the hook.
-   * @param {AutoexportConfig} data.autoexportConfig - The current autoexport configuration.
-   * @param {TFile} data.excalidrawFile - The Excalidraw file being auto-exported.
-   * @returns {AutoexportConfig | null} - Return a modified AutoexportConfig to override the export behavior, or null to use the default.
-   */
-  onTriggerAutoexportHook: (data: {
-    autoexportConfig: AutoexportConfig;
-    excalidrawFile: TFile; // The Excalidraw file being auto-exported
-  }) => AutoexportConfig | null = null;
 
   /**
    * If set, this callback is triggered when the scene changes in the target view.

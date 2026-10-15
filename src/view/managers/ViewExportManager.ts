@@ -1,8 +1,6 @@
 import {
-  getFrontMatterInfo,
   normalizePath,
   Notice,
-  parseYaml,
   type TFile,
 } from "obsidian";
 import type { FileId } from "@zsviczian/excalidraw/types/element/src/types";
@@ -12,20 +10,13 @@ import { t } from "../../lang/helpers";
 import type { EmbeddedFilesLoader } from "../../shared/EmbeddedFileLoader";
 import type { ExportDialog } from "../../shared/Dialogs/ExportDialog";
 import { FileAndFolderSelectorModal } from "../../shared/Dialogs/FileAndFolderSelectorModal";
-import type {
-  AutoexportConfig,
-  ExcalidrawViewScene,
-} from "../../types/excalidrawViewTypes";
+import type { ExcalidrawViewScene } from "../../types/excalidrawViewTypes";
 import type {
   ExportSettings,
   PageOrientation,
   PageSize,
 } from "../../types/exportUtilTypes";
 import type { FileData } from "../../types/embeddedFileLoaderTypes";
-import type {
-  PreparedAutoexportOutput,
-  PreparedAutoexportRequest,
-} from "../../core/managers/AutoexportCoordinator";
 import { errorlog } from "../../utils/coreUtils";
 import {
   download,
@@ -44,10 +35,6 @@ import {
 } from "../../utils/exportUtils";
 import type ExcalidrawView from "../ExcalidrawView";
 import type { PreparedSave, PreparedSaveExportOptions } from "./saveSnapshot";
-import {
-  resolvePreparedAutoexportSettings,
-  type PreparedAutoexportSettings,
-} from "./preparedAutoexportFrontmatter";
 
 /** Runtime dependencies supplied by the view's existing import graph. */
 export interface ViewExportDependencies {
@@ -236,176 +223,22 @@ export class ViewExportManager {
         );
   }
 
-  private getSaveOwnedFrontmatter(text: string): Record<string, unknown> {
-    try {
-      const info = getFrontMatterInfo(text);
-      if (!info.exists) {
-        return {};
-      }
-      const parsed = parseYaml(info.frontmatter) as unknown;
-      return parsed !== null &&
-        typeof parsed === "object" &&
-        !Array.isArray(parsed)
-        ? (parsed as Record<string, unknown>)
-        : {};
-    } catch {
-      return {};
-    }
-  }
-
-  /** Captures automatic-export settings from the save-owned Markdown envelope. */
-  public capturePreparedSaveAutoexportSettings(
+  /** Captures export options from the save-owned Markdown envelope. */
+  public capturePreparedSaveExportSettings(
     scene: ExcalidrawViewScene,
-    sourceText: string,
-  ): PreparedAutoexportSettings {
+  ): { exportOptions: PreparedSaveExportOptions } {
     const sceneTheme = scene.appState.theme === "dark" ? "dark" : "light";
     const settings = this.view.plugin.settings;
-    const exportOptions: PreparedSaveExportOptions = {
-      theme: settings.exportWithTheme ? sceneTheme : "light",
-      embedScene: settings.exportEmbedScene,
-      padding: settings.exportPaddingSVG,
-      scale: settings.pngExportScale,
-      withBackground: settings.exportWithBackground,
-      includeInternalLinks: true,
-      isMask: false,
-    };
-    return resolvePreparedAutoexportSettings(
-      {
-        exportOptions,
-        autoexportConfig: {
-          svg: settings.autoexportSVG,
-          png: settings.autoexportPNG,
-          excalidraw:
-            !this.view.compatibilityMode && settings.autoexportExcalidraw,
-          theme: settings.autoExportLightAndDark ? "both" : exportOptions.theme,
-        },
-      },
-      this.getSaveOwnedFrontmatter(sourceText),
-    );
-  }
-
-  /** Captures hook-adjusted output paths before the originating view retires. */
-  public prepareAutoexportRequest(
-    preparedSave: PreparedSave,
-    sourceFile: TFile,
-    includeOutputs: boolean,
-  ): PreparedAutoexportRequest {
-    const requestIdentity = {
-      producerId: preparedSave.producerId,
-      targetGeneration: preparedSave.targetGeneration,
-      operationId: preparedSave.operationId,
-      requestedRevision: preparedSave.requestedRevision,
-      sourceFilePath: preparedSave.filePath,
-      sourceFileCtime: preparedSave.sourceFileCtime,
-      capturedRevision: preparedSave.capturedRevision,
-    };
-    const createBarrier = (): PreparedAutoexportRequest => ({
-      ...requestIdentity,
-      kind: "barrier",
-      outputs: [],
-    });
-    if (!includeOutputs) {
-      return createBarrier();
-    }
-
-    const saveOwnedSettings = resolvePreparedAutoexportSettings(
-      {
-        exportOptions: preparedSave.exportOptions,
-        autoexportConfig: preparedSave.autoexportConfig,
-      },
-      this.getSaveOwnedFrontmatter(preparedSave.text),
-    );
-    let autoexportConfig: AutoexportConfig = {
-      ...saveOwnedSettings.autoexportConfig,
-    };
-    const hookServer = this.view.getHookServer();
-    if (hookServer?.onTriggerAutoexportHook) {
-      try {
-        autoexportConfig =
-          hookServer.onTriggerAutoexportHook({
-            excalidrawFile: sourceFile,
-            autoexportConfig,
-          }) ?? autoexportConfig;
-      } catch (error: unknown) {
-        errorlog({
-          where: "ViewExportManager.prepareAutoexportRequest",
-          fn: "onTriggerAutoexportHook",
-          error,
-        });
-      }
-    }
-
-    const outputs = new Map<string, PreparedAutoexportOutput>();
-    const addOutput = (
-      format: PreparedAutoexportOutput["format"],
-      theme: PreparedAutoexportOutput["theme"],
-      destinationExtension: string,
-      hookExtension: string = destinationExtension,
-    ) => {
-      let destinationPath = getIMGFilename(
-        preparedSave.filePath,
-        destinationExtension,
-      );
-      if (hookServer?.onImageExportPathHook) {
-        try {
-          destinationPath =
-            hookServer.onImageExportPathHook({
-              exportFilepath: destinationPath,
-              exportExtension: `.${hookExtension}`,
-              excalidrawFile: sourceFile,
-              action: "export",
-            }) ?? destinationPath;
-        } catch (error: unknown) {
-          errorlog({
-            where: "ViewExportManager.prepareAutoexportRequest",
-            fn: "onImageExportPathHook",
-            error,
-          });
-        }
-      }
-      destinationPath = normalizePath(destinationPath);
-      outputs.set(destinationPath, { format, theme, destinationPath });
-    };
-
-    if (autoexportConfig.excalidraw) {
-      addOutput("excalidraw", null, "excalidraw");
-    }
-    if (autoexportConfig.svg) {
-      if (autoexportConfig.theme === "both") {
-        addOutput("svg", "dark", "dark.svg");
-        addOutput("svg", "light", "light.svg");
-      } else {
-        addOutput(
-          "svg",
-          autoexportConfig.theme,
-          "svg",
-          `${autoexportConfig.theme}.svg`,
-        );
-      }
-    }
-    if (autoexportConfig.png) {
-      if (autoexportConfig.theme === "both") {
-        addOutput("png", "dark", "dark.png");
-        addOutput("png", "light", "light.png");
-      } else {
-        addOutput(
-          "png",
-          autoexportConfig.theme,
-          "png",
-          `${autoexportConfig.theme}.png`,
-        );
-      }
-    }
-    if (outputs.size === 0) {
-      return createBarrier();
-    }
     return {
-      ...requestIdentity,
-      kind: "render",
-      scene: preparedSave.scene,
-      exportOptions: saveOwnedSettings.exportOptions,
-      exportData: preparedSave.exportData,
-      outputs: Array.from(outputs.values()),
+      exportOptions: {
+        theme: settings.exportWithTheme ? sceneTheme : "light",
+        embedScene: settings.exportEmbedScene,
+        padding: settings.exportPaddingSVG,
+        scale: settings.pngExportScale,
+        withBackground: settings.exportWithBackground,
+        includeInternalLinks: true,
+        isMask: false,
+      },
     };
   }
 
@@ -444,11 +277,10 @@ export class ViewExportManager {
     );
   }
 
-  /** Saves SVG autoexports for the supplied or current scene. */
+  /** Saves an SVG export next to the drawing. */
   public async saveSVG(data: {
     scene?: ExcalidrawViewScene;
     embedScene?: boolean;
-    autoexportConfig?: AutoexportConfig;
   }): Promise<void | false> {
     if (!data) {
       data = {};
@@ -456,7 +288,7 @@ export class ViewExportManager {
     if (!this.view.file) {
       return;
     }
-    let { scene, embedScene, autoexportConfig } = data;
+    let { scene, embedScene } = data;
     if (!scene) {
       if (!this.view.excalidrawAPI) {
         return false;
@@ -484,25 +316,7 @@ export class ViewExportManager {
       );
     };
 
-    if (
-      autoexportConfig?.theme
-        ? autoexportConfig.theme === "both"
-        : this.view.plugin.settings.autoExportLightAndDark
-    ) {
-      await exportImage(
-        getIMGFilename(this.view.file.path, "dark.svg"),
-        "dark",
-      );
-      await exportImage(
-        getIMGFilename(this.view.file.path, "light.svg"),
-        "light",
-      );
-    } else {
-      await exportImage(
-        getIMGFilename(this.view.file.path, "svg"),
-        autoexportConfig?.theme,
-      );
-    }
+    await exportImage(getIMGFilename(this.view.file.path, "svg"));
   }
 
   /** Downloads an SVG export of the current or selected scene. */
@@ -628,11 +442,10 @@ export class ViewExportManager {
     );
   }
 
-  /** Saves PNG autoexports for the supplied or current scene. */
+  /** Saves a PNG export next to the drawing. */
   public async savePNG(data: {
     scene?: ExcalidrawViewScene;
     embedScene?: boolean;
-    autoexportConfig?: AutoexportConfig;
   }): Promise<void | false> {
     if (!data) {
       data = {};
@@ -640,7 +453,7 @@ export class ViewExportManager {
     if (!this.view.file) {
       return;
     }
-    let { scene, embedScene, autoexportConfig } = data;
+    let { scene, embedScene } = data;
     if (!scene) {
       if (!this.view.excalidrawAPI) {
         return false;
@@ -665,25 +478,7 @@ export class ViewExportManager {
       );
     };
 
-    if (
-      autoexportConfig?.theme
-        ? autoexportConfig.theme === "both"
-        : this.view.plugin.settings.autoExportLightAndDark
-    ) {
-      await exportImage(
-        getIMGFilename(this.view.file.path, "dark.png"),
-        "dark",
-      );
-      await exportImage(
-        getIMGFilename(this.view.file.path, "light.png"),
-        "light",
-      );
-    } else {
-      await exportImage(
-        getIMGFilename(this.view.file.path, "png"),
-        autoexportConfig?.theme,
-      );
-    }
+    await exportImage(getIMGFilename(this.view.file.path, "png"));
   }
 
   /** Copies a PNG export of the current or selected scene to the clipboard. */

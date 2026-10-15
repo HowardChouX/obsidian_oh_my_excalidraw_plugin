@@ -47,7 +47,6 @@ import {
 } from "src/utils/modifierkeyHelper";
 import { EDITOR_FADEOUT } from "src/core/editor/EditorHandler";
 import {
-  TAG_AUTOEXPORT,
   TAG_MDREADINGMODE,
   TAG_PDFEXPORT,
 } from "src/constants/constSettingsTags";
@@ -1034,15 +1033,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
           buildDefinitions: () => [this.createPdfExportSettingsDefinition()],
           renderLegacy: (container) =>
             this.renderPdfExportSettings(container),
-        },
-        {
-          name: t("EXPORT_HEAD"),
-          description: t("EXPORT_AUTOEXPORT_DESC"),
-          legacyId: TAG_AUTOEXPORT,
-          buildDefinitions: () =>
-            this.getAutoExportDefinitions(renderState),
-          renderLegacy: (container) =>
-            this.renderAutoExportSettings(container, renderState),
         },
       ],
     };
@@ -3180,11 +3170,7 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
   private isEmbedTypeAvailable(
     embedType: "excalidraw" | "PNG" | "SVG",
   ): boolean {
-    return (
-      embedType === "excalidraw" ||
-      (embedType === "PNG" && this.plugin.settings.autoexportPNG) ||
-      (embedType === "SVG" && this.plugin.settings.autoexportSVG)
-    );
+    return embedType === "excalidraw";
   }
 
   private normalizeEmbedType(): void {
@@ -3219,12 +3205,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
       .addDropdown((dropdown) => {
         renderState.embedTypeDropdown = dropdown;
         dropdown.addOption("excalidraw", "Excalidraw");
-        if (this.plugin.settings.autoexportPNG) {
-          dropdown.addOption("PNG", "PNG");
-        }
-        if (this.plugin.settings.autoexportSVG) {
-          dropdown.addOption("SVG", "SVG");
-        }
         dropdown
           .setValue(this.plugin.settings.embedType)
           .onChange((value) => {
@@ -3293,12 +3273,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
         8,
       ),
       this.createEmbedTypeDefinition(renderState),
-      this.createRelatedSettingsPageDefinition({
-        key: "inserted file type to auto-export",
-        name: t("EXPORT_HEAD"),
-        description: t("SETTINGS_RELATED_AUTOEXPORT_DESC"),
-        targetTag: TAG_AUTOEXPORT,
-      }),
       this.createEmbedCommentDefinition(renderState),
       ...this.toDeclarativeDefinitions(specs.slice(1)),
     ];
@@ -3560,140 +3534,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
       controlType: "PDF export settings",
       render: (container) => this.renderPdfExportSettings(container),
     });
-  }
-
-  private updateEmbedTypeOption(
-    embedType: "PNG" | "SVG",
-    enabled: boolean,
-    renderState: SettingsRenderState,
-  ): void {
-    const dropdown = renderState.embedTypeDropdown;
-    if (!dropdown?.selectEl.isConnected) {
-      return;
-    }
-    const option = Array.from(dropdown.selectEl.options).find(
-      (candidate) => candidate.value === embedType,
-    );
-    if (enabled && !option) {
-      dropdown.addOption(embedType, embedType);
-    } else if (!enabled && option) {
-      option.remove();
-    }
-    dropdown.setValue(this.plugin.settings.embedType);
-  }
-
-  private setAutoExportEnabled(
-    embedType: "PNG" | "SVG",
-    enabled: boolean,
-    renderState: SettingsRenderState,
-  ): void {
-    if (embedType === "PNG") {
-      this.plugin.settings.autoexportPNG = enabled;
-    } else {
-      this.plugin.settings.autoexportSVG = enabled;
-    }
-    if (!enabled && this.plugin.settings.embedType === embedType) {
-      this.plugin.settings.embedType = "excalidraw";
-    }
-    this.updateEmbedTypeOption(embedType, enabled, renderState);
-    this.updateEmbedCommentVisibility(renderState);
-    this.refreshDeclarativeDomState();
-    this.applySettingsUpdate();
-  }
-
-  private configureAutoExportSetting(
-    setting: Setting,
-    embedType: "PNG" | "SVG",
-    renderState: SettingsRenderState,
-  ): void {
-    const isPng = embedType === "PNG";
-    setting
-      .setName(t(isPng ? "EXPORT_PNG_NAME" : "EXPORT_SVG_NAME"))
-      .setDesc(fragWithHTML(t(isPng ? "EXPORT_PNG_DESC" : "EXPORT_SVG_DESC")))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(
-            isPng
-              ? this.plugin.settings.autoexportPNG
-              : this.plugin.settings.autoexportSVG,
-          )
-          .onChange((value) =>
-            this.setAutoExportEnabled(embedType, value, renderState),
-          ),
-      );
-  }
-
-  private createAutoExportDefinition(
-    embedType: "PNG" | "SVG",
-    renderState: SettingsRenderState,
-  ): SettingDefinition<SettingBindingKey> {
-    const isPng = embedType === "PNG";
-    return this.createCustomSettingDefinition({
-      name: t(isPng ? "EXPORT_PNG_NAME" : "EXPORT_SVG_NAME"),
-      desc: fragWithHTML(t(isPng ? "EXPORT_PNG_DESC" : "EXPORT_SVG_DESC")),
-      aliases: [
-        `auto-export ${embedType}`,
-        `automatic ${embedType}`,
-        `export ${embedType} copy`,
-      ],
-      controlType: "toggle",
-      configure: (setting) =>
-        this.configureAutoExportSetting(setting, embedType, renderState),
-    });
-  }
-
-  private getAutoExportDefinitions(
-    renderState: SettingsRenderState,
-  ): SettingDefinitionItem<SettingBindingKey>[] {
-    const specs = this.getAutoExportSpecs();
-    return [
-      this.createRelatedSettingsPageDefinition({
-        key: "auto-export to inserted file type",
-        name: t("EMBED_TYPE_NAME"),
-        description: t("SETTINGS_RELATED_EMBED_TYPE_DESC"),
-        targetTag: NAVIGATION_TAG_EMBED_PREVIEW,
-      }),
-      this.declarativeSettingsAdapter.toDefinition(specs[0]),
-      this.createAutoExportDefinition("SVG", renderState),
-      this.createAutoExportDefinition("PNG", renderState),
-      this.declarativeSettingsAdapter.toDefinition(specs[1]),
-    ];
-  }
-
-  private getAutoExportSpecs(): SettingSpec[] {
-    return [
-      {
-        name: t("EXPORT_SYNC_NAME"),
-        desc: fragWithHTML(t("EXPORT_SYNC_DESC")),
-        aliases: ["keep exported images in sync", "rename exported images"],
-        control: { type: "toggle", key: "keepInSync" },
-      },
-      {
-        name: t("EXPORT_BOTH_DARK_AND_LIGHT_NAME"),
-        desc: fragWithHTML(t("EXPORT_BOTH_DARK_AND_LIGHT_DESC")),
-        aliases: ["light and dark export", "both themes"],
-        control: { type: "toggle", key: "autoExportLightAndDark" },
-      },
-    ];
-  }
-
-  private renderAutoExportSettings(
-    container: HTMLElement,
-    renderState: SettingsRenderState,
-  ): void {
-    const specs = this.getAutoExportSpecs();
-    this.buildSetting(container, specs[0]);
-    this.configureAutoExportSetting(
-      new Setting(container),
-      "SVG",
-      renderState,
-    );
-    this.configureAutoExportSetting(
-      new Setting(container),
-      "PNG",
-      renderState,
-    );
-    this.buildSetting(container, specs[1]);
   }
 
   private getPdfImportSpecs(): SettingSpec[] {
@@ -4731,12 +4571,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
           key: "compatibilityMode",
           after: () => this.refreshFilenameSample(renderState),
         },
-      },
-      {
-        name: t("EXPORT_EXCALIDRAW_NAME"),
-        desc: fragWithHTML(t("EXPORT_EXCALIDRAW_DESC")),
-        aliases: ["export excalidraw file", "excalidraw.com compatibility"],
-        control: { type: "toggle", key: "autoexportExcalidraw" },
       },
       {
         name: t("SYNC_EXCALIDRAW_NAME"),

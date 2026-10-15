@@ -229,7 +229,6 @@ import { PackageLease, Packages } from "../types/types";
 import React from "react";
 import { IS_WORKER_SUPPORTED } from "../shared/Workers/compression-worker";
 import {
-  AutoexportConfig,
   EmbeddableLeafRef,
   ExcalidrawEphemeralState,
   ExcalidrawLinkOpenEvent,
@@ -263,7 +262,6 @@ import {
 } from "./managers/ViewSceneFileManager";
 import {
   type SaveExecutionResult,
-  type SaveSideEffectPolicy,
   ViewSaveCoordinator,
   WINDOW_BLUR_FORCE_SAVE_POLICY,
 } from "./managers/ViewSaveCoordinator";
@@ -602,14 +600,12 @@ export default class ExcalidrawView
         suppressReloadFromOwnWrite,
         forcePersistence,
         bypassSameFileEditGuard,
-        sideEffectPolicy,
       ) =>
         this.executeSaveRequest(
           operation,
           suppressReloadFromOwnWrite,
           forcePersistence,
           bypassSameFileEditGuard,
-          sideEffectPolicy,
         ),
       requestSave: (
         suppressReloadFromOwnWrite,
@@ -634,12 +630,6 @@ export default class ExcalidrawView
       getFreedrawLastActiveTimestamp: () => this.freedrawLastActiveTimestamp,
       markDirtyVisuals: () => this.markDirtyVisuals(),
       clearDirtyVisuals: () => this.clearDirtyVisuals(),
-      beginAutoexportSaveActivity: () => {
-        const file = this.file;
-        return file
-          ? this.plugin.beginAutoexportSaveActivity(file.path, file.stat.ctime)
-          : () => undefined;
-      },
     });
     this.exportManager = new ViewExportManager(this, {
       getOrCreateExportDialog: () => this.getOrCreateExportDialog(),
@@ -880,11 +870,10 @@ export default class ExcalidrawView
     return this.exportManager.svg(scene, theme, embedScene, embedFont);
   }
 
-  /** Saves SVG autoexports through the view-scoped export manager. */
+  /** Saves an SVG export through the view-scoped export manager. */
   public async saveSVG(data: {
     scene?: ExcalidrawViewScene;
     embedScene?: boolean;
-    autoexportConfig?: AutoexportConfig;
   }) {
     return this.exportManager.saveSVG(data);
   }
@@ -923,11 +912,10 @@ export default class ExcalidrawView
     return this.exportManager.png(scene, theme, embedScene);
   }
 
-  /** Saves PNG autoexports through the view-scoped export manager. */
+  /** Saves a PNG export through the view-scoped export manager. */
   public async savePNG(data: {
     scene?: ExcalidrawViewScene;
     embedScene?: boolean;
-    autoexportConfig?: AutoexportConfig;
   }) {
     return this.exportManager.savePNG(data);
   }
@@ -1044,7 +1032,6 @@ export default class ExcalidrawView
     suppressReloadFromOwnWrite: boolean,
     forcePersistence: boolean,
     bypassSameFileEditGuard: boolean,
-    sideEffectPolicy: Readonly<SaveSideEffectPolicy>,
   ): Promise<SaveExecutionResult> {
     /*if(this.semaphores.viewunload && (this.ownerWindow !== window)) {
       return;
@@ -1094,16 +1081,8 @@ export default class ExcalidrawView
           : this.excalidrawAPI
               .getSceneElementsIncludingDeleted()
               .filter((element: ExcalidrawElement) => element.isDeleted);
-        const { exportOptions, autoexportConfig } =
-          this.exportManager.capturePreparedSaveAutoexportSettings(
-            sourceScene,
-            this.data,
-          );
-        const shouldCaptureAutoexportData =
-          sideEffectPolicy.triggerAutoexport &&
-          (autoexportConfig.svg ||
-            autoexportConfig.png ||
-            Boolean(this.getHookServer()?.onTriggerAutoexportHook));
+        const { exportOptions } =
+          this.exportManager.capturePreparedSaveExportSettings(sourceScene);
         const saveSnapshot = createSaveSnapshot({
           operation,
           filePath: this.file.path,
@@ -1117,10 +1096,7 @@ export default class ExcalidrawView
             windowMigrationSaveSnapshot?.selectedElementIds ??
             appStateSnapshot.selectedElementIds,
           exportOptions,
-          exportData: shouldCaptureAutoexportData
-            ? this.excalidrawData.exportPreparedSaveData()
-            : null,
-          autoexportConfig,
+          exportData: null,
         });
         const scene = saveSnapshot.scene;
         const deletedElements = saveSnapshot.deletedElements;
@@ -1155,26 +1131,6 @@ export default class ExcalidrawView
         );
         preparedSave = createPreparedSave(saveSnapshot, this.getViewData());
         this.saveCoordinator.observePreparedSave(preparedSave);
-        const prepareAutoexportRequest = (includeOutputs: boolean) => {
-          try {
-            return this.exportManager.prepareAutoexportRequest(
-              preparedSave,
-              this.file,
-              includeOutputs && sideEffectPolicy.triggerAutoexport,
-            );
-          } catch (error: unknown) {
-            errorlog({
-              where: "ExcalidrawView.save",
-              fn: "prepareAutoexportRequest",
-              error,
-            });
-            return this.exportManager.prepareAutoexportRequest(
-              preparedSave,
-              this.file,
-              false,
-            );
-          }
-        };
 
         // Persist from the plugin's main-window realm before closing a runtime
         // whose container moved between windows. Calling TextFileView.save()
@@ -1186,7 +1142,6 @@ export default class ExcalidrawView
           const file = this.file;
           const sourceWindow = this.packageLease?.window;
           if (sourceWindow && sourceWindow !== window) {
-            const autoexportRequest = prepareAutoexportRequest(true);
             plugin.registerViewMigrationPersistenceHandoff({
               leafId: this.leaf.id,
               request: {
@@ -1201,7 +1156,6 @@ export default class ExcalidrawView
                 hasNonDeletedElements: preparedSave.hasNonDeletedElements,
                 reason: "window-migration",
                 migrationLeafId: this.leaf.id,
-                autoexportRequest,
               },
             });
             this.data = d;
@@ -1210,7 +1164,6 @@ export default class ExcalidrawView
               preparedSave,
             };
           }
-          const autoexportRequest = prepareAutoexportRequest(true);
           await this.withPersistenceWriteLease(
             preparedSave.filePath,
             async () => {
@@ -1229,12 +1182,6 @@ export default class ExcalidrawView
                   preparedSave.text,
                 );
               }
-              if (d) {
-                plugin.deferPreparedAutoexportUntilMigrationComplete(
-                  this.leaf.id,
-                  autoexportRequest,
-                );
-              }
             },
           );
           this.data = d;
@@ -1251,7 +1198,6 @@ export default class ExcalidrawView
             throw new Error("Cannot hand off an empty drawing payload");
           }
           const file = this.file;
-          const autoexportRequest = prepareAutoexportRequest(true);
           return await this.withPersistenceWriteLease(
             preparedSave.filePath,
             () => {
@@ -1266,7 +1212,6 @@ export default class ExcalidrawView
                 text: preparedSave.text,
                 hasNonDeletedElements: preparedSave.hasNonDeletedElements,
                 reason: "view-unload",
-                autoexportRequest,
               });
               return { status: "persistence-handed-off", preparedSave };
             },
@@ -1286,17 +1231,11 @@ export default class ExcalidrawView
                 this.lastSaveTimestamp === this.file.stat.mtime &&
                 !suppressReloadFromOwnWrite &&
                 forcePersistence;
-              const autoexportRequest = reloadIfWriteDidNotEmitModify
-                ? undefined
-                : prepareAutoexportRequest(true);
               if (preparedSave.hasNonDeletedElements) {
                 scheduleBAKAfterSuccessfulPersistence(
                   preparedSave.filePath,
                   preparedSave.text,
                 );
-              }
-              if (autoexportRequest) {
-                this.plugin.enqueuePreparedAutoexport(autoexportRequest);
               }
             },
           );
@@ -1892,7 +1831,6 @@ export default class ExcalidrawView
             await closeLeafView(l);
           } catch (error: unknown) {
             plugin.discardViewMigrationPersistenceHandoff(l.id);
-            plugin.completeMigrationAutoexport(l.id, f.path, false);
             this.setDirty();
             this.semaphores.windowMigrating = false;
             throw error;
@@ -2955,9 +2893,7 @@ export default class ExcalidrawView
     //It seems text file view gets the modified file event after sync before the modifyEventHandler in main.ts
     //reload can only be triggered via reload()
     let completionDelegatedToLayoutReady = false;
-    let completesWindowMigration = false;
     let migrationLoadSucceeded = false;
-    let migrationAutoexportFilePath: string | null = null;
     void (async () => {
       await plugin.awaitInit();
       if (!isCurrentLoad()) {
@@ -2986,11 +2922,6 @@ export default class ExcalidrawView
             this.leaf.id,
             targetFile.path,
           )
-        : null;
-      completesWindowMigration =
-        migrationHandoffToken !== null || migrationPersistenceHandoff !== null;
-      migrationAutoexportFilePath = completesWindowMigration
-        ? setViewDataFilePath
         : null;
       let migrationHandoffPersistenceFailed = false;
       if (migrationPersistenceHandoff !== null) {
@@ -3381,27 +3312,12 @@ export default class ExcalidrawView
       completionDelegatedToLayoutReady = true;
       this.app.workspace.onLayoutReady(() => {
         void loadAfterLayoutReady().finally(() => {
-          const loadWasCurrent = isCurrentLoad();
           this.completeSetViewDataLoad(setViewDataLoad);
-          if (completesWindowMigration) {
-            plugin.completeMigrationAutoexport(
-              this.leaf.id,
-              setViewDataFilePath,
-              loadWasCurrent && migrationLoadSucceeded,
-            );
-          }
         });
       });
     })().finally(() => {
       if (!completionDelegatedToLayoutReady) {
         this.completeSetViewDataLoad(setViewDataLoad);
-        if (migrationAutoexportFilePath !== null) {
-          plugin.completeMigrationAutoexport(
-            this.leaf.id,
-            migrationAutoexportFilePath,
-            false,
-          );
-        }
       }
     });
   }

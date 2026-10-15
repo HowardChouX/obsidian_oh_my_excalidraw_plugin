@@ -72,9 +72,6 @@ const sourceExportData = {
     ],
   ]),
   markdownImages: new Map([["markdown-1", { markdown: "save-owned" }]]),
-  equations: new Map([
-    ["equation-1", { latex: "x=1", isLoaded: true }],
-  ]),
   markdownImageRenderDefaults: {
     width: 500,
     paddingBottom: 10,
@@ -117,12 +114,6 @@ const snapshot = createSaveSnapshot({
     isMask: false,
   },
   exportData: sourceExportData,
-  autoexportConfig: {
-    svg: true,
-    png: true,
-    excalidraw: true,
-    theme: "both",
-  },
 });
 
 sourceElement.points[0][0] = 100;
@@ -132,7 +123,6 @@ sourceDeletedElement.customData.nested.value = 3;
 sourceScene.appState.selectedElementIds["element-1"] = false;
 sourceScene.files["file-1"].lastRetrieved = 2;
 sourceExportData.markdownImages.get("markdown-1").markdown = "live change";
-sourceExportData.equations.get("equation-1").latex = "x=2";
 sourceExportData.files.get("file-1").linkParts.original = "Changed.png";
 sourceExportData.files.get("file-1").colorMap["#000000"] = "#ff0000";
 sourceExportData.markdownImageRenderDefaults.border.color = "Red";
@@ -151,10 +141,6 @@ assert.equal("shape" in snapshot.scene.elements[0], false);
 assert.equal(
   snapshot.exportData.markdownImages.get("markdown-1").markdown,
   "save-owned",
-);
-assert.equal(
-  snapshot.exportData.equations.get("equation-1").latex,
-  "x=1",
 );
 assert.equal(
   snapshot.exportData.files.get("file-1").linkParts.original,
@@ -201,19 +187,9 @@ assert.deepEqual(prepared.exportOptions, {
   includeInternalLinks: true,
   isMask: false,
 });
-assert.deepEqual(prepared.autoexportConfig, {
-  svg: true,
-  png: true,
-  excalidraw: true,
-  theme: "both",
-});
 assert.equal(
   prepared.exportData.markdownImages.get("markdown-1").markdown,
   "save-owned",
-);
-assert.equal(
-  prepared.exportData.equations.get("equation-1").latex,
-  "x=1",
 );
 
 snapshot.scene.elements[0].customData.nested.value = 8;
@@ -223,8 +199,6 @@ snapshot.selectedElementIds["element-1"] = false;
 snapshot.exportOptions.padding = 99;
 snapshot.exportData.markdownImages.get("markdown-1").markdown =
   "snapshot change";
-snapshot.exportData.equations.get("equation-1").latex = "x=3";
-snapshot.autoexportConfig.svg = false;
 snapshot.exportData.files.get("file-1").linkParts.original = "Snapshot.png";
 snapshot.exportData.markdownImageRenderDefaults.transclusion.border.color =
   "Blue";
@@ -237,11 +211,6 @@ assert.equal(
   prepared.exportData.markdownImages.get("markdown-1").markdown,
   "save-owned",
 );
-assert.equal(
-  prepared.exportData.equations.get("equation-1").latex,
-  "x=1",
-);
-assert.equal(prepared.autoexportConfig.svg, true);
 assert.equal(
   prepared.exportData.files.get("file-1").linkParts.original,
   "Image.png",

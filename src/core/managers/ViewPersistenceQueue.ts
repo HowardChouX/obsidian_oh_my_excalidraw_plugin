@@ -1,5 +1,4 @@
 import type { TFile } from "obsidian";
-import type { PreparedAutoexportRequest } from "./AutoexportCoordinator";
 
 const DEFAULT_HANDOFF_TTL_MS = 15_000;
 
@@ -17,9 +16,8 @@ export interface ViewPersistenceRequest {
   readonly text: string;
   readonly hasNonDeletedElements: boolean;
   readonly reason: ViewPersistenceReason;
-  /** Required by window migration so autoexport waits for its replacement. */
+  /** Required by window migration so the replacement view adopts the write. */
   readonly migrationLeafId?: string;
-  readonly autoexportRequest?: PreparedAutoexportRequest;
 }
 
 export type ViewPersistenceResult =

@@ -133,11 +133,6 @@ export interface ExcalidrawSettings {
   exportWithBackground: boolean;
   exportPaddingSVG: number;
   exportEmbedScene: boolean;
-  keepInSync: boolean;
-  autoexportSVG: boolean;
-  autoexportPNG: boolean;
-  autoExportLightAndDark: boolean;
-  autoexportExcalidraw: boolean;
   embedType: "excalidraw" | "PNG" | "SVG";
   embedMarkdownCommentLinks: boolean;
   embedWikiLink: boolean;
@@ -331,11 +326,6 @@ export const DEFAULT_SETTINGS: ExcalidrawSettings = {
   exportWithBackground: true,
   exportPaddingSVG: 10, //since 1.6.17, not only SVG but also PNG
   exportEmbedScene: false,
-  keepInSync: false,
-  autoexportSVG: false,
-  autoexportPNG: false,
-  autoExportLightAndDark: false,
-  autoexportExcalidraw: false,
   embedType: "excalidraw",
   embedMarkdownCommentLinks: true,
   embedWikiLink: true,

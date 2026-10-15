@@ -170,14 +170,6 @@ type MarkdownBlockCacheEntry = {
   display: string;
 };
 
-export enum AutoexportPreference {
-  none,
-  both,
-  png,
-  svg,
-  inherit,
-}
-
 export const REGEX_TAGS = {
   // #[\p{Letter}\p{Emoji_Presentation}\p{Number}\/_-]+
   //   1
@@ -275,7 +267,6 @@ export interface ExcalidrawDataMigrationState {
   linkPrefix: string;
   embeddableTheme: "light" | "dark" | "auto" | "default";
   urlPrefix: string;
-  autoexportPreference: AutoexportPreference;
   textMode: TextMode;
   loaded: boolean;
   elementLinks: ReadonlyMap<string, string>;
@@ -297,8 +288,6 @@ export class ExcalidrawData {
   private linkPrefix: string;
   public embeddableTheme: "light" | "dark" | "auto" | "default" = "auto";
   private urlPrefix: string;
-  public autoexportPreference: AutoexportPreference =
-    AutoexportPreference.inherit;
   private textMode: TextMode = TextMode.raw;
   public loaded: boolean = false;
   public elementLinks: Map<string, string> = null;
@@ -330,7 +319,6 @@ export class ExcalidrawData {
     this.linkPrefix = null;
     this.embeddableTheme = null;
     this.urlPrefix = null;
-    this.autoexportPreference = null;
     this.textMode = null;
     this.loaded = false;
     this.elementLinks = null;
@@ -419,7 +407,6 @@ export class ExcalidrawData {
       linkPrefix: this.linkPrefix,
       embeddableTheme: this.embeddableTheme,
       urlPrefix: this.urlPrefix,
-      autoexportPreference: this.autoexportPreference,
       textMode: this.textMode,
       loaded: this.loaded,
       elementLinks: new Map(this.elementLinks),
@@ -459,7 +446,6 @@ export class ExcalidrawData {
     this.linkPrefix = state.linkPrefix;
     this.embeddableTheme = state.embeddableTheme;
     this.urlPrefix = state.urlPrefix;
-    this.autoexportPreference = state.autoexportPreference;
     this.textMode = state.textMode;
     this.loaded = state.loaded;
     this.elementLinks = new Map(state.elementLinks);
@@ -765,7 +751,6 @@ export class ExcalidrawData {
     this.setShowLinkBrackets();
     this.setLinkPrefix();
     this.setUrlPrefix();
-    this.setAutoexportPreferences();
     this.setembeddableThemePreference();
 
     this.scene = parsedScene;
@@ -2127,37 +2112,6 @@ export class ExcalidrawData {
       this.urlPrefix = this.plugin.settings.urlPrefix;
     }
     return urlPrefix !== this.urlPrefix;
-  }
-
-  private setAutoexportPreferences() {
-    const fileCache = this.app.metadataCache.getFileCache(this.file);
-    if (
-      fileCache?.frontmatter &&
-      fileCache.frontmatter[FRONTMATTER_KEYS.autoexport.name] !== null &&
-      typeof fileCache.frontmatter[FRONTMATTER_KEYS.autoexport.name] !==
-        "undefined"
-    ) {
-      switch (
-        fileCache.frontmatter[FRONTMATTER_KEYS.autoexport.name].toLowerCase()
-      ) {
-        case "none":
-          this.autoexportPreference = AutoexportPreference.none;
-          break;
-        case "both":
-          this.autoexportPreference = AutoexportPreference.both;
-          break;
-        case "png":
-          this.autoexportPreference = AutoexportPreference.png;
-          break;
-        case "svg":
-          this.autoexportPreference = AutoexportPreference.svg;
-          break;
-        default:
-          this.autoexportPreference = AutoexportPreference.inherit;
-      }
-    } else {
-      this.autoexportPreference = AutoexportPreference.inherit;
-    }
   }
 
   private setembeddableThemePreference(): boolean {

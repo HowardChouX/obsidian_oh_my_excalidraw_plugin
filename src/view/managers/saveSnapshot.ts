@@ -5,10 +5,7 @@ import type {
 import type { ExcalidrawElement } from "@zsviczian/excalidraw/types/element/src/types";
 
 import type { ExcalidrawDataExportState } from "../../shared/ExcalidrawData";
-import type {
-  AutoexportConfig,
-  ExcalidrawViewScene,
-} from "../../types/excalidrawViewTypes";
+import type { ExcalidrawViewScene } from "../../types/excalidrawViewTypes";
 
 /** Coordinator identity for one physical save attempt. */
 export interface SaveOperationContext {
@@ -47,7 +44,6 @@ export interface SaveSnapshot<
   readonly selectedElementIds: AppState["selectedElementIds"];
   readonly exportOptions: PreparedSaveExportOptions;
   readonly exportData: PreparedSaveExportData | null;
-  readonly autoexportConfig: Readonly<AutoexportConfig>;
 }
 
 /** Lightweight exact-content identity retained after heavy save inputs release. */
@@ -66,7 +62,6 @@ export interface PreparedSave extends PreparedSaveIdentity {
   readonly selectedElementIds: AppState["selectedElementIds"];
   readonly exportOptions: PreparedSaveExportOptions;
   readonly exportData: PreparedSaveExportData | null;
-  readonly autoexportConfig: Readonly<AutoexportConfig>;
 }
 
 const clonePlainValue = (value: unknown): unknown => {
@@ -171,7 +166,6 @@ export const createSaveSnapshot = <TScene extends ExcalidrawViewScene>(input: {
   selectedElementIds: AppState["selectedElementIds"];
   exportOptions: PreparedSaveExportOptions;
   exportData: PreparedSaveExportData | null;
-  autoexportConfig: Readonly<AutoexportConfig>;
 }): SaveSnapshot<TScene> => {
   const scene = cloneSceneForSave(input.scene);
   return {
@@ -188,7 +182,6 @@ export const createSaveSnapshot = <TScene extends ExcalidrawViewScene>(input: {
     selectedElementIds: { ...input.selectedElementIds },
     exportOptions: { ...input.exportOptions },
     exportData: clonePreparedSaveExportData(input.exportData),
-    autoexportConfig: { ...input.autoexportConfig },
   };
 };
 
@@ -217,7 +210,6 @@ export const createPreparedSave = (
     selectedElementIds: { ...snapshot.selectedElementIds },
     exportOptions: { ...snapshot.exportOptions },
     exportData: clonePreparedSaveExportData(snapshot.exportData),
-    autoexportConfig: { ...snapshot.autoexportConfig },
   };
 };
 
