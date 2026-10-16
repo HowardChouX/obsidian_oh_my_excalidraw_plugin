@@ -2496,14 +2496,16 @@ button.excalidraw-font-picker {
 
 /* -------------------------------------------------------------------------
    Tool settings popup (ToolSettingsPopup.ts): a small panel anchored under a
-   toolbar button, opened by clicking the already active tool again.
+   toolbar button, opened by clicking the already active pen again. Rows follow
+   the layout of the equivalent panels in oh-my-pdftion / oh-my-ink: a label on
+   the left, the control on the right.
    ------------------------------------------------------------------------- */
 .excalidraw .excalidraw-tool-settings-popup {
   position: absolute;
   display: flex;
   flex-direction: column;
-  min-width: 8rem;
-  padding: 4px;
+  gap: 4px;
+  padding: 8px;
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m);
   background-color: var(--background-primary);
@@ -2511,24 +2513,83 @@ button.excalidraw-font-picker {
   z-index: 9999;
 }
 
-.excalidraw .excalidraw-tool-settings-heading {
-  padding: 4px 8px 2px 8px;
+.excalidraw .excalidraw-tool-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.excalidraw .excalidraw-tool-settings-label {
+  flex: 0 0 4.5rem;
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
 }
 
-.excalidraw .excalidraw-tool-settings-item {
+.excalidraw .excalidraw-tool-settings-control {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  gap: 4px;
+}
+
+.excalidraw .excalidraw-tool-settings-swatches {
+  display: flex;
+  gap: 4px;
+}
+
+.excalidraw .excalidraw-tool-settings-swatch {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  box-shadow: none;
+  cursor: var(--cursor);
+}
+
+.excalidraw .excalidraw-tool-settings-swatch.is-selected {
+  border-color: var(--text-accent);
+  box-shadow: 0 0 0 1px var(--text-accent);
+}
+
+/* The native colour picker fills the last swatch, so clicking the swatch opens
+   the picker. It stays invisible; the swatch itself shows the colour. */
+.excalidraw .excalidraw-tool-settings-swatch--custom {
+  background:
+    linear-gradient(
+      135deg,
+      transparent 45%,
+      var(--text-muted) 45%,
+      var(--text-muted) 55%,
+      transparent 55%
+    ),
+    linear-gradient(
+      45deg,
+      transparent 45%,
+      var(--text-faint) 45%,
+      var(--text-faint) 55%,
+      transparent 55%
+    );
+}
+
+.excalidraw .excalidraw-tool-settings-color-input {
   width: 100%;
-  padding: 4px 8px;
+  height: 100%;
+  padding: 0;
   border: none;
+  opacity: 0;
+  cursor: var(--cursor);
+}
+
+.excalidraw .excalidraw-tool-settings-item {
+  padding: 3px 8px;
+  border: 1px solid transparent;
   border-radius: var(--radius-s);
   background-color: transparent;
   box-shadow: none;
   color: var(--text-normal);
   font-size: var(--font-ui-small);
-  text-align: left;
   cursor: var(--cursor);
 }
 
@@ -2537,6 +2598,7 @@ button.excalidraw-font-picker {
 }
 
 .excalidraw .excalidraw-tool-settings-item.is-selected {
+  border-color: var(--text-accent);
   color: var(--text-accent);
   font-weight: var(--font-semibold);
 }

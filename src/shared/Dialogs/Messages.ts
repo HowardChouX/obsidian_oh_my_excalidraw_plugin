@@ -22,8 +22,8 @@ I build this plugin as a labor of love. Curious about the philosophy behind it? 
 
 ## Toolbar
 - The toolbar keeps the four tools this fork needs: **hand**, **selection**, **pen** (freedraw), and **eraser**. The shape, arrow, line, text, image, sticky-note, and extra-tools (**...**) entries are removed.
-- Select the **pen** and click it again to open a stroke width panel under the button.
-- **Reset the canvas** is a toolbar button next to the other plugin buttons. It asks for confirmation, marks every element as deleted, and stays undoable.
+- Select the **pen** and click it again to open the pen panel under the button: stroke colour (Excalidraw's five top colours plus a custom picker), thickness, and pressure. Choices are stored with the drawing, so they are still in place when it is reopened.
+- **Clear canvas (undoable)** is the last button of the toolbar. It empties the drawing in one step that a single undo brings back, and it is disabled while the drawing is empty.
 - The eraser size is a fixed size inside the Excalidraw component and cannot be changed by the plugin.
 `,
 "2.29.1": `

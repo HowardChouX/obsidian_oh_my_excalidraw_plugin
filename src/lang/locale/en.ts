@@ -1641,9 +1641,17 @@ export default {
   TOGGLE_FRAME_CLIPPING: "Toggle frame clipping",
   OPEN_LINK_CLICK: "Open Link",
   OPEN_LINK_PROPS: "Open the image-link or LaTeX-formula editor",
-  RESET_CANVAS_BUTTON: "Reset the canvas",
-  RESET_CANVAS_CONFIRMATION:
-    "Remove all elements from this drawing? The drawing stays in your vault as an empty canvas.",
+
+  //ToolbarResetButton.ts
+  RESET_CANVAS_BUTTON: "Clear canvas (undoable)",
+
+  //ToolSettingsPopup.ts
+  PEN_POPUP_COLOR: "Color",
+  PEN_POPUP_COLOR_CUSTOM: "Custom color",
+  PEN_POPUP_THICKNESS: "Thickness",
+  PEN_POPUP_PRESSURE: "Pressure",
+  PEN_POPUP_PRESSURE_CONSTANT: "Constant",
+  PEN_POPUP_PRESSURE_VARIABLE: "Variable",
 
   //IFrameActionsMenu.tsx
   NARROW_TO_HEADING: "Narrow to heading...",

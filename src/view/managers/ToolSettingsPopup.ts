@@ -28,12 +28,29 @@ const TOOL_BUTTON_SELECTOR = "[data-testid^='toolbar-']";
 const TOOLBAR_SELECTOR = ".App-toolbar, .excalidraw-mobile-toolbar";
 
 const POPUP_CLASS = "excalidraw-tool-settings-popup";
-const HEADING_CLASS = "excalidraw-tool-settings-heading";
+const ROW_CLASS = "excalidraw-tool-settings-row";
+const LABEL_CLASS = "excalidraw-tool-settings-label";
+const CONTROL_CLASS = "excalidraw-tool-settings-control";
+const SWATCHES_CLASS = "excalidraw-tool-settings-swatches";
+const SWATCH_CLASS = "excalidraw-tool-settings-swatch";
+const CUSTOM_SWATCH_CLASS = "excalidraw-tool-settings-swatch--custom";
+const COLOR_INPUT_CLASS = "excalidraw-tool-settings-color-input";
 const ITEM_CLASS = "excalidraw-tool-settings-item";
-const SELECTED_ITEM_CLASS = "is-selected";
+const SELECTED_CLASS = "is-selected";
 
 /** Gap between the toolbar button and the popup, in pixels. */
 const ANCHOR_OFFSET = 6;
+
+/**
+ * Excalidraw's own top-picks stroke colours - the row its colour picker shows
+ * first. They are literal colours on purpose: the canvas applies the theme
+ * filter, so the same values read correctly in light and dark mode.
+ */
+const STROKE_COLORS = ["#1e1e1e", "#e03131", "#2f9e44", "#1971c2", "#fab005"];
+
+/** `<input type="color">` only accepts literal colours, so keep one for it. */
+const FALLBACK_CUSTOM_COLOR = "#e03131";
+const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
 /**
  * Minimum view surface required by {@link ToolSettingsPopup}.
@@ -48,16 +65,19 @@ export interface ToolSettingsPopupHost {
 }
 
 /**
- * The tool settings popup of the trimmed toolbar.
+ * The pen appearance popup of the trimmed toolbar: stroke colour, stroke
+ * width, and pressure.
  *
  * The Excalidraw component ignores a click on a tool button whose tool is
  * already active (and in compact mode opens its own tool-variant popover
  * instead), so that second click is consumed here and answered with a small
- * settings panel under the button - currently the freedraw stroke width.
+ * panel under the button.
  *
  * A plain DOM popup is used instead of a React component because the panel
  * must outlive toolbar re-renders and is owned by the view rather than by the
- * Excalidraw component tree.
+ * Excalidraw component tree. Controls are updated in place instead of the
+ * panel being re-rendered, so a control the user is interacting with (the
+ * native colour picker above all) is never rebuilt mid-interaction.
  */
 export class ToolSettingsPopup {
   private wrapperEl: HTMLElement | null = null;
@@ -162,54 +182,174 @@ export class ToolSettingsPopup {
     if (tool !== "freedraw") {
       return;
     }
-    popupEl.createDiv({
-      cls: HEADING_CLASS,
-      text: t("PEN_SETTINGS_STROKE_WIDTH"),
-    });
     const appState = this.host.excalidrawAPI?.getAppState();
+    this.renderColorRow(popupEl, appState);
+    this.renderStrokeWidthRow(popupEl, appState);
+    this.renderPressureRow(popupEl, appState);
+  }
+
+  /** A labeled row; returns the element controls should be added to. */
+  private renderRow(popupEl: HTMLDivElement, label: string): HTMLDivElement {
+    const rowEl = popupEl.createDiv({ cls: ROW_CLASS });
+    rowEl.createSpan({ cls: LABEL_CLASS, text: label });
+    return rowEl.createDiv({ cls: CONTROL_CLASS });
+  }
+
+  /** Highlights `activeEl` and clears the highlight from its siblings. */
+  private markSelected(activeEl: HTMLElement, family: Element[]): void {
+    for (const el of family) {
+      el.toggleClass(SELECTED_CLASS, el === activeEl);
+    }
+  }
+
+  private renderColorRow(
+    popupEl: HTMLDivElement,
+    appState: AppState | undefined,
+  ): void {
+    const controlsEl = this.renderRow(popupEl, t("PEN_POPUP_COLOR"));
+    const swatchesEl = controlsEl.createDiv({ cls: SWATCHES_CLASS });
+    const currentColor = (appState?.currentItemStrokeColor ?? "")
+      .trim()
+      .toLowerCase();
+
+    const swatchEls: HTMLElement[] = [];
+    for (const color of STROKE_COLORS) {
+      const swatchEl = swatchesEl.createEl("button", {
+        cls: SWATCH_CLASS,
+        attr: { type: "button", "aria-label": color, title: color },
+      });
+      setStyle(swatchEl, { backgroundColor: color });
+      if (color === currentColor) {
+        swatchEl.addClass(SELECTED_CLASS);
+      }
+      swatchEl.onClickEvent(() => {
+        this.markSelected(swatchEl, swatchEls);
+        this.applyStrokeColor(color);
+      });
+      swatchEls.push(swatchEl);
+    }
+
+    // Custom colour: the native picker input fills, and therefore opens, the
+    // last swatch, which then shows the colour in use.
+    const customEl = swatchesEl.createEl("label", {
+      cls: `${SWATCH_CLASS} ${CUSTOM_SWATCH_CLASS}`,
+      attr: { title: t("PEN_POPUP_COLOR_CUSTOM") },
+    });
+    if (!STROKE_COLORS.includes(currentColor)) {
+      customEl.addClass(SELECTED_CLASS);
+      if (HEX_COLOR_PATTERN.test(currentColor)) {
+        setStyle(customEl, { backgroundColor: currentColor });
+      }
+    }
+    const inputEl = customEl.createEl("input", {
+      cls: COLOR_INPUT_CLASS,
+      attr: {
+        type: "color",
+        value: HEX_COLOR_PATTERN.test(currentColor)
+          ? currentColor
+          : FALLBACK_CUSTOM_COLOR,
+        "aria-label": t("PEN_POPUP_COLOR_CUSTOM"),
+      },
+    });
+    swatchEls.push(customEl);
+    inputEl.addEventListener("input", () => {
+      setStyle(customEl, { backgroundColor: inputEl.value });
+      this.markSelected(customEl, swatchEls);
+      this.applyStrokeColor(inputEl.value);
+    });
+  }
+
+  private renderStrokeWidthRow(
+    popupEl: HTMLDivElement,
+    appState: AppState | undefined,
+  ): void {
+    const controlsEl = this.renderRow(popupEl, t("PEN_POPUP_THICKNESS"));
     // An explicit numeric width overrides the preset key, so only a preset
     // width marks a selected entry.
     const activeKey =
       appState && appState.currentItemStrokeWidth == null
         ? appState.currentItemStrokeWidthKey
         : null;
-    const strokeWidths: ReadonlyArray<readonly [StrokeWidthKey, string]> = [
+    const options: ReadonlyArray<readonly [StrokeWidthKey, string]> = [
       ["extraThin", t("PEN_SETTINGS_STROKE_PRESET_EXTRA_THIN")],
       ["thin", t("PEN_SETTINGS_STROKE_PRESET_THIN")],
       ["medium", t("PEN_SETTINGS_STROKE_PRESET_MEDIUM")],
       ["bold", t("PEN_SETTINGS_STROKE_PRESET_BOLD")],
       ["extraBold", t("PEN_SETTINGS_STROKE_PRESET_EXTRA_BOLD")],
     ];
-    for (const [key, label] of strokeWidths) {
-      const itemEl = popupEl.createEl("button", {
+    const itemEls: HTMLElement[] = [];
+    for (const [key, label] of options) {
+      const itemEl = controlsEl.createEl("button", {
         cls: ITEM_CLASS,
         text: label,
-        attr: { type: "button", "aria-pressed": String(key === activeKey) },
+        attr: { type: "button", title: label },
       });
       if (key === activeKey) {
-        itemEl.addClass(SELECTED_ITEM_CLASS);
+        itemEl.addClass(SELECTED_CLASS);
       }
       itemEl.onClickEvent(() => {
+        this.markSelected(itemEl, itemEls);
         this.applyStrokeWidth(key);
-        this.close();
       });
+      itemEls.push(itemEl);
     }
   }
 
-  private applyStrokeWidth(key: StrokeWidthKey): void {
-    const api = this.host.excalidrawAPI;
-    if (!api) {
-      return;
+  private renderPressureRow(
+    popupEl: HTMLDivElement,
+    appState: AppState | undefined,
+  ): void {
+    const controlsEl = this.renderRow(popupEl, t("PEN_POPUP_PRESSURE"));
+    const options: ReadonlyArray<
+      readonly [AppState["currentItemStrokeVariability"], string]
+    > = [
+      ["constant", t("PEN_POPUP_PRESSURE_CONSTANT")],
+      ["variable", t("PEN_POPUP_PRESSURE_VARIABLE")],
+    ];
+    const itemEls: HTMLElement[] = [];
+    for (const [value, label] of options) {
+      const itemEl = controlsEl.createEl("button", {
+        cls: ITEM_CLASS,
+        text: label,
+        attr: { type: "button", title: label },
+      });
+      if (appState?.currentItemStrokeVariability === value) {
+        itemEl.addClass(SELECTED_CLASS);
+      }
+      itemEl.onClickEvent(() => {
+        this.markSelected(itemEl, itemEls);
+        this.applyPressure(value);
+      });
+      itemEls.push(itemEl);
     }
-    api.updateScene({
-      appState: {
-        // Mirrors the component's own stroke width panel: the explicit numeric
-        // width has to be cleared so that the preset key takes effect.
-        currentItemStrokeWidthKey: key,
-        currentItemStrokeWidth: null,
-      } as Pick<AppState, keyof AppState>,
+  }
+
+  private updateAppState(appState: Partial<AppState>): void {
+    this.host.excalidrawAPI?.updateScene({
+      appState: appState as Pick<AppState, keyof AppState>,
+      // Appearance choices are not drawing changes: they stay out of the undo
+      // stack, exactly like the component's own property panel.
       captureUpdate: CaptureUpdateAction.NEVER,
     });
+  }
+
+  private applyStrokeColor(color: string): void {
+    this.updateAppState({ currentItemStrokeColor: color });
+  }
+
+  private applyStrokeWidth(key: StrokeWidthKey): void {
+    // Mirrors the component's own stroke width panel: the explicit numeric
+    // width has to be cleared so that the preset key takes effect.
+    this.updateAppState({
+      currentItemStrokeWidthKey: key,
+      currentItemStrokeWidth: null,
+    });
+  }
+
+  private applyPressure(
+    variability: AppState["currentItemStrokeVariability"],
+  ): void {
+    this.updateAppState({ currentItemStrokeVariability: variability });
   }
 
   private positionPopup(popupEl: HTMLDivElement, buttonEl: HTMLElement): void {

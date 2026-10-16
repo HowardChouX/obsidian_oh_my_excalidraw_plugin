@@ -1,7 +1,6 @@
 import { getIcon } from "obsidian";
 import { t } from "src/lang/helpers";
 import { clearCanvas } from "src/utils/excalidrawSceneUtils";
-import { MultiOptionConfirmationPrompt } from "src/shared/Dialogs/Prompt";
 import type ExcalidrawView from "../ExcalidrawView";
 
 /**
@@ -20,20 +19,23 @@ const ICON_WRAPPER_CLASS = "ToolIcon__icon";
 
 /**
  * Purpose:
- *   The "Reset the canvas" button of the trimmed toolbar.
+ *   The "Clear canvas (undoable)" button of the trimmed toolbar.
  *
  *   The Excalidraw component offers no hook for adding a button to its toolbar,
  *   so the button is appended to the toolbar row as a plain DOM node and
  *   re-appended whenever the component re-renders that row (see
  *   {@link scheduleSync}). It reuses the component's own `ToolIcon` classes, so
- *   it looks and hovers like the tool buttons around it.
+ *   it looks, hovers, and greys out like the tool buttons around it.
  *
- *   The button itself clears the drawing through `clearCanvas()` after a
- *   confirmation, which is the same behaviour the component's MainMenu item had.
+ *   Like the clear action of oh-my-pdftion and oh-my-ink, the button clears the
+ *   drawing directly: `clearCanvas()` records the change as one undoable step,
+ *   so no confirmation dialog is needed. The button is disabled while the
+ *   drawing has no elements, matching those plugins' disabled clear button.
  */
 export class ToolbarResetButton {
   private rowEl: HTMLElement | null = null;
   private buttonEl: HTMLButtonElement | null = null;
+  private iconEl: HTMLDivElement | null = null;
   private syncScheduled = false;
   private detached = false;
 
@@ -59,13 +61,13 @@ export class ToolbarResetButton {
 
   /**
    * Re-adds the button if the component re-rendered the toolbar row and
-   * dropped it.
+   * dropped it, and refreshes whether the action is currently available.
    *
-   * Called from the view's render hook, so the cheap connectedness check stays
-   * on the render path and the DOM work is deferred to a microtask.
+   * Called from the view's render hook, so only the cheap scheduling stays on
+   * the render path and the DOM work is deferred to a microtask.
    */
   public scheduleSync(): void {
-    if (this.detached || this.syncScheduled || this.isButtonConnected()) {
+    if (this.detached || this.syncScheduled) {
       return;
     }
     const container = this.view.excalidrawWrapperRef?.current;
@@ -81,28 +83,33 @@ export class ToolbarResetButton {
     });
   }
 
-  private isButtonConnected(): boolean {
-    return Boolean(this.buttonEl?.isConnected);
-  }
-
   private sync(container: HTMLElement): void {
     if (this.detached) {
       return;
     }
-    const rowEl = this.findToolbarRow(container);
+    const rowEl = this.rowEl?.isConnected
+      ? this.rowEl
+      : this.findToolbarRow(container);
     if (!rowEl) {
       // The toolbar is not in the DOM yet; the next render retries.
       this.buttonEl?.remove();
       this.buttonEl = null;
       this.rowEl = null;
+      this.iconEl = null;
       return;
     }
-    if (this.buttonEl && this.rowEl === rowEl && rowEl.contains(this.buttonEl)) {
+    if (
+      this.buttonEl &&
+      this.rowEl === rowEl &&
+      rowEl.contains(this.buttonEl)
+    ) {
+      this.refreshEnabledState();
       return;
     }
     this.buttonEl?.remove();
     this.rowEl = rowEl;
     this.buttonEl = this.createButton(rowEl);
+    this.refreshEnabledState();
   }
 
   private findToolbarRow(container: HTMLElement): HTMLElement | null {
@@ -116,43 +123,46 @@ export class ToolbarResetButton {
   }
 
   private createButton(rowEl: HTMLElement): HTMLButtonElement {
+    const label = t("RESET_CANVAS_BUTTON");
     const buttonEl = rowEl.createEl("button", {
       cls: BUTTON_CLASS,
-      attr: { type: "button", "aria-label": t("RESET_CANVAS_BUTTON") },
+      attr: { type: "button", "aria-label": label, title: label },
     });
     const iconEl = buttonEl.createDiv({ cls: ICON_WRAPPER_CLASS });
     const icon = getIcon("trash-2");
     if (icon) {
       iconEl.appendChild(icon);
     }
-    buttonEl.onClickEvent(() => void this.confirmAndReset());
+    this.iconEl = iconEl;
+    buttonEl.onClickEvent(() => this.clearCanvas());
     return buttonEl;
   }
 
   /**
-   * Empties the drawing after confirming, replacing the Excalidraw component's
-   * "Reset the canvas" menu item.
+   * Mirrors the component's disabled tool buttons: the action is unavailable
+   * while the drawing is empty, so the button cannot be clicked by accident.
    */
-  private async confirmAndReset(): Promise<void> {
-    const api = this.view.excalidrawAPI;
-    if (!api || api.getSceneElements().length === 0) {
+  private refreshEnabledState(): void {
+    if (!this.buttonEl) {
       return;
     }
-    const confirmationPrompt = new MultiOptionConfirmationPrompt(
-      this.view.plugin,
-      t("RESET_CANVAS_CONFIRMATION"),
-    );
-    const confirmed = await confirmationPrompt.waitForClose;
-    // The confirmation is modal: the view may have reloaded or migrated while
-    // it was open, and the captured API belongs to the drawing it started on.
-    if (
-      !confirmed ||
-      this.detached ||
-      this.view.isClosingOrMigrating() ||
-      this.view.excalidrawAPI !== api
-    ) {
+    const isEmpty =
+      (this.view.excalidrawAPI?.getSceneElements().length ?? 0) === 0;
+    this.buttonEl.disabled = isEmpty;
+    this.iconEl?.setAttribute("aria-disabled", String(isEmpty));
+  }
+
+  /**
+   * Empties the drawing, replacing the Excalidraw component's "Reset the
+   * canvas" menu item. `clearCanvas()` leaves the change on the undo stack, so
+   * a single undo brings the drawing back and the button needs no confirmation.
+   */
+  private clearCanvas(): void {
+    const api = this.view.excalidrawAPI;
+    if (!api || this.view.isClosingOrMigrating()) {
       return;
     }
     clearCanvas(api);
+    this.refreshEnabledState();
   }
 }
