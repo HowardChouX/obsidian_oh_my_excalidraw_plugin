@@ -18,7 +18,6 @@ import { EmbeddableMDCustomProps } from "src/shared/Dialogs/EmbeddableSettings";
 import { ModifierKeySet, ModifierSetType } from "src/utils/modifierkeyHelper";
 import { ANNOTATED_PREFIX, CROPPED_PREFIX } from "src/utils/carveout";
 import { Rank } from "src/constants/actionIcons";
-import { PDFExportSettings } from "src/shared/Dialogs/PDFExportSettingsComponent";
 import { UIMode } from "src/shared/Dialogs/UIModeSettingComponent";
 import { ScriptSettingValue } from "src/types/excalidrawAutomateTypes";
 import { URLs } from "src/constants/safeUrls";
@@ -216,7 +215,6 @@ export interface ExcalidrawSettings {
   rank: Rank;
   modifierKeyOverrides: { modifiers: Modifier[]; key: string }[];
   showSplashscreen: boolean;
-  pdfSettings: PDFExportSettings;
   disableContextMenu: boolean;
 }
 
@@ -704,14 +702,6 @@ export const DEFAULT_SETTINGS: ExcalidrawSettings = {
     { modifiers: ["Mod"], key: "G" },
   ],
   showSplashscreen: true,
-  pdfSettings: {
-    pageSize: "A4",
-    pageOrientation: "portrait",
-    fitToPage: 1,
-    paperColor: "white",
-    customPaperColor: "#ffffff",
-    alignment: "center",
-    margin: "normal",
-  },
+
   disableContextMenu: false,
 };

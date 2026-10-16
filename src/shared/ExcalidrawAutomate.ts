@@ -182,16 +182,11 @@ type MutableElementMapEntry = Mutable<ExcalidrawElement> &
   Record<string, unknown>;
 import { getLastActiveExcalidrawView } from "src/utils/excalidrawViewLookup";
 import {
-  exportToPDF,
-  getMarginValue,
-  getPageDimensions,
 } from "src/utils/exportUtils";
 import {
   PageDimensions,
   PageOrientation,
   PageSize,
-  PDFExportScale,
-  PDFPageProperties,
   ExportSettings,
 } from "src/types/exportUtilTypes";
 import { PaneTarget } from "src/types/utilTypes";
@@ -1348,81 +1343,6 @@ export class ExcalidrawAutomate {
       foldername,
       initData,
     );
-  }
-
-  /**
-   * Returns the dimensions of a standard page size in pixels.
-   *
-   * @param {PageSize} pageSize - The standard page size. Possible values are "A0", "A1", "A2", "A3", "A4", "A5", "Letter", "Legal", "Tabloid".
-   * @param {PageOrientation} orientation - The orientation of the page. Possible values are "portrait" and "landscape".
-   * @returns {PageDimensions} - An object containing the width and height of the page in pixels.
-   *
-   * @typedef {Object} PageDimensions
-   * @property {number} width - The width of the page in pixels.
-   * @property {number} height - The height of the page in pixels.
-   *
-   * @example
-   * const dimensions = getPageDimensions("A4", "portrait");
-   * console.log(dimensions); // { width: 794.56, height: 1122.56 }
-   */
-  getPagePDFDimensions(
-    pageSize: PageSize,
-    orientation: PageOrientation,
-  ): PageDimensions {
-    return getPageDimensions(pageSize, orientation);
-  }
-
-  /**
-   * Creates a PDF from the provided SVG elements with specified scaling and page properties.
-   *
-   * @param {Object} params - The parameters for creating the PDF.
-   * @param {SVGSVGElement[]} params.SVG - An array of SVG elements to be included in the PDF.
-   * @param {PDFExportScale} [params.scale={ fitToPage: 1, zoom: 1 }] - The scaling options for the SVG elements.
-   * @param {PDFPageProperties} [params.pageProps] - The properties for the PDF pages.
-   * @returns {Promise<ArrayBuffer>} - A promise that resolves to an ArrayBuffer containing the PDF data.
-   *
-   * @example
-   * const pdfData = await createToPDF({
-   *   SVG: [svgElement1, svgElement2],
-   *   scale: { fitToPage: 1 },
-   *   pageProps: {
-   *     dimensions: { width: 794.56, height: 1122.56 },
-   *     backgroundColor: "#ffffff",
-   *     margin: { left: 20, right: 20, top: 20, bottom: 20 },
-   *     alignment: "center",
-   *   }
-   *   filename: "example.pdf",
-   * });
-   */
-  async createPDF({
-    SVG,
-    scale = { fitToPage: 1, zoom: 1 },
-    pageProps,
-    filename,
-  }: {
-    SVG: SVGSVGElement[];
-    scale?: PDFExportScale;
-    pageProps?: PDFPageProperties;
-    filename: string;
-  }): Promise<void> {
-    if (!pageProps) {
-      pageProps = {
-        alignment: this.plugin.settings.pdfSettings.alignment,
-        margin: getMarginValue(this.plugin.settings.pdfSettings.margin),
-      };
-    }
-
-    if (!pageProps.dimensions) {
-      pageProps.dimensions = getPageDimensions(
-        this.plugin.settings.pdfSettings.pageSize,
-        this.plugin.settings.pdfSettings.pageOrientation,
-      );
-    }
-    if (!pageProps.backgroundColor) {
-      pageProps.backgroundColor = "#ffffff";
-    }
-
-    await exportToPDF({ SVG, scale, pageProps, filename });
   }
 
   private prepareViewImageExport(

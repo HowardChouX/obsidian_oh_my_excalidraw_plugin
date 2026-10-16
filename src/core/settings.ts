@@ -51,7 +51,6 @@ import {
 import { HotkeyEditor } from "src/shared/Dialogs/HotkeyEditor";
 import { getExcalidrawViews } from "src/utils/obsidianUtils";
 import { configureSliderWithText } from "src/utils/sliderUtils";
-import { PDFExportSettingsComponent } from "src/shared/Dialogs/PDFExportSettingsComponent";
 import { ContentSearcher } from "src/shared/components/ContentSearcher";
 import { URLs } from "src/constants/safeUrls";
 import { hideElement, setStyle, showElement } from "src/utils/styleUtils";
@@ -974,13 +973,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
             this.toDeclarativeDefinitions(this.getExportThemeSpecs()),
           renderLegacy: (container) =>
             this.renderSettingSpecs(container, this.getExportThemeSpecs()),
-        },
-        {
-          name: t("PDF_EXPORT_SETTINGS"),
-          description: t("PDF_EXPORT_SETTINGS_DESC"),
-          buildDefinitions: () => [this.createPdfExportSettingsDefinition()],
-          renderLegacy: (container) =>
-            this.renderPdfExportSettings(container),
         },
       ],
     };
@@ -3324,30 +3316,9 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
     ];
   }
 
-  private renderPdfExportSettings(container: HTMLElement): void {
-    new PDFExportSettingsComponent(
-      container,
-      this.plugin.settings.pdfSettings,
-      () => this.applySettingsUpdate(),
-    ).render();
-  }
 
-  private createPdfExportSettingsDefinition(): SettingDefinition<SettingBindingKey> {
-    return this.createRenderedDefinition({
-      name: t("PDF_EXPORT_DEFAULTS_CONTROL_NAME"),
-      desc: t("PDF_EXPORT_SETTINGS_DESC"),
-      aliases: [
-        t("EXPORTDIALOG_PAGE_SIZE"),
-        t("EXPORTDIALOG_PAGE_ORIENTATION"),
-        t("EXPORTDIALOG_PDF_FIT_TO_PAGE"),
-        t("EXPORTDIALOG_PDF_MARGIN"),
-        t("EXPORTDIALOG_PDF_PAPER_COLOR"),
-        t("EXPORTDIALOG_PDF_ALIGNMENT"),
-      ],
-      controlType: "PDF export settings",
-      render: (container) => this.renderPdfExportSettings(container),
-    });
-  }
+
+
 
   private getPdfImportSpecs(): SettingSpec[] {
     return [

@@ -29,9 +29,6 @@ import {
   exportPNG,
   exportPNGToClipboard,
   exportSVG,
-  exportToPDF,
-  getMarginValue,
-  getPageDimensions,
 } from "../../utils/exportUtils";
 import type ExcalidrawView from "../ExcalidrawView";
 import type { PreparedSave, PreparedSaveExportOptions } from "./saveSnapshot";
@@ -363,53 +360,7 @@ export class ViewExportManager {
     return svg;
   }
 
-  /** Downloads a PDF export of the current or selected scene. */
-  public async exportPDF(
-    selectedOnly?: boolean,
-    pageSize: PageSize = "A4",
-    orientation: PageOrientation = "portrait",
-  ): Promise<void> {
-    if (!this.view.excalidrawAPI || !this.view.file) {
-      return;
-    }
-
-    const scene = this.view.getScene(selectedOnly);
-    if (!scene) {
-      return;
-    }
-    if (!this.getViewExportIncludeInternalLinks()) {
-      scene.elements = this.dependencies.sceneRemoveInternalLinks(scene);
-    }
-
-    const svg = await this.svg(scene, undefined, false, true);
-    if (!svg) {
-      return;
-    }
-
-    const boundingBox = this.view.plugin.ea.getBoundingBox(scene.elements);
-    const margin = getMarginValue(this.view.exportDialog?.margin ?? "normal");
-    const [width, height] = [boundingBox.width, boundingBox.height];
-
-    await exportToPDF({
-      SVG: [svg],
-      scale: {
-        zoom: this.view.exportDialog?.scale ?? 1,
-        fitToPage:
-          pageSize === "MATCH IMAGE" || pageSize === "HD Screen"
-            ? 1
-            : (this.view.exportDialog?.fitToPage ?? 1),
-      },
-      pageProps: {
-        dimensions: getPageDimensions(pageSize, orientation, { width, height }),
-        backgroundColor: this.view.exportDialog?.getPaperColor() ?? "#FFFFFF",
-        margin,
-        alignment: this.view.exportDialog?.alignment ?? "center",
-      },
-      filename: `${this.view.file.basename}.pdf`,
-    });
-  }
-
-  /** Creates a PNG blob for the supplied scene using the view's export options. */
+/** Creates a PNG blob for the supplied scene using the view's export options. */
   public async png(
     scene: ExcalidrawViewScene,
     theme?: string,

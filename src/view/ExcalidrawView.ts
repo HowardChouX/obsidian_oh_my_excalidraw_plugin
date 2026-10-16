@@ -852,13 +852,7 @@ export default class ExcalidrawView
   }
 
   /** Downloads a PDF through the view-scoped export manager. */
-  public async exportPDF(
-    selectedOnly?: boolean,
-    pageSize: PageSize = "A4",
-    orientation: PageOrientation = "portrait",
-  ): Promise<void> {
-    return this.exportManager.exportPDF(selectedOnly, pageSize, orientation);
-  }
+
 
   /** Creates a PNG blob while retaining the established view signature. */
   public async png(
