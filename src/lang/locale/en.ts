@@ -828,6 +828,9 @@ export default {
   SHOW_PEN_MODE_FREEDRAW_CROSSHAIR_DESC:
     "Show crosshair in pen mode when using the freedraw tool. <b><u>Toggle ON:</u></b> SHOW <b><u>Toggle OFF:</u></b> HIDE<br>" +
     "The effect depends on the device. Crosshair is typically visible on drawing tablets, MS Surface, but not on iOS.",
+  ERASER_SIZE_NAME: "Eraser size",
+  ERASER_SIZE_DESC:
+    "How far the eraser reaches, in screen pixels. The Excalidraw eraser itself has a fixed reach, so a larger size lets the plugin erase anything the eraser path passes this close to - strokes erase when their line is reached, not when the pointer is inside an enclosed area. <b>5</b> keeps the eraser exactly as the component defines it. The same size can be set from the eraser tool panel in the toolbar.",
   SHOW_DRAWING_OR_MD_IN_HOVER_PREVIEW_NAME:
     "Render Excalidraw file as an image in hover preview...",
   SHOW_DRAWING_OR_MD_IN_HOVER_PREVIEW_DESC:
@@ -1652,6 +1655,7 @@ export default {
   PEN_POPUP_PRESSURE: "Pressure",
   PEN_POPUP_PRESSURE_CONSTANT: "Constant",
   PEN_POPUP_PRESSURE_VARIABLE: "Variable",
+  ERASER_POPUP_SIZE: "Size",
 
   //IFrameActionsMenu.tsx
   NARROW_TO_HEADING: "Narrow to heading...",

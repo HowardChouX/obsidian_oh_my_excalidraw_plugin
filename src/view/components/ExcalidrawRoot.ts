@@ -8,6 +8,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { DEVICE, obsidianToExcalidrawMap } from "../../constants/constants";
 import { t } from "../../lang/helpers";
 import type ExcalidrawView from "../ExcalidrawView";
+import { EraserSizeManager } from "../managers/EraserSizeManager";
 import { ToolSettingsPopup } from "../managers/ToolSettingsPopup";
 import { ToolbarResetButton } from "../managers/ToolbarResetButton";
 import { EmbeddableMenu } from "./menu/EmbeddableActionsMenu";
@@ -75,6 +76,9 @@ export function createExcalidrawRootElement(
     const toolbarResetButton = new ToolbarResetButton(view);
     toolbarResetButton.attach(excalidrawWrapperRef.current);
     view.toolbarResetButton = toolbarResetButton;
+    const eraserSizeManager = new EraserSizeManager(view);
+    eraserSizeManager.attach(excalidrawWrapperRef.current);
+    view.eraserSizeManager = eraserSizeManager;
     const appState = view.excalidrawAPI?.getAppState();
     if (appState) {
       view.selectedElementActionsMenu.update(
@@ -86,6 +90,8 @@ export function createExcalidrawRootElement(
       toolSettingsPopup.detach();
       toolbarResetButton.detach();
       view.toolbarResetButton = null;
+      eraserSizeManager.detach();
+      view.eraserSizeManager = null;
       view.obsidianMenu.destroy();
       view.obsidianMenu = null;
       view.embeddableMenu.destroy();

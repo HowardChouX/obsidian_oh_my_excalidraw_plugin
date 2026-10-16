@@ -2602,3 +2602,28 @@ button.excalidraw-font-picker {
   color: var(--text-accent);
   font-weight: var(--font-semibold);
 }
+
+.excalidraw .excalidraw-tool-settings-slider {
+  flex: 1 1 auto;
+  min-width: 6rem;
+}
+
+.excalidraw .excalidraw-tool-settings-value {
+  flex: 0 0 2.5rem;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  text-align: right;
+}
+
+/* Eraser size cursor (EraserSizeManager.ts): shows how far the eraser reaches
+   while the size is larger than the component's own eraser. */
+.excalidraw .excalidraw-eraser-size-cursor {
+  position: absolute;
+  border: 1px solid var(--text-muted);
+  border-radius: 50%;
+  background-color: var(--background-modifier-hover);
+  opacity: 0.6;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 9998;
+}

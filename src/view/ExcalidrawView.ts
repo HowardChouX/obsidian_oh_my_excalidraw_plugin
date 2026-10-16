@@ -148,6 +148,8 @@ import {
   generateIdFromFile,
 } from "../shared/EmbeddedFileLoader";
 import { ObsidianMenu } from "./components/menu/ObsidianMenu";
+import type { EraserSizeManager } from "./managers/EraserSizeManager";
+import { clampEraserSize } from "src/utils/eraserHitTest";
 import { ToolbarResetButton } from "./managers/ToolbarResetButton";
 import { ToolsPanel } from "./components/menu/ToolsPanel";
 import { SelectedElementActionsMenu } from "./components/menu/SelectedElementActionsMenu";
@@ -498,6 +500,7 @@ export default class ExcalidrawView
   public obsidianMenu: ObsidianMenu | null = null;
   public embeddableMenu: EmbeddableMenu | null = null;
   public toolbarResetButton: ToolbarResetButton | null = null;
+  public eraserSizeManager: EraserSizeManager | null = null;
   public selectedElementActionsMenu: SelectedElementActionsMenu | null = null;
   private destroyers: Array<() => void> = [];
   private previousContentElHeight: number = 0;
@@ -704,6 +707,28 @@ export default class ExcalidrawView
   /** Whether teardown has started for this view. */
   public isClosing(): boolean {
     return Boolean(this.semaphores?.viewunload);
+  }
+
+  /** Eraser size preference, in screen pixels (`EraserSizeManager`). */
+  public getEraserSize(): number {
+    return clampEraserSize(this.plugin.settings.eraserSizePx);
+  }
+
+  /**
+   * Updates the eraser size preference, clamped to the supported range.
+   *
+   * @param persist write the preference to disk; the tool popup passes `false`
+   * while its slider is dragged and persists once the value settles
+   */
+  public setEraserSize(sizePx: number, persist: boolean): void {
+    const clamped = clampEraserSize(sizePx);
+    if (this.plugin.settings.eraserSizePx === clamped) {
+      return;
+    }
+    this.plugin.settings.eraserSizePx = clamped;
+    if (persist) {
+      void this.plugin.saveSettings();
+    }
   }
 
   /** Whether this runtime must reject ordinary work during teardown or migration. */
@@ -6458,8 +6483,10 @@ export default class ExcalidrawView
 
   public renderTopRightUI(isMobile: boolean, appState: AppState) {
     // Called on every Excalidraw render, which is where the plugin re-asserts
-    // the reset button it appends to the component's toolbar row.
+    // the reset button it appends to the component's toolbar row and keeps the
+    // eraser size cursor in step with the active tool.
     this.toolbarResetButton?.scheduleSync();
+    this.eraserSizeManager?.refresh();
     if (!this.excalidrawAPI || !this.semaphores.viewloaded || !this.isLoaded) {
       return null;
     }

@@ -85,6 +85,8 @@ export interface ExcalidrawSettings {
   penModeDoubleTapEraser: boolean;
   penModeSingleFingerPanning: boolean;
   penModeCrosshairVisible: boolean;
+  /** Eraser reach in screen pixels; 5 keeps the component's own eraser. */
+  eraserSizePx: number;
   renderImageInMarkdownReadingMode: boolean;
   renderImageInHoverPreviewForMDNotes: boolean;
   renderImageInMarkdownToPDF: boolean;
@@ -267,6 +269,7 @@ export const DEFAULT_SETTINGS: ExcalidrawSettings = {
   penModeDoubleTapEraser: true,
   penModeSingleFingerPanning: true,
   penModeCrosshairVisible: true,
+  eraserSizePx: 5,
   renderImageInMarkdownReadingMode: false,
   renderImageInHoverPreviewForMDNotes: false,
   renderImageInMarkdownToPDF: false,

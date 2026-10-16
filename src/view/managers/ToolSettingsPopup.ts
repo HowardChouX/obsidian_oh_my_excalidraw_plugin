@@ -4,6 +4,12 @@ import type {
   ExcalidrawImperativeAPI,
 } from "@zsviczian/excalidraw/types/excalidraw/types";
 import { CaptureUpdateAction } from "src/constants/constants";
+import {
+  clampEraserSize,
+  ERASER_SIZE_MAX_PX,
+  ERASER_SIZE_MIN_PX,
+  ERASER_SIZE_STEP_PX,
+} from "src/utils/eraserHitTest";
 import { t } from "src/lang/helpers";
 import { setStyle } from "src/utils/styleUtils";
 import { isInstanceOfElement } from "src/utils/typechecks";
@@ -13,7 +19,7 @@ import { isInstanceOfElement } from "src/utils/typechecks";
  * while the tool is already active. Adding a tool here is all that is needed
  * to give it a popup, provided `renderToolContent()` knows its controls.
  */
-const TOOL_SETTINGS_TOOLS = ["freedraw"] as const;
+const TOOL_SETTINGS_TOOLS = ["freedraw", "eraser"] as const;
 
 type ToolSettingsTool = (typeof TOOL_SETTINGS_TOOLS)[number];
 
@@ -52,6 +58,9 @@ const STROKE_COLORS = ["#1e1e1e", "#e03131", "#2f9e44", "#1971c2", "#fab005"];
 const FALLBACK_CUSTOM_COLOR = "#e03131";
 const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
+const SLIDER_CLASS = "excalidraw-tool-settings-slider";
+const VALUE_CLASS = "excalidraw-tool-settings-value";
+
 /**
  * Minimum view surface required by {@link ToolSettingsPopup}.
  *
@@ -62,6 +71,15 @@ const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 export interface ToolSettingsPopupHost {
   readonly ownerDocument: Document;
   readonly excalidrawAPI: ExcalidrawImperativeAPI | null;
+  /** Current eraser size preference, in screen pixels. */
+  getEraserSize(): number;
+  /**
+   * Updates the eraser size preference, clamped to the supported range.
+   *
+   * `persist` writes it to disk; callers pass `false` while a slider is being
+   * dragged so the settings file is written once the value settles.
+   */
+  setEraserSize(sizePx: number, persist: boolean): void;
 }
 
 /**
@@ -179,6 +197,10 @@ export class ToolSettingsPopup {
     tool: ToolSettingsTool,
     popupEl: HTMLDivElement,
   ): void {
+    if (tool === "eraser") {
+      this.renderEraserSizeRow(popupEl);
+      return;
+    }
     if (tool !== "freedraw") {
       return;
     }
@@ -186,6 +208,41 @@ export class ToolSettingsPopup {
     this.renderColorRow(popupEl, appState);
     this.renderStrokeWidthRow(popupEl, appState);
     this.renderPressureRow(popupEl, appState);
+  }
+
+  /**
+   * The eraser size is the reach of the extra eraser pass (see
+   * `EraserSizeManager`): the component's own eraser has a fixed reach, so a
+   * larger size is what this value adds.
+   */
+  private renderEraserSizeRow(popupEl: HTMLDivElement): void {
+    const controlsEl = this.renderRow(popupEl, t("ERASER_POPUP_SIZE"));
+    const sizePx = this.host.getEraserSize();
+    const inputEl = controlsEl.createEl("input", {
+      cls: SLIDER_CLASS,
+      attr: {
+        type: "range",
+        min: String(ERASER_SIZE_MIN_PX),
+        max: String(ERASER_SIZE_MAX_PX),
+        step: String(ERASER_SIZE_STEP_PX),
+        value: String(sizePx),
+        "aria-label": t("ERASER_POPUP_SIZE"),
+      },
+    });
+    const valueEl = controlsEl.createSpan({
+      cls: VALUE_CLASS,
+      text: `${sizePx}px`,
+    });
+    // Live while dragging; the preference is written to disk once the value
+    // settles, so dragging does not hammer the settings file.
+    inputEl.addEventListener("input", () => {
+      const nextSize = clampEraserSize(inputEl.value);
+      valueEl.setText(`${nextSize}px`);
+      this.host.setEraserSize(nextSize, false);
+    });
+    inputEl.addEventListener("change", () => {
+      this.host.setEraserSize(clampEraserSize(inputEl.value), true);
+    });
   }
 
   /** A labeled row; returns the element controls should be added to. */

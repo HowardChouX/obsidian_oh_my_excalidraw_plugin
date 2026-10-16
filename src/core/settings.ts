@@ -31,6 +31,11 @@ import {
   setUIMode,
 } from "src/utils/utils";
 import { setElementHidden, setSanitizedHtml } from "src/utils/htmlUtils";
+import {
+  ERASER_SIZE_MAX_PX,
+  ERASER_SIZE_MIN_PX,
+  ERASER_SIZE_STEP_PX,
+} from "src/utils/eraserHitTest";
 import { getImageCache } from "src/shared/ImageCache";
 import { MultiOptionConfirmationPrompt } from "src/shared/Dialogs/Prompt";
 import { EmbeddalbeMDFileCustomDataSettingsComponent } from "src/shared/Dialogs/EmbeddableMDFileCustomDataSettingsComponent";
@@ -2149,6 +2154,18 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
         desc: fragWithHTML(t("SHOW_PEN_MODE_FREEDRAW_CROSSHAIR_DESC")),
         aliases: ["pen crosshair", "freedraw crosshair"],
         control: { type: "toggle", key: "penModeCrosshairVisible" },
+      },
+      {
+        name: t("ERASER_SIZE_NAME"),
+        desc: fragWithHTML(t("ERASER_SIZE_DESC")),
+        aliases: ["eraser size", "eraser thickness", "eraser reach"],
+        control: {
+          type: "slider",
+          key: "eraserSizePx",
+          min: ERASER_SIZE_MIN_PX,
+          max: ERASER_SIZE_MAX_PX,
+          step: ERASER_SIZE_STEP_PX,
+        },
       },
     ];
   }
