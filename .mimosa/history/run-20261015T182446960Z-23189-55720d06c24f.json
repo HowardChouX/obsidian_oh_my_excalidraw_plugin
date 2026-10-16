@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "mimosa-finding-history/v1",
+  "runId": "20261015T182446960Z-23189-55720d06c24f",
+  "runStatus": "inconclusive",
+  "errors": [
+    "candidate-select:src/core/managers/AutoexportCoordinator.ts: changed_file_unreadable: observed changed file no longer exists or cannot be read",
+    "candidate-select:src/core/cli/cliTarget.ts: changed_file_unreadable: observed changed file no longer exists or cannot be read",
+    "candidate-select:src/core/cli/cliApply.ts: changed_file_unreadable: observed changed file no longer exists or cannot be read",
+    "candidate-select:src/view/managers/ViewExportManager.ts: candidate_limit_exceeded: 19 changed reviewable file(s) were not scanned because the limit is 20"
+  ],
+  "target": ".",
+  "revision": "b1e74671f08409cbd20b2794a499d749c4744360",
+  "diffHash": "598804760fb236ed861858f668dc9b90fc421f35c74094a3507e6922a3ead1e2",
+  "rulesVersion": "unavailable",
+  "recordedAt": "2026-10-15T18:24:46.960Z",
+  "timing": {
+    "startedAt": "2026-10-15T18:24:45.400Z",
+    "completedAt": "2026-10-15T18:24:46.960Z",
+    "durationMs": 1560
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0,
+    "total": 0,
+    "modelCalls": 0,
+    "measurement": "known-zero"
+  },
+  "findings": {
+    "total": 0,
+    "bySeverity": {},
+    "byStatus": {}
+  },
+  "coverage": {
+    "status": "partial",
+    "reasonCounts": {
+      "changed_file_unreadable": 3,
+      "candidate_limit_exceeded": 1,
+      "project_check_failed": 4
+    }
+  },
+  "evidenceBoundary": "static_only",
+  "immutableReport": ".mimosa/reports/task-review-sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc-20261015T182446960Z-23189-55720d06c24f.json"
+}

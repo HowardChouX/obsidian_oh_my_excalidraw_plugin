@@ -1,43 +1,64 @@
 {
   "schema_version": "mimosa-task-review/v2",
-  "run_id": "20261015T153417111Z-90699-3401d207b8f9",
-  "run_status": "completed",
-  "errors": [],
+  "run_id": "20261015T182446960Z-23189-55720d06c24f",
+  "run_status": "inconclusive",
+  "errors": [
+    {
+      "stage": "candidate-select",
+      "target": "src/core/managers/AutoexportCoordinator.ts",
+      "reason": "changed_file_unreadable: observed changed file no longer exists or cannot be read"
+    },
+    {
+      "stage": "candidate-select",
+      "target": "src/core/cli/cliTarget.ts",
+      "reason": "changed_file_unreadable: observed changed file no longer exists or cannot be read"
+    },
+    {
+      "stage": "candidate-select",
+      "target": "src/core/cli/cliApply.ts",
+      "reason": "changed_file_unreadable: observed changed file no longer exists or cannot be read"
+    },
+    {
+      "stage": "candidate-select",
+      "target": "src/view/managers/ViewExportManager.ts",
+      "reason": "candidate_limit_exceeded: 19 changed reviewable file(s) were not scanned because the limit is 20"
+    }
+  ],
   "coverage": {
     "schema_version": "mimosa-hook-coverage/v1",
-    "status": "complete",
+    "status": "partial",
     "scope": "hook_observed_diff",
     "baseline": {
       "complete": true,
-      "captured_files": 11,
+      "captured_files": 249,
       "candidate_limit": 5000,
       "truncated": false,
       "enumeration_error_count": 0,
       "snapshot_error_count": 0,
-      "compensated_target_count": 1
+      "compensated_target_count": 39
     },
     "change_tracking": {
-      "touched_observed": 1,
-      "touched_retained": 1,
+      "touched_observed": 29,
+      "touched_retained": 29,
       "truncated": false,
-      "bash_mutation": false,
-      "bash_discovered": 0,
+      "bash_mutation": true,
+      "bash_discovered": 39,
       "bash_discovery_limit": 80,
       "bash_discovery_truncated": false
     },
     "candidates": {
-      "eligible_files": 1,
-      "selected_files": 1,
+      "eligible_files": 39,
+      "selected_files": 20,
       "limit": 20,
-      "truncated": false
+      "truncated": true
     },
     "scanning": {
-      "required_files": 0,
-      "scanned_files": 0,
+      "required_files": 17,
+      "scanned_files": 17,
       "skipped_files": 0,
       "failed_files": 0,
-      "project_checks_required": 1,
-      "project_checks_completed": 1
+      "project_checks_required": 0,
+      "project_checks_completed": 0
     },
     "notification": {
       "eligible_findings": 0,
@@ -45,37 +66,434 @@
       "detail_limit": 3,
       "truncated": false
     },
-    "reason_counts": {},
-    "reasons": [],
+    "reason_counts": {
+      "changed_file_unreadable": 3,
+      "candidate_limit_exceeded": 1,
+      "project_check_failed": 4
+    },
+    "reasons": [
+      {
+        "code": "changed_file_unreadable",
+        "stage": "candidate-select",
+        "target": "src/core/managers/AutoexportCoordinator.ts",
+        "detail": "observed changed file no longer exists or cannot be read",
+        "affects_completion": true
+      },
+      {
+        "code": "changed_file_unreadable",
+        "stage": "candidate-select",
+        "target": "src/core/cli/cliTarget.ts",
+        "detail": "observed changed file no longer exists or cannot be read",
+        "affects_completion": true
+      },
+      {
+        "code": "changed_file_unreadable",
+        "stage": "candidate-select",
+        "target": "src/core/cli/cliApply.ts",
+        "detail": "observed changed file no longer exists or cannot be read",
+        "affects_completion": true
+      },
+      {
+        "code": "candidate_limit_exceeded",
+        "stage": "candidate-select",
+        "target": "src/view/managers/ViewExportManager.ts",
+        "detail": "19 changed reviewable file(s) were not scanned because the limit is 20",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "candidate-select",
+        "target": "src/core/managers/AutoexportCoordinator.ts",
+        "detail": "changed_file_unreadable: observed changed file no longer exists or cannot be read",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "candidate-select",
+        "target": "src/core/cli/cliTarget.ts",
+        "detail": "changed_file_unreadable: observed changed file no longer exists or cannot be read",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "candidate-select",
+        "target": "src/core/cli/cliApply.ts",
+        "detail": "changed_file_unreadable: observed changed file no longer exists or cannot be read",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "candidate-select",
+        "target": "src/view/managers/ViewExportManager.ts",
+        "detail": "candidate_limit_exceeded: 19 changed reviewable file(s) were not scanned because the limit is 20",
+        "affects_completion": true
+      }
+    ],
     "reasons_truncated": false
   },
-  "generated_at": "2026-10-15T15:34:17.111Z",
+  "generated_at": "2026-10-15T18:24:46.960Z",
   "session_id": "sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc",
   "target": ".",
-  "revision": null,
+  "revision": "b1e74671f08409cbd20b2794a499d749c4744360",
   "rules_version": "unavailable",
-  "diff_hash": "4bd4b4b8fd5a6e713c6ba0d565b8e053a99086b72f188583707a4fa2727cf001",
+  "diff_hash": "598804760fb236ed861858f668dc9b90fc421f35c74094a3507e6922a3ead1e2",
   "diff": {
     "algorithm": "sha256",
-    "changed_file_count": 1,
+    "changed_file_count": 17,
     "changed_files": [
       {
-        "file": "package.json",
+        "file": "src/core/main.ts",
         "ranges": [
           {
-            "start": 9,
-            "end": 9
+            "start": 235,
+            "end": 235
+          },
+          {
+            "start": 238,
+            "end": 238
+          },
+          {
+            "start": 243,
+            "end": 243
+          },
+          {
+            "start": 273,
+            "end": 273
+          },
+          {
+            "start": 906,
+            "end": 906
+          },
+          {
+            "start": 908,
+            "end": 908
+          },
+          {
+            "start": 1195,
+            "end": 1195
           }
         ],
-        "before_hash": "e7426d7745f53c5e63486e705375280fac0944901cdfd33047ac537038d8cf0e",
-        "after_hash": "e31a7a8c027386ed6f53cc8538e45a9e4893c310a2913ef35b3408e02c9a5067"
+        "before_hash": "76cee27201fe5023de52938ba532af5898ec3ad2c93f0566214b7b80861b04f9",
+        "after_hash": "1495f1fdf1783cbe007816942010f5c36db42c429b7a7f62127dcfea33f82f4c"
+      },
+      {
+        "file": "src/core/managers/CommandManager.ts",
+        "ranges": [
+          {
+            "start": 1370,
+            "end": 1370
+          }
+        ],
+        "before_hash": "76573a9080c17ee74b6c48ac058048bb2e4254cac4b4cb5ffc170c8a7d60fd56",
+        "after_hash": "a04f4b018f88f0c8313008af6b71a507f36b0c306f227c632ae660cbbd5787dc"
+      },
+      {
+        "file": "src/core/settings.ts",
+        "ranges": [
+          {
+            "start": 2986,
+            "end": 2986
+          },
+          {
+            "start": 3722,
+            "end": 3722
+          },
+          {
+            "start": 3729,
+            "end": 3729
+          }
+        ],
+        "before_hash": "37010f4e5465ea323647677df2e511a10ef1f40c2c7d96a6f1e51e96569ad2b4",
+        "after_hash": "34a1e2420cc0a2b448149a560359a9a574b6adca9a1ab0b6100042cfb5e0d012"
+      },
+      {
+        "file": "src/core/settingsDefaults.ts",
+        "ranges": [
+          {
+            "start": 18,
+            "end": 384
+          }
+        ],
+        "before_hash": "b0994f67ca0e74847eaa486589edab34e84c7b97e6933f9a06885c82c7176ec9",
+        "after_hash": "5bb1ddf59b44e082d27a272a81daf0150b9442faaf9b73fea277f973c8f4c156"
+      },
+      {
+        "file": "src/shared/Dialogs/UniversalInsertFileModal.ts",
+        "ranges": [
+          {
+            "start": 243,
+            "end": 246
+          },
+          {
+            "start": 248,
+            "end": 252
+          },
+          {
+            "start": 268,
+            "end": 268
+          },
+          {
+            "start": 272,
+            "end": 272
+          }
+        ],
+        "before_hash": "415e1b2604b323ef0fd4fc2ed1352943a7825e809b0dc76d4969d6032a58b3a6",
+        "after_hash": "f0096aad3325f4116dd569e88ac8a90d861bcaff8690f469834082a431d0975c"
+      },
+      {
+        "file": "src/shared/EmbeddedDataRegistries.ts",
+        "ranges": [
+          {
+            "start": 2,
+            "end": 6
+          },
+          {
+            "start": 10,
+            "end": 10
+          }
+        ],
+        "before_hash": "2c8ff3a64c901fc6eb71d130accae7eb1a05aacbc16672cf2e8948b7c6552098",
+        "after_hash": "fd1f5f89dbe0a0b81c0b3d809b7def46e382c548360d42b9421db2fb12c933e1"
+      },
+      {
+        "file": "src/shared/EmbeddedFileLoader.ts",
+        "ranges": [
+          {
+            "start": 1132,
+            "end": 1132
+          }
+        ],
+        "before_hash": "e58d4ff412786126ca20644cde0eb55684dabc78a49497848aaf616903c2e74c",
+        "after_hash": "28ae153237b0ec2c87074b21f094578c6fa4951972a19a8ab51182383d30e4a2"
+      },
+      {
+        "file": "src/shared/ExcalidrawAutomate.ts",
+        "ranges": [
+          {
+            "start": 203,
+            "end": 203
+          },
+          {
+            "start": 2721,
+            "end": 2721
+          },
+          {
+            "start": 3038,
+            "end": 3039
+          }
+        ],
+        "before_hash": "594d1591b3ae299bacc93df0b1c42ab53a52a359a6c320a577be9b51a498e0cf",
+        "after_hash": "72ea2a3ed8729bacc766e5117b22399f97d4e5916d7988fb9b429e134f850c03"
+      },
+      {
+        "file": "src/shared/ExcalidrawData.ts",
+        "ranges": [
+          {
+            "start": 316,
+            "end": 316
+          },
+          {
+            "start": 346,
+            "end": 346
+          },
+          {
+            "start": 689,
+            "end": 689
+          },
+          {
+            "start": 1534,
+            "end": 1534
+          },
+          {
+            "start": 1715,
+            "end": 1715
+          },
+          {
+            "start": 1727,
+            "end": 1727
+          },
+          {
+            "start": 1766,
+            "end": 1766
+          },
+          {
+            "start": 2067,
+            "end": 2068
+          },
+          {
+            "start": 2070,
+            "end": 2070
+          },
+          {
+            "start": 2072,
+            "end": 2073
+          }
+        ],
+        "before_hash": "2acfc10b7b78618d764a77ac4b16f720c93a890ae8342a863075b3305331e757",
+        "after_hash": "c1ee80ba74c09ccb46666f765c1f85da71e7c7739fa01d48d9122cd2ee405d7a"
+      },
+      {
+        "file": "src/types/excalidrawLib.d.ts",
+        "ranges": [
+          {
+            "start": 127,
+            "end": 127
+          }
+        ],
+        "before_hash": "f34a0e465188d2d281810503a74ee21cb267983b5cbcea9131baa4ffdaaac1bd",
+        "after_hash": "89275ac96e7df07b2a72418cd78c8584e589c449457391b38cb0b85778a83ec6"
+      },
+      {
+        "file": "src/utils/excalidrawAutomateUtils.ts",
+        "ranges": [
+          {
+            "start": 57,
+            "end": 57
+          },
+          {
+            "start": 836,
+            "end": 836
+          },
+          {
+            "start": 989,
+            "end": 989
+          }
+        ],
+        "before_hash": "204c79bd73297cab369e1d52c9e8d6452558c15e67f15423daebddd36898d26b",
+        "after_hash": "91129cb1ef6db9fea7079d52ae7832b72620a44a67d85747fd150c883c940999"
+      },
+      {
+        "file": "src/utils/excalidrawViewHelpers.ts",
+        "ranges": [
+          {
+            "start": 25,
+            "end": 26
+          }
+        ],
+        "before_hash": "3d54c5c237edb2742f79b2a12a28342de717c87e97f45bec363b244413af65ae",
+        "after_hash": "e1d0ffc8a78514eec632fd182ad66ddd40a286e87030a5f622e73e8cd96a2bde"
+      },
+      {
+        "file": "src/view/components/ExcalidrawRoot.ts",
+        "ranges": [
+          {
+            "start": 218,
+            "end": 218
+          }
+        ],
+        "before_hash": "10fd6fa3d4a44d1ed48859ef68a2ff1e15a42a5d0d3cff5d6460eae6766e2ef8",
+        "after_hash": "ec3fa16b0bda11ca774a397a228f4c22255c025f5bc9b1a80171edb08c18256e"
+      },
+      {
+        "file": "src/view/components/menu/ToolsPanel.tsx",
+        "ranges": [
+          {
+            "start": 7,
+            "end": 7
+          }
+        ],
+        "before_hash": "0255c14ee9933ff1083ab8abe8c4dbd70c58c7ca6c2306664eba80c58d454aae",
+        "after_hash": "4b604569505fd3ee4f9ea860eeb958a641366369fbb88715dd7dba162f62b33a"
+      },
+      {
+        "file": "src/view/ExcalidrawView.ts",
+        "ranges": [
+          {
+            "start": 153,
+            "end": 153
+          },
+          {
+            "start": 412,
+            "end": 412
+          },
+          {
+            "start": 830,
+            "end": 830
+          },
+          {
+            "start": 872,
+            "end": 872
+          },
+          {
+            "start": 1038,
+            "end": 1039
+          },
+          {
+            "start": 1053,
+            "end": 1053
+          },
+          {
+            "start": 1305,
+            "end": 1307
+          },
+          {
+            "start": 1728,
+            "end": 1728
+          },
+          {
+            "start": 3498,
+            "end": 3498
+          },
+          {
+            "start": 3786,
+            "end": 3786
+          },
+          {
+            "start": 4008,
+            "end": 4008
+          },
+          {
+            "start": 4043,
+            "end": 4043
+          },
+          {
+            "start": 6453,
+            "end": 6453
+          },
+          {
+            "start": 6611,
+            "end": 6611
+          },
+          {
+            "start": 6617,
+            "end": 6617
+          },
+          {
+            "start": 6856,
+            "end": 6858
+          }
+        ],
+        "before_hash": "dc365df5d3de8d9ae16ef2998fe9ea23cf4af2538be39faa3357eab59fd81bb7",
+        "after_hash": "1d65354d9214d8a048344fc99963a155721fd1fe01e409694ff7bb1bb1b7ee6d"
+      },
+      {
+        "file": "src/view/managers/saveSnapshot.ts",
+        "ranges": [
+          {
+            "start": 8,
+            "end": 8
+          }
+        ],
+        "before_hash": "113740cc13862b3be8a2103c05c4ce2a1ac636d05025cb62676c1e360260e20c",
+        "after_hash": "3a29e986ede3bf70ba916fa59767aca31ed2a0f915c78ca2b02bb8b3acc41099"
+      },
+      {
+        "file": "src/view/managers/ViewLinkNavigationManager.ts",
+        "ranges": [
+          {
+            "start": 444,
+            "end": 445
+          }
+        ],
+        "before_hash": "3f0ff1c026a722b51e8bf75e1895cf5117983bead422b1b694da95514fb37db3",
+        "after_hash": "07af0bc2462609d8849f63f4755c42e81c6d1a8206cac511dd94deae91b397b3"
       }
     ]
   },
   "timing": {
-    "started_at": "2026-10-15T15:34:14.860Z",
-    "completed_at": "2026-10-15T15:34:17.111Z",
-    "duration_ms": 2251,
+    "started_at": "2026-10-15T18:24:45.400Z",
+    "completed_at": "2026-10-15T18:24:46.960Z",
+    "duration_ms": 1560,
     "measurement": "hook_wall_clock"
   },
   "tokens": {
@@ -89,11 +507,11 @@
     "schemaVersion": "mimosa-gate-telemetry/v1",
     "profile": "gate",
     "operation": "Stop",
-    "outcome": "complete",
-    "latencyMs": 2251,
-    "peakMemoryBytes": 107397120,
+    "outcome": "partial/INCONCLUSIVE",
+    "latencyMs": 1560,
+    "peakMemoryBytes": 286998528,
     "memoryMeasurement": "max-observed-process-rss",
-    "scannedFiles": 0,
+    "scannedFiles": 17,
     "cache": {
       "hits": 0,
       "misses": 0,
@@ -118,8 +536,8 @@
   "finding_events": [],
   "findings": [],
   "artifacts": {
-    "immutable_report": ".mimosa/reports/task-review-sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc-20261015T153417111Z-90699-3401d207b8f9.json",
+    "immutable_report": ".mimosa/reports/task-review-sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc-20261015T182446960Z-23189-55720d06c24f.json",
     "latest_report": ".mimosa/reports/task-review-sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc.json",
-    "history_summary": ".mimosa/history/run-20261015T153417111Z-90699-3401d207b8f9.json"
+    "history_summary": ".mimosa/history/run-20261015T182446960Z-23189-55720d06c24f.json"
   }
 }
