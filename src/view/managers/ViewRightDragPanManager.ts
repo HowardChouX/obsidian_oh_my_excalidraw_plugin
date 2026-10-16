@@ -33,6 +33,7 @@ export class ViewRightDragPanManager {
     host.addEventListener("pointermove", this.onPointerMove, true);
     host.addEventListener("pointerup", this.onPointerUp, true);
     host.addEventListener("pointercancel", this.onPointerUp, true);
+    host.addEventListener("contextmenu", this.onContextMenu, true);
   }
 
   public destroy(): void {
@@ -44,9 +45,27 @@ export class ViewRightDragPanManager {
     host.removeEventListener("pointermove", this.onPointerMove, true);
     host.removeEventListener("pointerup", this.onPointerUp, true);
     host.removeEventListener("pointercancel", this.onPointerUp, true);
+    host.removeEventListener("contextmenu", this.onContextMenu, true);
     this.endPan();
     this.host = null;
   }
+
+  /**
+   * Suppresses the canvas context menu as a capture-phase guard (the fork's
+   * own `disableContextMenu` state is asserted on load, this covers any other
+   * route that could open a menu). Text editing targets and embedded Obsidian
+   * views keep their native menus.
+   */
+  private onContextMenu = (event: MouseEvent): void => {
+    if (this.isEditableTarget(event.target)) {
+      return;
+    }
+    if (!this.isCanvasTarget(event.target)) {
+      return;
+    }
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  };
 
   private isEditableTarget(target: EventTarget | null): boolean {
     const el = target as HTMLElement | null;
@@ -133,10 +152,12 @@ export class ViewRightDragPanManager {
     const zoom = api.getAppState().zoom.value || 1;
     const dx = (this.pendingClientX - this.startClientX) / zoom;
     const dy = (this.pendingClientY - this.startClientY) / zoom;
+    // Matches Excalidraw's own pan math (scrollX + delta / zoom): content
+    // follows the pointer.
     api.updateScene({
       appState: {
-        scrollX: this.startScrollX - dx,
-        scrollY: this.startScrollY - dy,
+        scrollX: this.startScrollX + dx,
+        scrollY: this.startScrollY + dy,
       },
       captureUpdate: CaptureUpdateAction.NEVER,
     });

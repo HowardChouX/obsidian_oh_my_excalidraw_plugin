@@ -208,8 +208,6 @@ export function createExcalidrawRootElement(
             void view.onLinkOpen(element, e);
           },
           onLinkHover: (element, event) => view.onLinkHover(element, event),
-          onContextMenu: (elements, st, onClose) =>
-            view.onContextMenu(elements, st, onClose),
           onViewModeChange: (isViewModeEnabled) =>
             view.onViewModeChange(isViewModeEnabled),
           validateEmbeddable: true,

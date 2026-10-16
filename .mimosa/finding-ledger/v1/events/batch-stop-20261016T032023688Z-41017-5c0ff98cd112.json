@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "mimosa-finding-ledger-batch/v1",
+  "batchId": "stop-20261016T032023688Z-41017-5c0ff98cd112",
+  "runId": "20261016T032023688Z-41017-5c0ff98cd112",
+  "runStatus": "completed",
+  "coverage": {
+    "status": "complete",
+    "reasons": []
+  },
+  "source": {
+    "component": "zcode-hook",
+    "operationId": "Stop"
+  },
+  "revision": "c05fd59aee616bb79ddc502eff1fea3801f2ce15",
+  "diffHash": "3a8d38e1c124fd13aaf3d7e9a5953b5a29ccf72991f6fea1ad28d7a704cfc2fa",
+  "rulesVersion": "unavailable",
+  "sessionHash": "ee4833089f13fab3017ec435197d7f61d23bd2d66399f2271728f8e32a58c8fe",
+  "reportRef": ".mimosa/reports/task-review-sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc-20261016T032023688Z-41017-5c0ff98cd112.json",
+  "events": [],
+  "observedFindingIds": [
+    "mimosa-d748c965f924609c90d7f60a"
+  ],
+  "verifiedFiles": [
+    {
+      "file": "src/view/managers/ViewRightDragPanManager.ts",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "src/view/ExcalidrawView.ts",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "src/core/settingsDefaults.ts",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "src/core/managers/obsidianExcalidrawHostAdapter.ts",
+      "direct": "complete",
+      "projectContext": "partial"
+    }
+  ],
+  "recordedAt": "2026-10-16T03:20:23.970Z"
+}

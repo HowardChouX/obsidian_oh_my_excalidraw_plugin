@@ -978,21 +978,6 @@ export class CommandManager {
     });
 
     this.addCommand({
-      id: "toggle-enable-context-menu",
-      name: t("TOGGLE_ENABLE_CONTEXT_MENU"),
-      checkCallback: (checking: boolean) => {
-        if (checking) {
-          return Boolean(
-            this.app.workspace.getActiveViewOfType(ExcalidrawView),
-          );
-        }
-        const view = this.app.workspace.getActiveViewOfType(ExcalidrawView);
-        view.toggleEnableContextMenu();
-        return true;
-      },
-    });
-
-    this.addCommand({
       id: "reset-image-to-100",
       name: t("RESET_IMG_TO_100"),
       checkCallback: (checking: boolean) => {

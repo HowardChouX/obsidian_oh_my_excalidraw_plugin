@@ -3726,6 +3726,9 @@ export default class ExcalidrawView
           elements: excalidrawData.elements,
           appState: {
             ...appState,
+            // The plugin replaces the right-click menu with right-button
+            // drag panning; keep the fork's menu disabled at runtime.
+            disableContextMenu: true,
             ...(excalidrawData.appState.frameRendering &&
             excalidrawData.appState.frameRendering.markerName === undefined
               ? {
