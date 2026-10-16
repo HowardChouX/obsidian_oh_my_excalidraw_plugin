@@ -1063,10 +1063,6 @@ export default class ExcalidrawPlugin extends Plugin {
     return await this.fileManager.embedDrawing(file);
   }
 
-  public async exportLibrary() {
-    return await this.fileManager.exportLibrary();
-  }
-
   public async renameEventHandler(file: TAbstractFile, oldPath: string) {
     await this.fileManager.renameEventHandler(file, oldPath);
   }

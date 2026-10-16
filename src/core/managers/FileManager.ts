@@ -395,41 +395,7 @@ export class PluginFileManager {
     }
   }
 
-  public async exportLibrary() {
-    if (DEVICE.isMobile) {
-      const location = await new FileAndFolderSelectorModal(this.app, {
-        title: t("FILE_AND_FOLDER_SELECTOR_EXPORT_TITLE"),
-        folderLabel: t("FILE_AND_FOLDER_SELECTOR_FOLDER"),
-        fileNameLabel: t("FILE_AND_FOLDER_SELECTOR_FILENAME"),
-        submitButtonText: t("FILE_AND_FOLDER_SELECTOR_EXPORT"),
-        folderPath: normalizePath(this.settings.folder),
-        fileName: "my-library.excalidrawlib",
-      }).start();
-      if (!location) {
-        return;
-      }
-      const filename = location.fileName
-        .toLowerCase()
-        .endsWith(".excalidrawlib")
-        ? location.fileName
-        : `${location.fileName}.excalidrawlib`;
-      const fname = getNewUniqueFilepath(
-        this.app.vault,
-        filename,
-        location.folderPath,
-      );
-      await createOrOverwriteFile(this.app, fname, this.settings.library);
-      new Notice(`Exported library to ${fname}`, 6000);
-      return;
-    }
-    download(
-      "data:text/plain;charset=utf-8",
-      encodeURIComponent(JSON.stringify(this.settings.library2, null, "\t")),
-      "my-obsidian-library.excalidrawlib",
-    );
-  }
-
-  /**
+/**
    * Opens a drawing file
    * @param drawingFile
    * @param location
