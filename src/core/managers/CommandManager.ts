@@ -31,7 +31,6 @@ import { InsertLinkDialog } from "../../shared/Dialogs/InsertLinkDialog";
 import { InsertCommandDialog } from "../../shared/Dialogs/InsertCommandDialog";
 import { InsertImageDialog } from "../../shared/Dialogs/InsertImageDialog";
 import { ImportSVGDialog } from "../../shared/Dialogs/ImportSVGDialog";
-import { InsertMDDialog } from "../../shared/Dialogs/InsertMDDialog";
 import { ExcalidrawAutomate } from "../../shared/ExcalidrawAutomate";
 import { templatePromt } from "../../shared/Dialogs/Prompt";
 import { t } from "../../lang/helpers";
@@ -90,7 +89,6 @@ export class CommandManager {
   public insertCommandDialog: InsertCommandDialog;
   public insertImageDialog: InsertImageDialog;
   public importSVGDialog: ImportSVGDialog;
-  public insertMDDialog: InsertMDDialog;
   public forceSaveCommand: Command;
 
   get settings(): ExcalidrawSettings {
@@ -146,8 +144,6 @@ export class CommandManager {
     this.importSVGDialog = null;
     this.insertImageDialog.destroy();
     this.insertImageDialog = null;
-    this.insertMDDialog.destroy();
-    this.insertMDDialog = null;
     this.forceSaveCommand = null;
   }
 
@@ -165,7 +161,6 @@ export class CommandManager {
     this.insertCommandDialog = new InsertCommandDialog(this.app);
     this.insertImageDialog = new InsertImageDialog(this.plugin);
     this.importSVGDialog = new ImportSVGDialog(this.plugin);
-    this.insertMDDialog = new InsertMDDialog(this.plugin);
 
     const createNewAction = (e: MouseEvent | KeyboardEvent, file: TFile) => {
       let folderpath = file.path;
@@ -1092,43 +1087,6 @@ export class CommandManager {
     });
 
     this.addCommand({
-      id: "convert-card-to-file",
-      name: t("CONVERT_CARD_TO_FILE"),
-      checkCallback: (checking: boolean) => {
-        const view = this.app.workspace.getActiveViewOfType(ExcalidrawView);
-        if (!view) {
-          return false;
-        }
-        if (!view.excalidrawAPI) {
-          return false;
-        }
-        const els = view
-          .getViewSelectedElements()
-          .filter((el) => el.type === "embeddable");
-        if (els.length !== 1) {
-          if (checking) {
-            return false;
-          }
-          new Notice("Select a single back-of-the-note card and try again");
-          return false;
-        }
-        const embeddableData = view.getEmbeddableLeafElementById(els[0].id);
-        const child = embeddableData?.node?.child;
-        if (!child || child.file !== view.file) {
-          if (checking) {
-            return false;
-          }
-          new Notice("The selected embeddable is not a back-of-the-note card.");
-          return false;
-        }
-        if (checking) {
-          return true;
-        }
-        void view.moveBackOfTheNoteCardToFile();
-      },
-    });
-
-    this.addCommand({
       id: "refresh-scene-images",
       name: t("REFRESH_SCENE_IMAGES"),
       checkCallback: (checking: boolean) => {
@@ -1230,24 +1188,6 @@ export class CommandManager {
     });
 
     this.addCommand({
-      id: "insert-md",
-      name: t("INSERT_MD"),
-      checkCallback: (checking: boolean) => {
-        if (checking) {
-          return Boolean(
-            this.app.workspace.getActiveViewOfType(ExcalidrawView),
-          );
-        }
-        const view = this.app.workspace.getActiveViewOfType(ExcalidrawView);
-        if (view) {
-          this.insertMDDialog.start(view);
-          return true;
-        }
-        return false;
-      },
-    });
-
-    this.addCommand({
       id: "universal-add-file",
       name: t("UNIVERSAL_ADD_FILE"),
       checkCallback: (checking: boolean) => {
@@ -1263,24 +1203,6 @@ export class CommandManager {
             view,
           );
           insertFileModal.open();
-          return true;
-        }
-        return false;
-      },
-    });
-
-    this.addCommand({
-      id: "universal-card",
-      name: t("INSERT_CARD"),
-      checkCallback: (checking: boolean) => {
-        if (checking) {
-          return Boolean(
-            this.app.workspace.getActiveViewOfType(ExcalidrawView),
-          );
-        }
-        const view = this.app.workspace.getActiveViewOfType(ExcalidrawView);
-        if (view) {
-          void view.insertBackOfTheNoteCard();
           return true;
         }
         return false;

@@ -332,25 +332,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
     plugin.insertImageDialog.start(view);
   }
 
-  actionInsertMarkdown() {
-    const view = this.getView();
-    const plugin = view?.plugin;
-    if (!view || !plugin) {
-      return;
-    }
-    this.props.centerPointer();
-    plugin.insertMDDialog.start(view);
-  }
-
-  actionInsertBackOfNote() {
-    const view = this.getView();
-    if (!view) {
-      return;
-    }
-    this.props.centerPointer();
-    void view.insertBackOfTheNoteCard();
-  }
-
   actionInsertLink() {
     const view = this.getView();
     const plugin = view?.plugin;
@@ -570,18 +551,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
                     title={t("UNIVERSAL_ADD_FILE")}
                     action={() => this.actionAddAnyFile()}
                     icon={ICONS["add-file"]}
-                  />
-                  <ActionButton
-                    key={"insertMD"}
-                    title={t("INSERT_MD")}
-                    action={() => this.actionInsertMarkdown()}
-                    icon={ICONS.insertMD}
-                  />
-                  <ActionButton
-                    key={"insertBackOfNote"}
-                    title={t("INSERT_CARD")}
-                    action={() => this.actionInsertBackOfNote()}
-                    icon={ICONS.BackOfNote}
                   />
                   <ActionButton
                     key={"link"}

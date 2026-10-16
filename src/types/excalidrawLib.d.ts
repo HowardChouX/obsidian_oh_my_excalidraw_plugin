@@ -124,7 +124,7 @@ export declare namespace ExcalidrawLib {
     shouldSyncElementLinkWithText: () => boolean;
     loadFontFromFile: (filename: string) => Promise<ArrayBuffer | undefined>;
     getMermaid: () => Promise<MermaidToExcalidrawLibProps>;
-    runAction: (action: "anyFile" | "card") => void;
+    runAction: (action: "anyFile") => void;
     getLabel: (key: string) => string;
     attachInlineLinkSuggester: (
       inputEl: HTMLInputElement | HTMLTextAreaElement,

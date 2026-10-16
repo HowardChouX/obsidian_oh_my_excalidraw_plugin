@@ -172,8 +172,6 @@ import {
 import { setDynamicStyle } from "../utils/dynamicStyling";
 import { CustomEmbeddable } from "./components/CustomEmbeddable";
 import {
-  addBackOfTheNoteCard,
-  insertBackOfTheNoteContent,
   addTextWithOEmbed,
   deleteAppStateKeys,
   getExcalidrawFileForwardLinks,
@@ -203,7 +201,6 @@ import { createExcalidrawRootElement } from "./components/ExcalidrawRoot";
 import { nanoid } from "nanoid";
 import { CustomMutationObserver, DEBUGGING } from "../utils/debugHelper";
 import { Mutable } from "@zsviczian/excalidraw/types/common/src/utility-types";
-import { SelectCard } from "../shared/Dialogs/SelectCard";
 import { PackageLease, Packages } from "../types/types";
 import React from "react";
 import { IS_WORKER_SUPPORTED } from "../shared/Workers/compression-worker";
@@ -2588,20 +2585,6 @@ export default class ExcalidrawView
         void (async () => {
           await waitForExcalidraw();
           if (filenameParts.blockref && !filenameParts.hasGroupref) {
-            if (
-              !this.getScene()?.elements.find(
-                (el: ExcalidrawElement) => el.id === filenameParts.blockref,
-              )
-            ) {
-              const cleanQuery = cleanSectionHeading(
-                filenameParts.blockref,
-              ).replaceAll(" ", "");
-              const blocks = await this.getBackOfTheNoteBlocks();
-              if (blocks.includes(cleanQuery)) {
-                void this.setMarkdownView(state);
-                return;
-              }
-            }
           }
           window.setTimeout(() => {
             void this.zoomToElementId(
@@ -2698,11 +2681,6 @@ export default class ExcalidrawView
               filenameParts.hasGroupref,
             )
           ) {
-            const cleanQuery = cleanSectionHeading(query[0]);
-            const sections = await this.getBackOfTheNoteSections();
-            if (sections.includes(cleanQuery) || this.data.includes(query[0])) {
-              void this.setMarkdownView(state);
-            }
           }
         })();
       });
@@ -5746,20 +5724,6 @@ export default class ExcalidrawView
       return false;
     }
     if (data && data.text && !this.modifierKeyDown.shiftKey) {
-      const isCodeblock = Boolean(
-        data.text
-          .replaceAll("\r\n", "\n")
-          .replaceAll("\r", "\n")
-          .match(/^`{3}[^\n]*\n.+\n`{3}\s*$/ms),
-      );
-      if (isCodeblock) {
-        const clipboardText = data.text;
-        window.setTimeout(() => {
-          void this.pasteCodeBlock(clipboardText);
-        });
-        return false;
-      }
-
       if (
         isTextImageTransclusion(data.text, this, (link, file) => {
           void (async () => {
@@ -6358,38 +6322,7 @@ export default class ExcalidrawView
     }
   }
 
-  public async getBackOfTheNoteSections() {
-    return (
-      await this.app.metadataCache.blockCache.getForFile(
-        { isCancelled: () => false },
-        this.file,
-      )
-    ).blocks
-      .filter(
-        (b: MarkdownBlockCacheEntry) => b.display && b.node?.type === "heading",
-      )
-      .filter(
-        (b: MarkdownBlockCacheEntry) => !MD_EX_SECTIONS.includes(b.display),
-      )
-      .map((b: MarkdownBlockCacheEntry) => cleanSectionHeading(b.display));
-  }
 
-  private async getBackOfTheNoteBlocks() {
-    return (
-      await this.app.metadataCache.blockCache.getForFile(
-        { isCancelled: () => false },
-        this.file,
-      )
-    ).blocks
-      .filter(
-        (b: MarkdownBlockCacheEntry) =>
-          b.display &&
-          b.node &&
-          Object.hasOwn(b.node ?? {}, "type") &&
-          Object.hasOwn(b.node ?? {}, "id"),
-      )
-      .map((b: MarkdownBlockCacheEntry) => cleanBlockRef(b.node.id));
-  }
 
   public getSingleSelectedImage(): {
     imageEl: ExcalidrawImageElement;
@@ -6409,124 +6342,8 @@ export default class ExcalidrawView
     return { imageEl: el, embeddedFile: imageFile };
   }
 
-  public async insertBackOfTheNoteCard(center: boolean = false) {
-    await this.forceSave(true);
-    const sections = await this.getBackOfTheNoteSections();
-    const selectCardDialog = new SelectCard(this.app, this, sections);
-    selectCardDialog.start(center);
-  }
 
-  public async moveBackOfTheNoteCardToFile(id?: string) {
-    id =
-      id ??
-      this.getViewSelectedElements().filter((el) => el.type === "embeddable")[0]
-        ?.id;
-    const embeddableData = this.getEmbeddableLeafElementById(id);
-    const child = embeddableData?.node?.child;
-    if (!child || child.file !== this.file) {
-      return;
-    }
 
-    if (child.lastSavedData !== this.data) {
-      await this.forceSave(true);
-      if (child.lastSavedData !== this.data) {
-        new Notice(t("ERROR_TRY_AGAIN"));
-        return;
-      }
-    }
-    const { folder } = await getAttachmentsFolderAndFilePath(
-      this.app,
-      this.file.path,
-      "dummy",
-    );
-    const filepath = getNewUniqueFilepath(
-      this.app.vault,
-      child.subpath.replaceAll("#", ""),
-      folder,
-    );
-    let path = await inputPrompt(
-      this,
-      this.plugin,
-      this.app,
-      "Set filename",
-      "Enter filename",
-      filepath,
-      undefined,
-      3,
-    );
-    if (!path) {
-      return;
-    }
-    if (!path.endsWith(".md")) {
-      path += ".md";
-    }
-    const { folderpath, filename } = splitFolderAndFilename(path);
-    path = getNewUniqueFilepath(this.app.vault, filename, folderpath);
-    try {
-      const newFile = await createOrOverwriteFile(this.app, path, child.text);
-      if (!newFile) {
-        new Notice("Unexpected error");
-        return;
-      }
-      const ea = getEA(this);
-      ea.copyViewElementsToEAforEditing([
-        this.getViewElements().find((el) => el.id === id),
-      ]);
-      ea.getElement(id).link = `[[${newFile.path}]]`;
-      this.data = this.data.split(child.heading + child.text).join("");
-      await ea.addElementsToView(false);
-      ea.destroy();
-      await this.forceSave(true);
-    } catch (e) {
-      new Notice(`Unexpected error: ${e.message}`);
-    }
-  }
-
-  public async pasteCodeBlock(data: string) {
-    try {
-      data = data.replaceAll("\r\n", "\n").replaceAll("\r", "\n").trim();
-      const isCodeblock = Boolean(data.match(/^`{3}[^\n]*\n.+\n`{3}\s*$/ms));
-      if (!isCodeblock) {
-        const codeblockType = await GenericInputPrompt.Prompt(
-          this,
-          this.plugin,
-          this.app,
-          "type codeblock type",
-          "javascript, html, python, etc.",
-          "",
-        );
-        data = `\`\`\`${codeblockType.trim()}\n${data}\n\`\`\``;
-      }
-      let title = (
-        await GenericInputPrompt.Prompt(
-          this,
-          this.plugin,
-          this.app,
-          "Code Block Title",
-          "Enter title or leave empty for automatic title",
-          "",
-        )
-      ).trim();
-      if (title === "") {
-        title = "Code Block";
-      }
-      const sections = await this.getBackOfTheNoteSections();
-      if (sections.includes(title)) {
-        let i = 0;
-        while (sections.includes(`${title} ${++i}`)) {
-          // no-op
-        }
-        title = `${title} ${i}`;
-      }
-      await addBackOfTheNoteCard(this, title, false, data);
-    } catch (error) {
-      console.error(
-        "unexpected error in pasteCodeBlock",
-        this.pasteCodeBlock.bind(this),
-        error,
-      );
-    }
-  }
 
 
 
@@ -6845,40 +6662,6 @@ export default class ExcalidrawView
         ]);
       }
 
-      if (
-        this.getViewSelectedElements().filter((el) => el.type === "embeddable")
-          .length === 1
-      ) {
-        const embeddableData = this.getEmbeddableLeafElementById(
-          this.getViewSelectedElements().find((el) => el.type === "embeddable")
-            .id,
-        );
-        if (embeddableData?.node?.child?.file === this.file) {
-          contextMenuActions.push([
-            renderContextMenuAction(
-              React,
-              t("CONVERT_CARD_TO_FILE"),
-              () => {
-                void this.moveBackOfTheNoteCardToFile();
-              },
-              onClose,
-              "convertCardToFile",
-            ),
-          ]);
-        }
-      }
-
-      contextMenuActions.push([
-        renderContextMenuAction(
-          React,
-          t("INSERT_CARD"),
-          () => {
-            void this.insertBackOfTheNoteCard();
-          },
-          onClose,
-          "insertCard",
-        ),
-      ]);
       contextMenuActions.push([
         renderContextMenuAction(
           React,
@@ -6913,23 +6696,6 @@ export default class ExcalidrawView
           // Add more context menu actions here if needed
         ]);
       }
-      contextMenuActions.push([
-        renderContextMenuAction(
-          React,
-          t("PASTE_CODEBLOCK"),
-          () => {
-            void (async () => {
-              const data = await navigator.clipboard?.readText();
-              if (!data || data.trim() === "") {
-                return;
-              }
-              void this.pasteCodeBlock(data);
-            })();
-          },
-          onClose,
-          "pasteCodeblock",
-        ),
-      ]);
 
       if (!areElementsSelected) {
         const { frameRendering } = appState;

@@ -1149,10 +1149,6 @@ export default class ExcalidrawPlugin extends Plugin {
     return this.commandManager?.insertImageDialog;
   }
 
-  get insertMDDialog() {
-    return this.commandManager?.insertMDDialog;
-  }
-
   get insertLinkDialog() {
     return this.commandManager?.insertLinkDialog;
   }
@@ -1179,7 +1175,7 @@ export default class ExcalidrawPlugin extends Plugin {
 
   //used by obsidianUtils in the Excalidraw Pacakge
   //aweful coding, but does the job
-  public runAction(action: "anyFile" | "card") {
+  public runAction(action: "anyFile") {
     if (!this.activeExcalidrawView) {
       return;
     }
@@ -1187,9 +1183,6 @@ export default class ExcalidrawPlugin extends Plugin {
       case "anyFile":
         this.activeExcalidrawView.setCurrentPositionToCenter();
         new UniversalInsertFileModal(this, this.activeExcalidrawView).open();
-        break;
-      case "card":
-        void this.activeExcalidrawView.insertBackOfTheNoteCard(true);
         break;
     }
   }

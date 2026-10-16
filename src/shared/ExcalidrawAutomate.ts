@@ -131,7 +131,6 @@ import PolyBool from "polybooljs";
 import { EmbeddableMDCustomProps } from "./Dialogs/EmbeddableSettings";
 import { showColorPicker } from "./Dialogs/ColorPicker";
 import {
-  addBackOfTheNoteCard,
   getViewColorPalette,
   sceneRemoveInternalLinks,
 } from "../utils/excalidrawViewUtils";
@@ -3008,35 +3007,7 @@ export class ExcalidrawAutomate {
     return true;
   }
 
-  /**
-   * Adds a back of the note card to the current active view.
-   * @param {string} sectionTitle - The title of the section.
-   * @param {boolean} [activate=true] - Whether to activate the new Embedded Element after creation.
-   * @param {string} [sectionBody] - The body of the section.
-   * @param {EmbeddableMDCustomProps} [embeddableCustomData] - Custom properties for the embeddable element.
-   * @returns {Promise<string>} Promise resolving to the ID of the embeddable element.
-   */
-  async addBackOfTheCardNoteToView(
-    sectionTitle: string,
-    activate: boolean = false,
-    sectionBody?: string,
-    embeddableCustomData?: EmbeddableMDCustomProps,
-  ): Promise<string> {
-    if (!this.targetView || !this.targetView?._loaded) {
-      errorMessage("targetView not set", "addBackOfTheCardNoteToView()");
-      return null;
-    }
-    await this.targetView.forceSave(true);
-    return addBackOfTheNoteCard(
-      this.targetView,
-      sectionTitle,
-      activate,
-      sectionBody,
-      embeddableCustomData,
-    );
-  }
-
-  /**
+    /**
    * Gets the selected element in the view. If more are selected, gets the first.
    * @returns {ExcalidrawElement | null} The selected element or null if none selected.
    */
