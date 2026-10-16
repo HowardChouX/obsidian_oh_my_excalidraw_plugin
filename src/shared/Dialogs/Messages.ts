@@ -17,6 +17,15 @@ I build this plugin as a labor of love. Curious about the philosophy behind it? 
 
 <div class="ex-coffee-div"><a href="${URLs.KO_FI_COM_ZSOLT}"><img src="${URLs.CDN_KO_FI_COM_CDN_KOFI3_PNG}" border="0" alt="Buy Me a Coffee at ko-fi.com"  height=45></a></div>
 `,
+"0.1.0": `
+**Oh My Excalidraw** is a trimmed fork of the plugin that reads and writes the same \`.excalidraw.md\` files.
+
+## Toolbar
+- The toolbar keeps the four tools this fork needs: **hand**, **selection**, **pen** (freedraw), and **eraser**. The shape, arrow, line, text, image, sticky-note, and extra-tools (**...**) entries are removed.
+- Select the **pen** and click it again to open a stroke width panel under the button.
+- **Reset the canvas** is a toolbar button next to the other plugin buttons. It asks for confirmation, marks every element as deleted, and stays undoable.
+- The eraser size is a fixed size inside the Excalidraw component and cannot be changed by the plugin.
+`,
 "2.29.1": `
 ## Fixed
 - Drawing-load warnings now name the affected file. Select **More information** to learn about missing or malformed drawing data and device-local backups, and see the reported error. Warnings without a local backup also include a **Dismiss** button. Existing recovery actions are unchanged. [#2995](${URLs.GITHUB_COM_ZSVICZIAN_OBSIDIAN_EXCALIDRAW_PLUGIN_ISSUES}/2995)

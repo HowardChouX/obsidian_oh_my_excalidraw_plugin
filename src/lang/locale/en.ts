@@ -1641,6 +1641,9 @@ export default {
   TOGGLE_FRAME_CLIPPING: "Toggle frame clipping",
   OPEN_LINK_CLICK: "Open Link",
   OPEN_LINK_PROPS: "Open the image-link or LaTeX-formula editor",
+  RESET_CANVAS_BUTTON: "Reset the canvas",
+  RESET_CANVAS_CONFIRMATION:
+    "Remove all elements from this drawing? The drawing stays in your vault as an empty canvas.",
 
   //IFrameActionsMenu.tsx
   NARROW_TO_HEADING: "Narrow to heading...",

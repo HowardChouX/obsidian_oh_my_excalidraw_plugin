@@ -22,6 +22,8 @@ import {
   getAppStateStrokeWidthEntry,
   getFreedrawStrokeWidthByKey,
 } from "src/utils/excalidrawAutomateUtils";
+import { clearCanvas } from "src/utils/excalidrawSceneUtils";
+import { MultiOptionConfirmationPrompt } from "src/shared/Dialogs/Prompt";
 import { ToolsPanel } from "./ToolsPanel";
 
 /** Aliased to the fork's canonical type (packages/excalidraw/types.ts) so
@@ -238,6 +240,29 @@ export class ObsidianMenu {
     });
   }
 
+  /**
+   * Empties the drawing after confirming, replacing the Excalidraw component's
+   * "Reset the canvas" menu item with a toolbar button.
+   */
+  private async actionResetCanvas(): Promise<void> {
+    const view = this.view;
+    const api = view.excalidrawAPI;
+    if (!api || api.getSceneElements().length === 0) {
+      return;
+    }
+    const confirmationPrompt = new MultiOptionConfirmationPrompt(
+      this.plugin,
+      t("RESET_CANVAS_CONFIRMATION"),
+    );
+    const confirmed = await confirmationPrompt.waitForClose;
+    // The confirmation is modal: the view may have reloaded or migrated while
+    // it was open, and the captured API belongs to the drawing it started on.
+    if (!confirmed || view.isClosingOrMigrating() || view.excalidrawAPI !== api) {
+      return;
+    }
+    clearCanvas(api);
+  }
+
   public renderCustomPens(isMobile: boolean, appState: AppState) {
     if (this.pendingPenActivation && appState.activeTool.type === "freedraw") {
       this.pendingPenActivation = false;
@@ -363,6 +388,16 @@ export class ObsidianMenu {
             }
           >
             {isFullscreen ? ICONS.exitFullScreen : ICONS.gotoFullScreen}
+          </div>
+        </label>
+        <label
+          className={clsx("ToolIcon", "ToolIcon_size_medium", {
+            "is-mobile": isMobile,
+          })}
+          onClick={() => void this.actionResetCanvas()}
+        >
+          <div className="ToolIcon__icon" aria-label={t("RESET_CANVAS_BUTTON")}>
+            {ICONS.resetCanvas}
           </div>
         </label>
         {this.renderCustomPens(isMobile, appState)}

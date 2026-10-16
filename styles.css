@@ -2449,3 +2449,94 @@ button.excalidraw-font-picker {
 .excalidraw .excalidraw-tooltip-wrapper {
   --no-tooltip: true;
 }
+
+/* -------------------------------------------------------------------------
+   Trimmed toolbar
+
+   Oh My Excalidraw keeps four tools in the toolbar: hand, selection, pen
+   (freedraw), and eraser. The other tool buttons, the now empty divider
+   slots, and the extra-tools ("...") dropdown are hidden here rather than
+   patched out of the Excalidraw runtime, so the list stays explicit and
+   reviewable. The selectors use the data-testids the component assigns to
+   the buttons; both the desktop toolbar and the mobile toolbar are covered.
+   `!important` is required for the dropdown triggers because the component
+   sets `display: flex` on them inline.
+   ------------------------------------------------------------------------- */
+.excalidraw .App-toolbar [data-testid="toolbar-lock"],
+.excalidraw .App-toolbar [data-testid="toolbar-rectangle"],
+.excalidraw .App-toolbar [data-testid="toolbar-diamond"],
+.excalidraw .App-toolbar [data-testid="toolbar-ellipse"],
+.excalidraw .App-toolbar [data-testid="toolbar-arrow"],
+.excalidraw .App-toolbar [data-testid="toolbar-line"],
+.excalidraw .App-toolbar [data-testid="toolbar-text"],
+.excalidraw .App-toolbar [data-testid="toolbar-stickynote"],
+.excalidraw .App-toolbar [data-testid="toolbar-image"],
+.excalidraw .App-toolbar [data-testid="toolbar-frame"],
+.excalidraw .excalidraw-mobile-toolbar [data-testid="toolbar-rectangle"],
+.excalidraw .excalidraw-mobile-toolbar [data-testid="toolbar-arrow"],
+.excalidraw .excalidraw-mobile-toolbar [data-testid="toolbar-text"],
+.excalidraw .excalidraw-mobile-toolbar [data-testid="toolbar-stickynote"],
+.excalidraw .excalidraw-mobile-toolbar [data-testid="toolbar-frame"],
+.excalidraw .App-toolbar .App-toolbar__divider,
+.excalidraw .excalidraw-mobile-toolbar .App-toolbar__divider {
+  display: none;
+}
+
+/* Both the image menu and the extra-tools menu render their trigger with this
+   class, so hiding it removes both dropdowns from the toolbar. */
+.excalidraw .App-toolbar .App-toolbar__extra-tools-trigger,
+.excalidraw .excalidraw-mobile-toolbar .App-toolbar__extra-tools-trigger {
+  display: none !important;
+}
+
+/* The "Reset the canvas" menu item is replaced by a toolbar button. */
+.excalidraw [data-testid="clear-canvas-button"] {
+  display: none;
+}
+
+/* -------------------------------------------------------------------------
+   Tool settings popup (ToolSettingsPopup.ts): a small panel anchored under a
+   toolbar button, opened by clicking the already active tool again.
+   ------------------------------------------------------------------------- */
+.excalidraw .excalidraw-tool-settings-popup {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  min-width: 8rem;
+  padding: 4px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background-color: var(--background-primary);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  z-index: 9999;
+}
+
+.excalidraw .excalidraw-tool-settings-heading {
+  padding: 4px 8px 2px 8px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.excalidraw .excalidraw-tool-settings-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 4px 8px;
+  border: none;
+  border-radius: var(--radius-s);
+  background-color: transparent;
+  box-shadow: none;
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  text-align: left;
+  cursor: var(--cursor);
+}
+
+.excalidraw .excalidraw-tool-settings-item:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.excalidraw .excalidraw-tool-settings-item.is-selected {
+  color: var(--text-accent);
+  font-weight: var(--font-semibold);
+}
