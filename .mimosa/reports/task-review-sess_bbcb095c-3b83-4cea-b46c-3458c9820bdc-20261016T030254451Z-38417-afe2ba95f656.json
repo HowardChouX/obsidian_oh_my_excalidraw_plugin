@@ -1,0 +1,239 @@
+{
+  "schema_version": "mimosa-task-review/v2",
+  "run_id": "20261016T030254451Z-38417-afe2ba95f656",
+  "run_status": "completed",
+  "errors": [],
+  "coverage": {
+    "schema_version": "mimosa-hook-coverage/v1",
+    "status": "complete",
+    "scope": "hook_observed_diff",
+    "baseline": {
+      "complete": true,
+      "captured_files": 208,
+      "candidate_limit": 5000,
+      "truncated": false,
+      "enumeration_error_count": 0,
+      "snapshot_error_count": 0,
+      "compensated_target_count": 14
+    },
+    "change_tracking": {
+      "touched_observed": 1,
+      "touched_retained": 1,
+      "truncated": false,
+      "bash_mutation": true,
+      "bash_discovered": 14,
+      "bash_discovery_limit": 80,
+      "bash_discovery_truncated": false
+    },
+    "candidates": {
+      "eligible_files": 14,
+      "selected_files": 14,
+      "limit": 20,
+      "truncated": false
+    },
+    "scanning": {
+      "required_files": 11,
+      "scanned_files": 11,
+      "skipped_files": 0,
+      "failed_files": 0,
+      "project_checks_required": 0,
+      "project_checks_completed": 0
+    },
+    "notification": {
+      "eligible_findings": 0,
+      "detailed_findings": 0,
+      "detail_limit": 3,
+      "truncated": false
+    },
+    "reason_counts": {},
+    "reasons": [],
+    "reasons_truncated": false
+  },
+  "generated_at": "2026-10-16T03:02:54.451Z",
+  "session_id": "sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc",
+  "target": ".",
+  "revision": "37ab389691007b9bfb1341f08dc97172386edc20",
+  "rules_version": "unavailable",
+  "diff_hash": "d12f595da939f080c911bde06e834cae58fc35fbe8a4872761cbdb6f9aacfb25",
+  "diff": {
+    "algorithm": "sha256",
+    "changed_file_count": 11,
+    "changed_files": [
+      {
+        "file": "src/core/main.ts",
+        "ranges": [
+          {
+            "start": 1178,
+            "end": 1178
+          }
+        ],
+        "before_hash": "41c60b31a6a4ea121618773c8f5e3428a0f87fe0206617c7f3b0cf9e15d9b509",
+        "after_hash": "56c9f7651fc1584f22964201245cb99d959694c93f58d019b586a0ed0c3d6a8c"
+      },
+      {
+        "file": "src/core/managers/CommandManager.ts",
+        "ranges": [
+          {
+            "start": 34,
+            "end": 1205
+          }
+        ],
+        "before_hash": "24a4356e514bf048a18c16b538655a6667a28ea6fa9684a5c852622c104a6f46",
+        "after_hash": "2343b554b42b0205a4a8258301616323da6f6a12bbd98ffc3e28ff0b1c747994"
+      },
+      {
+        "file": "src/core/settings.ts",
+        "ranges": [
+          {
+            "start": 3251,
+            "end": 3252
+          }
+        ],
+        "before_hash": "34a1e2420cc0a2b448149a560359a9a574b6adca9a1ab0b6100042cfb5e0d012",
+        "after_hash": "0565d3ce1ab47f855eb9f31dee8d71c807f4424999e322a56f1bd241a99e88c2"
+      },
+      {
+        "file": "src/core/settingsDefaults.ts",
+        "ranges": [
+          {
+            "start": 690,
+            "end": 690
+          }
+        ],
+        "before_hash": "5bb1ddf59b44e082d27a272a81daf0150b9442faaf9b73fea277f973c8f4c156",
+        "after_hash": "89ece041a39723d7adc49f902814e1631efb93a28be90b09ae18020425c956ed"
+      },
+      {
+        "file": "src/shared/Dialogs/ExportDialog.ts",
+        "ranges": [
+          {
+            "start": 48,
+            "end": 48
+          }
+        ],
+        "before_hash": "0f47a88eef33ca79fa7309428604b9f4574ccfad78d8405073ea8a08c921f409",
+        "after_hash": "f06ffffed52ab0fd10f37860b4dd6192d0b6813d958fd69ac8e1eb3f621a8711"
+      },
+      {
+        "file": "src/shared/ExcalidrawAutomate.ts",
+        "ranges": [
+          {
+            "start": 392,
+            "end": 392
+          },
+          {
+            "start": 3010,
+            "end": 3010
+          }
+        ],
+        "before_hash": "72ea2a3ed8729bacc766e5117b22399f97d4e5916d7988fb9b429e134f850c03",
+        "after_hash": "b5d4e925645815607ffea7fa3b954e52f4023a82b15858ba416b6551d8bb10f1"
+      },
+      {
+        "file": "src/types/excalidrawLib.d.ts",
+        "ranges": [
+          {
+            "start": 127,
+            "end": 127
+          }
+        ],
+        "before_hash": "89275ac96e7df07b2a72418cd78c8584e589c449457391b38cb0b85778a83ec6",
+        "after_hash": "4bc209c5f56cc0f5aa7554b664ef7c373e66684af3430a3160148f4d56ba9f3b"
+      },
+      {
+        "file": "src/utils/fileUtils.ts",
+        "ranges": [
+          {
+            "start": 509,
+            "end": 510
+          }
+        ],
+        "before_hash": "74138273c8b89dc08eea11a4e2a9d7a20fcae24fd27c42c1b0f360abca504431",
+        "after_hash": "2f809381971e5ee426164783fd0c5182467539828c6ca5a0d29112881075f76b"
+      },
+      {
+        "file": "src/view/components/menu/ToolsPanel.tsx",
+        "ranges": [
+          {
+            "start": 7,
+            "end": 565
+          }
+        ],
+        "before_hash": "cbdafa44a88dc15137084841e60ae1ca46f24e0022dd48120222be5ba26d8df2",
+        "after_hash": "f5ddc9fcdd544c19341e6784658ad18b104e42688c6494face36d088c4870f45"
+      },
+      {
+        "file": "src/view/ExcalidrawView.ts",
+        "ranges": [
+          {
+            "start": 852,
+            "end": 852
+          }
+        ],
+        "before_hash": "1d65354d9214d8a048344fc99963a155721fd1fe01e409694ff7bb1bb1b7ee6d",
+        "after_hash": "436c42d998eb2d57bd40934fe479e8ff11c32af9eff82c825b867058c8c60f1b"
+      },
+      {
+        "file": "src/view/managers/ViewExportManager.ts",
+        "ranges": [
+          {
+            "start": 363,
+            "end": 363
+          }
+        ],
+        "before_hash": "62eddf2afbebed53eeb6bb47a1f04b22c56bc5fd01716926334ebce135f5b800",
+        "after_hash": "e5d8c59da8d85f90d350deba3b6f0bb8968b699d15c3edd5314c50c401a2519e"
+      }
+    ]
+  },
+  "timing": {
+    "started_at": "2026-10-16T03:02:53.110Z",
+    "completed_at": "2026-10-16T03:02:54.451Z",
+    "duration_ms": 1341,
+    "measurement": "hook_wall_clock"
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0,
+    "total": 0,
+    "model_calls": 0,
+    "measurement": "known-zero"
+  },
+  "telemetry": {
+    "schemaVersion": "mimosa-gate-telemetry/v1",
+    "profile": "gate",
+    "operation": "Stop",
+    "outcome": "complete",
+    "latencyMs": 1341,
+    "peakMemoryBytes": 253394944,
+    "memoryMeasurement": "max-observed-process-rss",
+    "scannedFiles": 11,
+    "cache": {
+      "hits": 0,
+      "misses": 0,
+      "measurement": "not-applicable"
+    },
+    "denyCount": 0,
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "total": 0,
+      "modelCalls": 0,
+      "measurement": "known-zero"
+    }
+  },
+  "finding_count": 0,
+  "rewake_finding_count": 0,
+  "evidence_boundary": {
+    "scan": "candidate",
+    "static_fix_verification": "observed_static_only",
+    "runtime_verification": "not_performed"
+  },
+  "finding_events": [],
+  "findings": [],
+  "artifacts": {
+    "immutable_report": ".mimosa/reports/task-review-sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc-20261016T030254451Z-38417-afe2ba95f656.json",
+    "latest_report": ".mimosa/reports/task-review-sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc.json",
+    "history_summary": ".mimosa/history/run-20261016T030254451Z-38417-afe2ba95f656.json"
+  }
+}

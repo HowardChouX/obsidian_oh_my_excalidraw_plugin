@@ -620,42 +620,6 @@ export function getFrameBasedOnFrameNameOrId(
   return frames.length === 1 ? frames[0] : null;
 }
 
-export function renderContextMenuAction(
-  React: Pick<typeof import("react"), "createElement">,
-  label: string,
-  action: () => void,
-  onClose: (callback?: () => void) => void,
-  actionId?: string,
-  checked: boolean = false,
-) {
-  return React.createElement(
-    "li",
-    {
-      key: nanoid(),
-      onClick: () => onClose(action),
-      "data-testid": actionId,
-    },
-    React.createElement(
-      "button",
-      {
-        className: checked
-          ? "context-menu-item checkmark"
-          : "context-menu-item",
-      },
-      React.createElement(
-        "div",
-        { className: "context-menu-item__label" },
-        label,
-      ),
-      React.createElement(
-        "kbd",
-        { className: "context-menu-item__shortcut" },
-        "", //this is where the shortcut may go in the future
-      ),
-    ),
-  );
-}
-
 export function tmpBruteForceCleanup(view: ExcalidrawView) {
   window.setTimeout(() => {
     if (!view) {

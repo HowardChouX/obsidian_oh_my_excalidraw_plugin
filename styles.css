@@ -2449,3 +2449,8 @@ button.excalidraw-font-picker {
 .excalidraw .excalidraw-tooltip-wrapper {
   --no-tooltip: true;
 }
+/* Right-button drag panning: the context menu is disabled plugin-wide and the
+   right mouse button pans the canvas instead. */
+.excalidraw-right-drag-panning .excalidraw__canvas {
+  cursor: grabbing !important;
+}

@@ -207,7 +207,6 @@ export interface ExcalidrawSettings {
   rank: Rank;
   modifierKeyOverrides: { modifiers: Modifier[]; key: string }[];
   showSplashscreen: boolean;
-  disableContextMenu: boolean;
 }
 
 
@@ -688,5 +687,4 @@ export const DEFAULT_SETTINGS: ExcalidrawSettings = {
   ],
   showSplashscreen: true,
 
-  disableContextMenu: false,
 };

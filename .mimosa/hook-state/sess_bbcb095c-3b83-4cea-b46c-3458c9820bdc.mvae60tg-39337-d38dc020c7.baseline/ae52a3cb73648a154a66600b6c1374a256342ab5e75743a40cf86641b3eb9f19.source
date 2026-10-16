@@ -19,17 +19,7 @@ import {
   exportPNG,
   exportPNGToClipboard,
 } from "src/utils/exportUtils";
-import {
-  PageOrientation,
-  PageSize,
-  PDFPageAlignment,
-  PDFPageMarginString,
-} from "src/types/exportUtilTypes";
 import { t } from "src/lang/helpers";
-import {
-  PDFExportSettings,
-  PDFExportSettingsComponent,
-} from "./PDFExportSettingsComponent";
 import { captureScreenshot } from "src/utils/screenshot";
 import { exportImageToFile, getIMGFilename } from "src/utils/fileUtils";
 import { setStyle } from "src/utils/styleUtils";
@@ -55,17 +45,10 @@ export class ExportDialog extends Modal {
   public embedScene: boolean;
   public exportSelectedOnly: boolean;
   public saveToVault: boolean;
-  public pageSize: PageSize = "A4";
-  public pageOrientation: PageOrientation = "portrait";
-  private activeTab: "image" | "pdf" | "screenshot" = "image";
+  private activeTab: "image" | "screenshot" = "image";
   private contentContainer: HTMLDivElement | null = null;
   private buttonContainerRow1: HTMLDivElement | null = null;
   private buttonContainerRow2: HTMLDivElement | null = null;
-  public fitToPage: number = 1;
-  public paperColor: "white" | "scene" | "custom" = "white";
-  public customPaperColor: string = "#ffffff";
-  public alignment: PDFPageAlignment = "center";
-  public margin: PDFPageMarginString = "normal";
   private scaleSetting: Setting | null = null;
 
   constructor(
@@ -89,14 +72,6 @@ export class ExportDialog extends Modal {
     this.saveToVault = true;
     this.transparent = !getWithBackground(this.plugin, this.file);
     this.exportInternalLinks = getExportInternalLinks(this.plugin, this.file);
-
-    this.pageSize = plugin.settings.pdfSettings.pageSize;
-    this.pageOrientation = plugin.settings.pdfSettings.pageOrientation;
-    this.fitToPage = plugin.settings.pdfSettings.fitToPage;
-    this.paperColor = plugin.settings.pdfSettings.paperColor;
-    this.customPaperColor = plugin.settings.pdfSettings.customPaperColor;
-    this.alignment = plugin.settings.pdfSettings.alignment;
-    this.margin = plugin.settings.pdfSettings.margin;
 
     this.saveSettings = false;
     this.createForm();
@@ -153,11 +128,6 @@ export class ExportDialog extends Modal {
         cls: `nav-button ${this.activeTab === "image" ? "is-active" : ""}`,
       });
 
-      const pdfTab = tabContainer.createEl("button", {
-        text: t("EXPORTDIALOG_TAB_PDF"),
-        cls: `nav-button ${this.activeTab === "pdf" ? "is-active" : ""}`,
-      });
-
       const screenshotTab = tabContainer.createEl("button", {
         text: t("EXPORTDIALOG_TAB_SCREENSHOT"),
         cls: `nav-button ${this.activeTab === "screenshot" ? "is-active" : ""}`,
@@ -167,15 +137,6 @@ export class ExportDialog extends Modal {
       imageTab.onclick = () => {
         this.activeTab = "image";
         imageTab.addClass("is-active");
-        pdfTab.removeClass("is-active");
-        screenshotTab.removeClass("is-active");
-        this.renderContent();
-      };
-
-      pdfTab.onclick = () => {
-        this.activeTab = "pdf";
-        pdfTab.addClass("is-active");
-        imageTab.removeClass("is-active");
         screenshotTab.removeClass("is-active");
         this.renderContent();
       };
@@ -184,7 +145,6 @@ export class ExportDialog extends Modal {
         this.activeTab = "screenshot";
         screenshotTab.addClass("is-active");
         imageTab.removeClass("is-active");
-        pdfTab.removeClass("is-active");
         this.renderContent();
       };
     }
@@ -223,11 +183,6 @@ export class ExportDialog extends Modal {
 
     this.createHeader();
     switch (this.activeTab) {
-      case "pdf":
-        this.createImageSettings();
-        this.createPDFSettings();
-        this.createPDFButton();
-        break;
       case "screenshot":
         if (this.view.isInMainObsidianWorkspace) {
           this.createImageSettings(true);
@@ -257,12 +212,6 @@ export class ExportDialog extends Modal {
 
   private createHeader() {
     switch (this.activeTab) {
-      case "pdf":
-        this.contentContainer.createEl("h1", {
-          text: t("EXPORTDIALOG_PDF_SETTINGS"),
-        });
-        //this.contentContainer.createEl("p",{text: t("EXPORTDIALOG_PDF_DESC")});
-        break;
       case "screenshot":
         this.contentContainer.createEl("h1", {
           text: t("EXPORTDIALOG_TAB_SCREENSHOT"),
@@ -386,36 +335,6 @@ export class ExportDialog extends Modal {
             this.embedScene = value === "embed";
           }),
       );
-  }
-
-  private createPDFSettings() {
-    if (!DEVICE.isDesktop) {
-      return;
-    }
-
-    this.contentContainer.createEl("h1", {
-      text: t("EXPORTDIALOG_PDF_SETTINGS"),
-    });
-
-    const pdfSettings: PDFExportSettings = {
-      pageSize: this.pageSize,
-      pageOrientation: this.pageOrientation,
-      fitToPage: this.fitToPage,
-      paperColor: this.paperColor,
-      customPaperColor: this.customPaperColor,
-      alignment: this.alignment,
-      margin: this.margin,
-    };
-
-    new PDFExportSettingsComponent(this.contentContainer, pdfSettings, () => {
-      this.pageSize = pdfSettings.pageSize;
-      this.pageOrientation = pdfSettings.pageOrientation;
-      this.fitToPage = pdfSettings.fitToPage;
-      this.paperColor = pdfSettings.paperColor;
-      this.customPaperColor = pdfSettings.customPaperColor;
-      this.alignment = pdfSettings.alignment;
-      this.margin = pdfSettings.margin;
-    }).render();
   }
 
   private createImageButtons(isScreenshot: boolean = false) {
@@ -553,56 +472,5 @@ export class ExportDialog extends Modal {
       await exportSVGToClipboard(svg);
       this.close();
     };
-  }
-
-  private createPDFButton() {
-    const bSavePDFSettings = this.buttonContainerRow1.createEl("button", {
-      text: t("EXPORTDIALOG_SAVE_PDF_SETTINGS"),
-      cls: "excalidraw-export-button",
-    });
-    bSavePDFSettings.onclick = async () => {
-      //in case sync loaded a new version of settings in the mean time
-      await this.plugin.loadSettings();
-      this.plugin.settings.pdfSettings = {
-        pageSize: this.pageSize,
-        pageOrientation: this.pageOrientation,
-        fitToPage: this.fitToPage,
-        paperColor: this.paperColor,
-        customPaperColor: this.customPaperColor,
-        alignment: this.alignment,
-        margin: this.margin,
-      };
-      await this.plugin.saveSettings();
-      new Notice(t("EXPORTDIALOG_SAVE_CONFIRMATION"));
-    };
-
-    if (!DEVICE.isDesktop) {
-      return;
-    }
-    const bPDFExport = this.buttonContainerRow1.createEl("button", {
-      text: t("EXPORTDIALOG_PDF"),
-      cls: "excalidraw-export-button",
-    });
-    bPDFExport.onclick = () => {
-      void this.view.exportPDF(
-        this.isSelectedOnly,
-        this.pageSize,
-        this.pageOrientation,
-      );
-      this.close();
-    };
-  }
-
-  public getPaperColor(): string {
-    switch (this.paperColor) {
-      case "white":
-        return this.theme === "light" ? "#ffffff" : "#000000";
-      case "scene":
-        return this.api.getAppState().viewBackgroundColor;
-      case "custom":
-        return this.customPaperColor;
-      default:
-        return "#ffffff";
-    }
   }
 }

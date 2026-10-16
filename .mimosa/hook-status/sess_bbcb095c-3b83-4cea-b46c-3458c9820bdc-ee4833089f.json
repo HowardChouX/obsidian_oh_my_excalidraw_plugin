@@ -1,14 +1,14 @@
 {
   "schemaVersion": "mimosa-hook-status/v1",
-  "recordedAt": "2026-10-16T02:59:32.758Z",
+  "recordedAt": "2026-10-16T03:18:38.168Z",
   "sessionId": "sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc",
   "event": "PostToolUse",
-  "toolName": "Write",
-  "file": "scripts/tmp-splice-card2.mjs",
+  "toolName": "Edit",
+  "file": "scripts/tmp-splice-ctxmenu.mjs",
   "outcome": "clear",
   "coverage": "complete",
   "findingCount": 0,
-  "durationMs": 4,
+  "durationMs": 3,
   "hostState": "hook_complete",
   "reportHint": ".mimosa/reports/"
 }

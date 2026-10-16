@@ -1778,12 +1778,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
         },
       },
       {
-        name: t("DISABLE_CONTEXT_MENU_NAME"),
-        desc: t("DISABLE_CONTEXT_MENU_DESC"),
-        aliases: ["context menu", "right click menu"],
-        control: { type: "toggle", key: "disableContextMenu", negate: true },
-      },
-      {
         name: t("SHOW_DRAWING_OR_MD_IN_READING_MODE_NAME"),
         desc: fragWithHTML(t("SHOW_DRAWING_OR_MD_IN_READING_MODE_DESC")),
         aliases: ["reading mode", "markdown reading mode", "render image"],

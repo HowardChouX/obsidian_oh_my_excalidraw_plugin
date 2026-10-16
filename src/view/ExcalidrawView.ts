@@ -183,7 +183,6 @@ import {
   onLoadMessages,
   openExternalLink,
   parseObsidianLink,
-  renderContextMenuAction,
   sceneRemoveInternalLinks,
   setMobileNavbarPosition,
   tmpBruteForceCleanup,
@@ -219,6 +218,7 @@ import {
   ViewSemaphores,
 } from "../types/excalidrawViewTypes";
 import { DropManager } from "./managers/DropManager";
+import { ViewRightDragPanManager } from "./managers/ViewRightDragPanManager";
 import { ViewExportManager } from "./managers/ViewExportManager";
 import { ViewFullscreenManager } from "./managers/ViewFullscreenManager";
 import { ViewLinkNavigationManager } from "./managers/ViewLinkNavigationManager";
@@ -499,6 +499,7 @@ export default class ExcalidrawView
   public embeddableMenu: EmbeddableMenu | null = null;
   public selectedElementActionsMenu: SelectedElementActionsMenu | null = null;
   private destroyers: Array<() => void> = [];
+  private rightDragPan: ViewRightDragPanManager;
   private previousContentElHeight: number = 0;
   private resizeBatchTimer: number | null = null;
   private excalidrawInitializeTimer: number | null = null;
@@ -1672,6 +1673,9 @@ export default class ExcalidrawView
   onload() {
     super.onload();
     this.displayLoadingText();
+    this.rightDragPan = new ViewRightDragPanManager(this);
+    this.rightDragPan.attach(this.contentEl);
+    this.destroyers.push(() => this.rightDragPan.destroy());
     if (this.plugin.settings.overrideObsidianFontSize) {
       setStyle(mainDocument.documentElement, {
         fontSize: "",
@@ -4909,7 +4913,7 @@ export default class ExcalidrawView
         frameRendering: st.frameRendering,
         objectsSnapModeEnabled: st.objectsSnapModeEnabled,
         activeTool,
-        disableContextMenu: st.disableContextMenu,
+        disableContextMenu: true,
         bindingPreference: st.bindingPreference,
         isMidpointSnappingEnabled: st.isMidpointSnappingEnabled,
         boxSelectionMode: st.boxSelectionMode,
@@ -6362,415 +6366,6 @@ export default class ExcalidrawView
     );
   }
 
-  public onContextMenu(
-    elements: readonly ExcalidrawElement[],
-    appState: AppState,
-    onClose: (callback?: () => void) => void,
-  ) {
-    const React = this.packages.react;
-    const contextMenuActions = [];
-    const api = this.excalidrawAPI;
-    const selectedElementIds = Object.keys(
-      api.getAppState().selectedElementIds,
-    );
-    const areElementsSelected = selectedElementIds.length > 0;
-
-    if (this.isLinkSelected()) {
-      contextMenuActions.push([
-        renderContextMenuAction(
-          React,
-          t("OPEN_LINK_CLICK"),
-          () => {
-            const event = emulateKeysForLinkClick("new-tab");
-            void this.handleLinkClick(event, true);
-          },
-          onClose,
-          "openLink",
-        ),
-      ]);
-    }
-
-    if (!appState.viewModeEnabled) {
-      const selectedTextElements = this.getViewSelectedElements().filter(
-        (el) => el.type === "text",
-      );
-      if (selectedTextElements.length === 1) {
-        const selectedTextElement = selectedTextElements[0];
-        const containerElement = (
-          this.getViewElements() as ExcalidrawElement[]
-        ).find((el) => el.id === selectedTextElement.containerId);
-
-        //if the text element in the container no longer has a link associated with it...
-        if (
-          containerElement &&
-          selectedTextElement.link &&
-          this.excalidrawData.getParsedText(selectedTextElement.id) ===
-            selectedTextElement.rawText
-        ) {
-          contextMenuActions.push([
-            renderContextMenuAction(
-              React,
-              t("REMOVE_LINK"),
-              () => {
-                void (async () => {
-                  const ea = getEA(this);
-                  ea.copyViewElementsToEAforEditing([selectedTextElement]);
-                  const el = ea.getElement(
-                    selectedTextElement.id,
-                  ) as Mutable<ExcalidrawTextElement>;
-                  el.link = null;
-                  await ea.addElementsToView(false);
-                  ea.destroy();
-                })();
-              },
-              onClose,
-              "removeLink",
-            ),
-          ]);
-        }
-
-        if (containerElement) {
-          contextMenuActions.push([
-            renderContextMenuAction(
-              React,
-              t("SELECT_TEXTELEMENT_ONLY"),
-              () => {
-                window.setTimeout(() =>
-                  this.excalidrawAPI.selectElements([selectedTextElement]),
-                );
-              },
-              onClose,
-              "selectTextWithoutContainer",
-            ),
-          ]);
-        }
-
-        if (
-          !containerElement ||
-          (containerElement && containerElement.type !== "arrow")
-        ) {
-          contextMenuActions.push([
-            renderContextMenuAction(
-              React,
-              t("CONVERT_TO_MARKDOWN"),
-              () => {
-                this.convertTextElementToMarkdown(
-                  selectedTextElement,
-                  containerElement,
-                );
-              },
-              onClose,
-              "convertToMarkdown",
-            ),
-          ]);
-        }
-      }
-
-      const img = this.getSingleSelectedImage();
-      if (img?.embeddedFile?.isHyperLink) {
-      }
-
-      if (
-        img?.embeddedFile?.mimeType === "image/svg+xml" &&
-        (!img.embeddedFile.file ||
-          (img.embeddedFile.file &&
-            !this.plugin.isExcalidrawFile(img.embeddedFile.file)))
-      ) {
-        contextMenuActions.push([
-          renderContextMenuAction(
-            React,
-            t("IMPORT_SVG_CONTEXTMENU"),
-            () => {
-              void (async () => {
-                const base64Content = img.embeddedFile
-                  .getImage(false)
-                  .split(",")[1];
-                // Decoding the base64 content
-                const svg = atob(base64Content);
-                if (!svg || svg === "") {
-                  return;
-                }
-                const ea = getEA(this);
-                ea.importSVG(svg);
-                ea.addToGroup(ea.getElements().map((el) => el.id));
-                await ea.addElementsToView(true, true, true, true);
-                ea.destroy();
-              })();
-            },
-            onClose,
-            "convertSvgToStrokes",
-          ),
-        ]);
-      }
-
-      const selectedImages = this.getViewSelectedElements().filter(
-        (el) => el.type === "image",
-      );
-      if (selectedImages.length > 0) {
-        type ImageType = "svg" | "pdf" | "bitmap" | "excalidraw";
-
-        const getImageType = (
-          imageEl: ExcalidrawImageElement,
-          embeddedFile?: EmbeddedFile,
-        ): ImageType | null => {
-          if (!embeddedFile) {
-            return null;
-          }
-          if (
-            embeddedFile.file &&
-            this.plugin.isExcalidrawFile(embeddedFile.file)
-          ) {
-            return "excalidraw";
-          }
-          if (
-            embeddedFile.file?.extension?.toLowerCase?.() === "pdf" ||
-            !!embeddedFile.pdfPageViewProps
-          ) {
-            return "pdf";
-          }
-          if (embeddedFile.mimeType === "image/svg+xml") {
-            return "svg";
-          }
-          return "bitmap";
-        };
-
-        const getInvertInDarkMode = (
-          imageEl: ExcalidrawImageElement,
-          imageType: ImageType,
-        ): boolean => {
-          const invertBitmap = imageEl.customData?.invertBitmapInDarkmode;
-          switch (imageType) {
-            case "svg":
-            case "excalidraw":
-              return !imageEl.customData?.doNotInvertSVGInDarkMode;
-            case "pdf":
-              return invertBitmap ?? true;
-          }
-          return invertBitmap ?? false;
-        };
-
-        const imageMenuState = (() => {
-          const ea = getEA(this);
-          try {
-            const imagesWithStatus = selectedImages
-              .map((el) => {
-                const embeddedFile = this.excalidrawData.getFile(el.fileId);
-                const imageType = getImageType(el, embeddedFile);
-                if (!imageType) {
-                  return null;
-                }
-                return {
-                  el,
-                  imageType,
-                  invertInDarkMode: getInvertInDarkMode(el, imageType),
-                };
-              })
-              .filter(Boolean) as {
-              el: ExcalidrawImageElement;
-              imageType: ImageType;
-              invertInDarkMode: boolean;
-            }[];
-            if (imagesWithStatus.length === 0) {
-              return null;
-            }
-            const reference = imagesWithStatus[0].invertInDarkMode;
-            if (
-              !imagesWithStatus.every(
-                (img) => img.invertInDarkMode === reference,
-              )
-            ) {
-              return null;
-            }
-            return { imagesWithStatus, invertInDarkMode: reference };
-          } finally {
-            ea.destroy();
-          }
-        })();
-
-        if (imageMenuState) {
-          const { imagesWithStatus, invertInDarkMode } = imageMenuState;
-          const newInvertState = !invertInDarkMode;
-          contextMenuActions.push([
-            renderContextMenuAction(
-              React,
-              t("INVERT_IMAGES_IN_DARK_MODE"),
-              () => {
-                void (async () => {
-                  const ea = getEA(this);
-                  ea.copyViewElementsToEAforEditing(
-                    imagesWithStatus.map((img) => img.el),
-                  );
-                  imagesWithStatus.forEach((img) => {
-                    const editableEl = ea.getElement(
-                      img.el.id,
-                    ) as Mutable<ExcalidrawImageElement>;
-                    const embeddedFile = this.excalidrawData.getFile(
-                      editableEl.fileId,
-                    );
-                    const imageType =
-                      getImageType(editableEl, embeddedFile) ?? img.imageType;
-                    if (imageType === "svg" || imageType === "excalidraw") {
-                      addAppendUpdateCustomData(editableEl, {
-                        doNotInvertSVGInDarkMode: newInvertState
-                          ? undefined
-                          : true,
-                        invertBitmapInDarkmode: undefined,
-                      });
-                    } else {
-                      addAppendUpdateCustomData(editableEl, {
-                        invertBitmapInDarkmode: newInvertState,
-                        doNotInvertSVGInDarkMode: undefined,
-                      });
-                    }
-                  });
-                  await ea.addElementsToView(false);
-                  ea.destroy();
-                })();
-              },
-              onClose,
-              "invertImageInDarkmode",
-              invertInDarkMode,
-            ),
-          ]);
-        }
-      }
-
-      if (areElementsSelected) {
-        contextMenuActions.push([
-          renderContextMenuAction(
-            React,
-            t("COPY_ELEMENT_LINK"),
-            () => this.copyLinkToSelectedElementToClipboard(""),
-            onClose,
-            "copyElementLink",
-          ),
-        ]);
-      } else {
-        contextMenuActions.push([
-          renderContextMenuAction(
-            React,
-            t("COPY_DRAWING_LINK"),
-            () => {
-              const path = this.file.path.match(/(.*)(\.md)$/)?.[1];
-              void navigator.clipboard.writeText(
-                `![[${path ?? this.file.path}]]`,
-              );
-            },
-            onClose,
-            "copyDrawingLink",
-          ),
-        ]);
-      }
-
-      contextMenuActions.push([
-        renderContextMenuAction(
-          React,
-          t("UNIVERSAL_ADD_FILE"),
-          () => {
-            const insertFileModal = new UniversalInsertFileModal(
-              this.plugin,
-              this,
-            );
-            insertFileModal.open();
-          },
-          onClose,
-          "insertAnyFile",
-        ),
-      ]);
-      if (DEVICE.isTablet || DEVICE.isMobile) {
-        contextMenuActions.push([
-          renderContextMenuAction(
-            React,
-            t("INSERT_LINK"),
-            () => {
-              this.plugin.insertLinkDialog.start(
-                this.file.path,
-                (markdownlink: string, path: string, alias: string) => {
-                  void this.addLink(markdownlink, path, alias);
-                },
-              );
-            },
-            onClose,
-            "insertLinkToFile",
-          ),
-          // Add more context menu actions here if needed
-        ]);
-      }
-
-      if (!areElementsSelected) {
-        const { frameRendering } = appState;
-        const enabled =
-          frameRendering.markerEnabled &&
-          frameRendering.enabled &&
-          frameRendering.outline;
-        contextMenuActions.push([
-          renderContextMenuAction(
-            React,
-            t("MARKER_FRAME_SHOW"),
-            () => {
-              window.setTimeout(() =>
-                this.updateScene({
-                  appState: {
-                    frameRendering: {
-                      ...frameRendering,
-                      ...(enabled ? {} : { enabled: true, outline: true }),
-                      markerEnabled: !enabled,
-                    },
-                  },
-                  captureUpdate: CaptureUpdateAction.NEVER,
-                }),
-              );
-            },
-            onClose,
-            "toggleMarkerFrames",
-            enabled,
-          ),
-        ]);
-        if (
-          frameRendering.markerEnabled &&
-          frameRendering.enabled &&
-          frameRendering.outline
-        ) {
-          contextMenuActions.push([
-            renderContextMenuAction(
-              React,
-              t("MARKER_FRAME_TITLE_SHOW"),
-              () => {
-                window.setTimeout(() =>
-                  this.updateScene({
-                    appState: {
-                      frameRendering: {
-                        ...frameRendering,
-                        markerName: !frameRendering.markerName,
-                      },
-                    },
-                    captureUpdate: CaptureUpdateAction.NEVER,
-                  }),
-                );
-              },
-              onClose,
-              "toggleMarkerFrameTitles",
-              frameRendering.markerName,
-            ),
-          ]);
-        }
-      }
-    }
-
-    if (contextMenuActions.length === 0) {
-      return;
-    }
-    return React.createElement(
-      React.Fragment,
-      {},
-      ...contextMenuActions,
-      React.createElement("hr", {
-        key: nanoid(),
-        className: "context-menu-item-separator",
-      }),
-    );
-  }
-
   private actionOpenExportImageDialog() {
     if (!this.exportDialog) {
       this.exportDialog = new ExportDialog(this.plugin, this, this.file);
@@ -7153,18 +6748,6 @@ export default class ExcalidrawView
     }
     api.updateScene({
       appState: { allowWheelZoom: this.plugin.settings.allowWheelZoom },
-      captureUpdate: CaptureUpdateAction.NEVER,
-    });
-  }
-
-  public toggleEnableContextMenu() {
-    const api = this.excalidrawAPI;
-    if (!api) {
-      return;
-    }
-    const disableContextMenu = api.getAppState().disableContextMenu;
-    this.updateScene({
-      appState: { disableContextMenu: !disableContextMenu },
       captureUpdate: CaptureUpdateAction.NEVER,
     });
   }

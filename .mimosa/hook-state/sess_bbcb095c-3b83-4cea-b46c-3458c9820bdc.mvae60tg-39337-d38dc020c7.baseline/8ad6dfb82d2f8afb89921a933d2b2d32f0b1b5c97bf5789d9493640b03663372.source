@@ -4,7 +4,6 @@ import * as React from "react";
 import { ActionButton } from "./ActionButton";
 import { ICONS, saveIcon, stringToSVG } from "../../../constants/actionIcons";
 import { DEVICE, SCRIPT_INSTALL_FOLDER } from "../../../constants/constants";
-import { search } from "../../../utils/excalidrawViewHelpers";
 import { TextMode } from "../../../shared/TextMode";
 import type ExcalidrawView from "../../ExcalidrawView";
 import { t } from "../../../lang/helpers";
@@ -242,14 +241,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
     }
   }
 
-  actionSearch() {
-    const view = this.getView();
-    if (!view) {
-      return;
-    }
-    void search(view);
-  }
-
   actionOpenLink(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
     const view = this.getView();
     if (!view) {
@@ -341,25 +332,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
     plugin.insertImageDialog.start(view);
   }
 
-  actionInsertMarkdown() {
-    const view = this.getView();
-    const plugin = view?.plugin;
-    if (!view || !plugin) {
-      return;
-    }
-    this.props.centerPointer();
-    plugin.insertMDDialog.start(view);
-  }
-
-  actionInsertBackOfNote() {
-    const view = this.getView();
-    if (!view) {
-      return;
-    }
-    this.props.centerPointer();
-    void view.insertBackOfTheNoteCard();
-  }
-
   actionInsertLink() {
     const view = this.getView();
     const plugin = view?.plugin;
@@ -379,12 +351,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
       return;
     }
     plugin.importSVGDialog.start(view);
-  }
-
-  actionCropImage() {
-    this.getView()?.app.commands.executeCommandById(
-      "obsidian-excalidraw-plugin:crop-image",
-    );
   }
 
   private islandOnClick(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
@@ -535,12 +501,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
                 </div>
                 <div className="buttonList buttonListIcon">
                   <ActionButton
-                    key={"search"}
-                    title={t("SEARCH")}
-                    action={() => this.actionSearch()}
-                    icon={ICONS.search}
-                  />
-                  <ActionButton
                     key={"openLink"}
                     title={t("OPEN_LINK_CLICK")}
                     action={(e) => this.actionOpenLink(e)}
@@ -593,18 +553,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
                     icon={ICONS["add-file"]}
                   />
                   <ActionButton
-                    key={"insertMD"}
-                    title={t("INSERT_MD")}
-                    action={() => this.actionInsertMarkdown()}
-                    icon={ICONS.insertMD}
-                  />
-                  <ActionButton
-                    key={"insertBackOfNote"}
-                    title={t("INSERT_CARD")}
-                    action={() => this.actionInsertBackOfNote()}
-                    icon={ICONS.BackOfNote}
-                  />
-                  <ActionButton
                     key={"link"}
                     title={t("INSERT_LINK")}
                     action={() => this.actionInsertLink()}
@@ -615,12 +563,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
                     title={t("IMPORT_SVG")}
                     action={() => this.actionImportSVG()}
                     icon={ICONS.importSVG}
-                  />
-                  <ActionButton
-                    key={"crop-image"}
-                    title={t("CROP_IMAGE")}
-                    action={() => this.actionCropImage()}
-                    icon={ICONS.Crop}
                   />
                 </div>
               </fieldset>

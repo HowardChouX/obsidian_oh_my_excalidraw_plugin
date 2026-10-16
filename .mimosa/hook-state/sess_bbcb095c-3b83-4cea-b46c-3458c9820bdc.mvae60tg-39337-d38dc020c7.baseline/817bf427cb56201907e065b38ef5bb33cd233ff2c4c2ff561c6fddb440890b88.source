@@ -817,44 +817,6 @@ function estimateLineBound(
   return [minX, minY, maxX, maxY];
 }
 
-export const search = async (view: ExcalidrawView) => {
-  const ea = view.plugin.ea;
-  ea.reset();
-  ea.setView(view);
-  const elements = ea
-    .getViewElements()
-    .filter(
-      (el) =>
-        el.type === "text" ||
-        el.type === "frame" ||
-        el.link ||
-        el.type === "image",
-    );
-  if (elements.length === 0) {
-    return;
-  }
-  let text = await inputPrompt(
-    view,
-    view.plugin,
-    view.plugin.app,
-    "Search for",
-    "use quotation marks for exact match",
-    "",
-  );
-  if (!text) {
-    return;
-  }
-  const res = text.matchAll(/"(.*?)"/g);
-  let query: string[] = [];
-  let parts: IteratorResult<RegExpMatchArray, undefined>;
-  while (!(parts = res.next()).done) {
-    query.push(parts.value[1]);
-  }
-  text = text.replaceAll(/"(.*?)"/g, "");
-  query = query.concat(text.split(" ").filter((s: string) => s.length !== 0));
-
-  ea.targetView.selectElementsMatchingQuery(elements, query);
-};
 
 /**
  *
