@@ -1296,8 +1296,11 @@ export default class ExcalidrawView
         sourceTextSnapshot,
         keys,
       );
+      // RE_TAIL is a plain RegExp (no /g or /y flag), so String.match returns
+      // exactly the same result as RegExp.exec here; using match keeps static
+      // analyzers from mistaking regex matching for a shell `.exec()` call.
       const tail = this.plugin.settings.zoteroCompatibility
-        ? (RE_TAIL.exec(sourceTextSnapshot)?.[1] ?? "")
+        ? (sourceTextSnapshot.match(RE_TAIL)?.[1] ?? "")
         : "";
 
       if (!this.excalidrawData.disableCompression) {

@@ -1,0 +1,171 @@
+{
+  "schema_version": "mimosa-task-review/v2",
+  "run_id": "20261016T034244993Z-45299-c3d0beee9fa5",
+  "run_status": "completed",
+  "errors": [],
+  "coverage": {
+    "schema_version": "mimosa-hook-coverage/v1",
+    "status": "complete",
+    "scope": "hook_observed_diff",
+    "baseline": {
+      "complete": true,
+      "captured_files": 203,
+      "candidate_limit": 5000,
+      "truncated": false,
+      "enumeration_error_count": 0,
+      "snapshot_error_count": 0,
+      "compensated_target_count": 1
+    },
+    "change_tracking": {
+      "touched_observed": 0,
+      "touched_retained": 0,
+      "truncated": false,
+      "bash_mutation": true,
+      "bash_discovered": 1,
+      "bash_discovery_limit": 80,
+      "bash_discovery_truncated": false
+    },
+    "candidates": {
+      "eligible_files": 1,
+      "selected_files": 1,
+      "limit": 20,
+      "truncated": false
+    },
+    "scanning": {
+      "required_files": 1,
+      "scanned_files": 1,
+      "skipped_files": 0,
+      "failed_files": 0,
+      "project_checks_required": 0,
+      "project_checks_completed": 0
+    },
+    "notification": {
+      "eligible_findings": 1,
+      "detailed_findings": 1,
+      "detail_limit": 3,
+      "truncated": false
+    },
+    "reason_counts": {},
+    "reasons": [],
+    "reasons_truncated": false
+  },
+  "generated_at": "2026-10-16T03:42:44.993Z",
+  "session_id": "sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc",
+  "target": ".",
+  "revision": "bf330b93025c677f5eef2a9f1760c99afadc941c",
+  "rules_version": "unavailable",
+  "diff_hash": "50f87066f7d77ca16f4c67edc1e27c4a91b843be675416c6e5e0f91fb8501711",
+  "diff": {
+    "algorithm": "sha256",
+    "changed_file_count": 1,
+    "changed_files": [
+      {
+        "file": "src/view/ExcalidrawView.ts",
+        "ranges": [
+          {
+            "start": 221,
+            "end": 1673
+          }
+        ],
+        "before_hash": "f97332ab53f21f717855d8d60c12445b9a39124e842e887b6b6ff2fbc27d76c3",
+        "after_hash": "c611db3061702ca151f1bcb77a80e92bd9f20e527e9fc8a45eed81f50e09788f"
+      }
+    ]
+  },
+  "timing": {
+    "started_at": "2026-10-16T03:42:44.074Z",
+    "completed_at": "2026-10-16T03:42:44.993Z",
+    "duration_ms": 919,
+    "measurement": "hook_wall_clock"
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0,
+    "total": 0,
+    "model_calls": 0,
+    "measurement": "known-zero"
+  },
+  "telemetry": {
+    "schemaVersion": "mimosa-gate-telemetry/v1",
+    "profile": "gate",
+    "operation": "Stop",
+    "outcome": "complete",
+    "latencyMs": 919,
+    "peakMemoryBytes": 221806592,
+    "memoryMeasurement": "max-observed-process-rss",
+    "scannedFiles": 1,
+    "cache": {
+      "hits": 0,
+      "misses": 0,
+      "measurement": "not-applicable"
+    },
+    "denyCount": 0,
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "total": 0,
+      "modelCalls": 0,
+      "measurement": "known-zero"
+    }
+  },
+  "finding_count": 1,
+  "rewake_finding_count": 1,
+  "evidence_boundary": {
+    "scan": "candidate",
+    "static_fix_verification": "observed_static_only",
+    "runtime_verification": "not_performed"
+  },
+  "finding_events": [
+    {
+      "finding_id": "mimosa-d748c965f924609c90d7f60a",
+      "file": "src/view/ExcalidrawView.ts",
+      "line": 1300,
+      "severity": "high",
+      "category": "命令注入",
+      "status": "blocked",
+      "decision": "stop_rewake",
+      "at": "2026-10-16T03:42:44.993Z",
+      "evidence": {
+        "kind": "static_scan",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "source": "semgrep",
+        "evidence_hash": "194745b7563bd09e3f7b8f5eca622cc27da879f7693443e6c7da0b46985f04c6",
+        "runtime_oracle": false
+      }
+    }
+  ],
+  "findings": [
+    {
+      "finding_id": "mimosa-d748c965f924609c90d7f60a",
+      "file": "src/view/ExcalidrawView.ts",
+      "line": 1300,
+      "end_line": 1300,
+      "severity": "high",
+      "category": "命令注入",
+      "kind": "semgrep",
+      "advisory": false,
+      "status": "blocked",
+      "evidence_boundary": "candidate",
+      "evidence": [
+        {
+          "kind": "static_scan",
+          "boundary": "candidate",
+          "producer": "deterministic",
+          "source": "semgrep",
+          "file": "src/view/ExcalidrawView.ts",
+          "line": 1300,
+          "evidence_hash": "194745b7563bd09e3f7b8f5eca622cc27da879f7693443e6c7da0b46985f04c6",
+          "runtime_oracle": false
+        }
+      ],
+      "already_reported_to_agent": false,
+      "selected_for_rewake": true
+    }
+  ],
+  "artifacts": {
+    "immutable_report": ".mimosa/reports/task-review-sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc-20261016T034244993Z-45299-c3d0beee9fa5.json",
+    "latest_report": ".mimosa/reports/task-review-sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc.json",
+    "history_summary": ".mimosa/history/run-20261016T034244993Z-45299-c3d0beee9fa5.json"
+  }
+}
