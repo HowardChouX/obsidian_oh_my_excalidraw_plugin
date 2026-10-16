@@ -372,12 +372,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
     plugin.importSVGDialog.start(view);
   }
 
-  actionCropImage() {
-    this.getView()?.app.commands.executeCommandById(
-      "obsidian-excalidraw-plugin:crop-image",
-    );
-  }
-
   private islandOnClick(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
     event.preventDefault();
     if (
@@ -600,12 +594,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
                     title={t("IMPORT_SVG")}
                     action={() => this.actionImportSVG()}
                     icon={ICONS.importSVG}
-                  />
-                  <ActionButton
-                    key={"crop-image"}
-                    title={t("CROP_IMAGE")}
-                    action={() => this.actionCropImage()}
-                    icon={ICONS.Crop}
                   />
                 </div>
               </fieldset>

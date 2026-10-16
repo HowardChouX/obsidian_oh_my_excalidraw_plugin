@@ -1608,26 +1608,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
         control: { type: "toggle", key: "embedUseExcalidrawFolder" },
       },
       {
-        name: t("CROP_FOLDER_NAME"),
-        desc: fragWithHTML(t("CROP_FOLDER_DESC")),
-        control: {
-          type: "text",
-          key: "cropFolder",
-          placeholder: t("CROP_FOLDER_PLACEHOLDER"),
-          vaultPath: { kind: "folder", options: { optional: true } },
-        },
-      },
-      {
-        name: t("ANNOTATE_FOLDER_NAME"),
-        desc: fragWithHTML(t("ANNOTATE_FOLDER_DESC")),
-        control: {
-          type: "text",
-          key: "annotateFolder",
-          placeholder: t("ANNOTATE_FOLDER_PLACEHOLDER"),
-          vaultPath: { kind: "folder", options: { optional: true } },
-        },
-      },
-      {
         name: t("TEMPLATE_NAME"),
         desc: fragWithHTML(t("TEMPLATE_DESC")),
         aliases: ["drawing template", "template file"],
@@ -1782,55 +1762,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
           key: "useExcalidrawExtension",
           after: () => this.refreshFilenameSample(renderState),
         },
-      },
-      {
-        name: t("CROP_PREFIX_NAME"),
-        desc: fragWithHTML(t("CROP_PREFIX_DESC")),
-        aliases: ["cropped image filename prefix"],
-        control: {
-          type: "text",
-          key: "cropPrefix",
-          placeholder: t("CROP_PREFIX_PLACEHOLDER"),
-          sanitize: sanitizeFilenameSegment,
-        },
-      },
-      {
-        name: t("CROP_SUFFIX_NAME"),
-        desc: fragWithHTML(t("CROP_SUFFIX_DESC")),
-        aliases: ["cropped image filename suffix"],
-        control: {
-          type: "text",
-          key: "cropSuffix",
-          placeholder: t("CROP_SUFFIX_PLACEHOLDER"),
-          sanitize: sanitizeFilenameSegment,
-        },
-      },
-      {
-        name: t("ANNOTATE_PREFIX_NAME"),
-        desc: fragWithHTML(t("ANNOTATE_PREFIX_DESC")),
-        aliases: ["annotated image filename prefix"],
-        control: {
-          type: "text",
-          key: "annotatePrefix",
-          placeholder: t("ANNOTATE_PREFIX_PLACEHOLDER"),
-          sanitize: sanitizeFilenameSegment,
-        },
-      },
-      {
-        name: t("ANNOTATE_SUFFIX_NAME"),
-        desc: fragWithHTML(t("ANNOTATE_SUFFIX_DESC")),
-        aliases: ["annotated image filename suffix"],
-        control: {
-          type: "text",
-          key: "annotateSuffix",
-          placeholder: t("ANNOTATE_SUFFIX_PLACEHOLDER"),
-          sanitize: sanitizeFilenameSegment,
-        },
-      },
-      {
-        name: t("ANNOTATE_PRESERVE_SIZE_NAME"),
-        desc: fragWithHTML(t("ANNOTATE_PRESERVE_SIZE_DESC")),
-        control: { type: "toggle", key: "annotatePreserveSize" },
       },
     ];
   }

@@ -16,7 +16,6 @@ import { PreviewImageType } from "src/types/utilTypes";
 import { PENS } from "src/utils/pens";
 import { EmbeddableMDCustomProps } from "src/shared/Dialogs/EmbeddableSettings";
 import { ModifierKeySet, ModifierSetType } from "src/utils/modifierkeyHelper";
-import { ANNOTATED_PREFIX, CROPPED_PREFIX } from "src/utils/carveout";
 import { Rank } from "src/constants/actionIcons";
 import { UIMode } from "src/shared/Dialogs/UIModeSettingComponent";
 import { ScriptSettingValue } from "src/types/excalidrawAutomateTypes";
@@ -42,8 +41,6 @@ export interface ExcalidrawSettings {
   libraryStorageMode: StencilLibraryStorageMode;
   libraryMigrationStatus: StencilLibraryMigrationStatus;
   libraryMigrationSnoozeUntil: number;
-  cropFolder: string;
-  annotateFolder: string;
   embedUseExcalidrawFolder: boolean;
   templateFilePath: string;
   scriptFolderPath: string;
@@ -63,11 +60,6 @@ export interface ExcalidrawSettings {
   drawingFilnameEmbedPostfix: string;
   drawingFilenameDateTime: string;
   useExcalidrawExtension: boolean;
-  cropSuffix: string;
-  cropPrefix: string;
-  annotateSuffix: string;
-  annotatePrefix: string;
-  annotatePreserveSize: boolean;
   displaySVGInPreview: boolean; //No longer used since 1.9.13
   previewImageType: PreviewImageType; //Introduced with 1.9.13
   renderingConcurrency: number;
@@ -232,8 +224,6 @@ export const DEFAULT_SETTINGS: ExcalidrawSettings = {
   libraryStorageMode: "vault",
   libraryMigrationStatus: "not-required",
   libraryMigrationSnoozeUntil: 0,
-  cropFolder: "",
-  annotateFolder: "",
   embedUseExcalidrawFolder: false,
   templateFilePath: "Excalidraw/Template.excalidraw",
   scriptFolderPath: "Excalidraw/Scripts",
@@ -253,11 +243,6 @@ export const DEFAULT_SETTINGS: ExcalidrawSettings = {
   drawingFilnameEmbedPostfix: " ",
   drawingFilenameDateTime: "YYYY-MM-DD HH.mm.ss",
   useExcalidrawExtension: true,
-  cropSuffix: "",
-  cropPrefix: CROPPED_PREFIX,
-  annotateSuffix: "",
-  annotatePrefix: ANNOTATED_PREFIX,
-  annotatePreserveSize: false,
   displaySVGInPreview: false,
   previewImageType: PreviewImageType.SVG,
   renderingConcurrency: 3,

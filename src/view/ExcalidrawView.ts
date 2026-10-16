@@ -6528,47 +6528,7 @@ export default class ExcalidrawView
     }
   }
 
-  public async convertImageElWithURLToLocalFile(data: {
-    imageEl: ExcalidrawImageElement;
-    embeddedFile: EmbeddedFile;
-  }) {
-    const { imageEl, embeddedFile } = data;
-    const imageDataURL = embeddedFile.getImage(false);
-    if (!imageDataURL && !imageDataURL.startsWith("data:")) {
-      new Notice("Image not found");
-      return false;
-    }
-    const ea = getEA(this);
-    ea.copyViewElementsToEAforEditing([imageEl]);
-    const eaEl = ea.getElement(imageEl.id) as Mutable<ExcalidrawImageElement>;
-    eaEl.fileId = fileid() as FileId;
-    if (!eaEl.link) {
-      eaEl.link = embeddedFile.hyperlink;
-    }
-    let dataURL = embeddedFile.getImage(false);
-    if (!dataURL.startsWith("data:")) {
-      new Notice(
-        "Attempting to download image from URL. This may take a long while. The operation will time out after max 1 minute",
-      );
-      dataURL = await getDataURLFromURL(dataURL, embeddedFile.mimeType, 30000);
-      if (!dataURL.startsWith("data:")) {
-        new Notice("Failed. Could not download image!");
-        return false;
-      }
-    }
-    const files: BinaryFileData[] = [];
-    files.push({
-      mimeType: embeddedFile.mimeType,
-      id: eaEl.fileId,
-      dataURL: dataURL as DataURL,
-      created: embeddedFile.mtime,
-    });
-    const api = this.excalidrawAPI;
-    api.addFiles(files);
-    await ea.addElementsToView(false, true);
-    ea.destroy();
-    new Notice("Image successfully converted to local file");
-  }
+
 
   public insertLinkAction(linkVal: string) {
     let link = linkVal.match(/\[\[(.*?)\]\]/)?.[1];
@@ -6691,19 +6651,6 @@ export default class ExcalidrawView
 
       const img = this.getSingleSelectedImage();
       if (img?.embeddedFile?.isHyperLink) {
-        contextMenuActions.push([
-          renderContextMenuAction(
-            React,
-            t("CONVERT_URL_TO_FILE"),
-            () => {
-              window.setTimeout(() => {
-                void this.convertImageElWithURLToLocalFile(img);
-              });
-            },
-            onClose,
-            "convertImgUrlToFile",
-          ),
-        ]);
       }
 
       if (
