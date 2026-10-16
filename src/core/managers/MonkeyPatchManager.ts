@@ -126,27 +126,6 @@ export class MonkeyPatchManager {
               state.type === "markdown" &&
               typeof filePath === "string";
 
-            // TODO(OME-DIAG): temporary diagnostics, remove after the
-            // auto-open regression is diagnosed.
-            if (state.type === "markdown" && typeof filePath === "string") {
-              const cache = plugin.app.metadataCache.getCache(filePath);
-              console.log(
-                "[OME-DIAG] setViewState markdown:",
-                JSON.stringify({
-                  filePath,
-                  pluginLoaded: plugin._loaded,
-                  leafMode: plugin.excalidrawFileModes[this.id || filePath],
-                  forceMd: plugin.forceToOpenInMarkdownFilepath,
-                  hasFrontmatter: Boolean(cache?.frontmatter),
-                  pluginKey: cache?.frontmatter?.["excalidraw-plugin"],
-                  shouldDefault: fileShouldDefaultAsExcalidraw(
-                    filePath,
-                    plugin.app,
-                  ),
-                }),
-              );
-            }
-
             if (
               markdownViewLoaded &&
               plugin.excalidrawFileModes[this.id || filePath] !== "markdown"
