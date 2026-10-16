@@ -129,10 +129,6 @@ import { emulateKeysForLinkClick } from "src/utils/modifierkeyHelper";
 import { Mutable } from "@zsviczian/excalidraw/types/common/src/utility-types";
 import PolyBool from "polybooljs";
 import { EmbeddableMDCustomProps } from "./Dialogs/EmbeddableSettings";
-import {
-  EXCALIDRAW_AUTOMATE_INFO,
-  EXCALIDRAW_SCRIPTENGINE_INFO,
-} from "./Dialogs/SuggesterInfo";
 import { showColorPicker } from "./Dialogs/ColorPicker";
 import {
   addBackOfTheNoteCard,
@@ -399,79 +395,7 @@ export class ExcalidrawAutomate {
     return addAppendUpdateCustomData(el, newData);
   }
 
-  /**
-   * Displays help information for EA functions and properties intended to be used in Obsidian developer console.
-   * @param {ExcalidrawAutomateHelpTarget} target - Function reference or property name as string.
-   * Usage examples:
-   * - ea.help(ea.functionName)
-   * - ea.help('propertyName')
-   * - ea.help('utils.functionName')
-   */
-  public help(target: ExcalidrawAutomateHelpTarget) {
-    if (!target) {
-      log(
-        "Usage: ea.help(ea.functionName) or ea.help('propertyName') or ea.help('utils.functionName') - notice property name and utils function name is in quotes",
-      );
-      return;
-    }
-
-    let funcInfo;
-
-    if (typeof target === "function") {
-      funcInfo = EXCALIDRAW_AUTOMATE_INFO.find(
-        (info) => info.field === target.name,
-      );
-    } else if (typeof target === "string") {
-      let stringTarget: string = target;
-      stringTarget = stringTarget.startsWith("utils.")
-        ? stringTarget.substring(6)
-        : stringTarget;
-      stringTarget = stringTarget.startsWith("ea.")
-        ? stringTarget.substring(3)
-        : stringTarget;
-      funcInfo = EXCALIDRAW_AUTOMATE_INFO.find(
-        (info) => info.field === stringTarget,
-      );
-      if (!funcInfo) {
-        funcInfo = EXCALIDRAW_SCRIPTENGINE_INFO.find(
-          (info) => info.field === stringTarget,
-        );
-      }
-    }
-
-    if (!funcInfo) {
-      log(
-        "Usage: ea.help(ea.functionName) or ea.help('propertyName') or ea.help('utils.functionName') - notice property name and utils function name is in quotes",
-      );
-      return;
-    }
-
-    let isMissing = true;
-    if (funcInfo.code) {
-      isMissing = false;
-      log(`Declaration: ${funcInfo.code}`);
-    }
-    if (funcInfo.desc) {
-      isMissing = false;
-      const formattedDesc = funcInfo.desc
-        .replaceAll("<br>", "\n")
-        .replace(/<code>(.*?)<\/code>/g, "%c\u200b$1%c") // Zero-width space
-        .replace(/<b>(.*?)<\/b>/g, "%c\u200b$1%c") // Zero-width space
-        .replace(
-          /<a onclick='window\.open\("(.*?)"\)'>(.*?)<\/a>/g,
-          (_, href, text) => `%c\u200b${text}%c\u200b (link: ${href})`,
-        ); // Zero-width non-joiner
-
-      const styles = Array.from(
-        { length: (formattedDesc.match(/%c/g) || []).length },
-        (_, i) => (i % 2 === 0 ? "color: #007bff;" : ""),
-      );
-      log(`Description: ${formattedDesc}`, ...styles);
-    }
-    if (isMissing) {
-      log("Description not available for this function.");
-    }
-  }
+  
 
   /**
    * Converts a string to a data URL with specified MIME type.

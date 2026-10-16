@@ -61,7 +61,6 @@ import {
   markdownPostProcessor,
   legacyExcalidrawPopoverObserver,
 } from "./managers/MarkdownPostProcessor";
-import { FieldSuggester } from "../shared/Suggesters/FieldSuggester";
 import { ReleaseNotes } from "../shared/Dialogs/ReleaseNotes";
 import { DeviceType, PackageLease, Packages } from "../types/types";
 import { PaneTarget } from "../types/utilTypes";
@@ -567,14 +566,6 @@ export default class ExcalidrawPlugin extends Plugin {
     this.logStartupEvent("Editor handler initialized");
 
     this.commandManager.initialize();
-
-    try {
-      this.registerEditorSuggest(new FieldSuggester(this));
-    } catch (e) {
-      new Notice("Error registering editor suggester", 6000);
-      console.error("Error registering editor suggester", e);
-    }
-    this.logStartupEvent("Editor suggester registered");
 
     try {
       void this.setPropertyTypes();
