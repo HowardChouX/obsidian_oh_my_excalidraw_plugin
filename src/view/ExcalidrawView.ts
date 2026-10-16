@@ -218,7 +218,6 @@ import {
   ViewSemaphores,
 } from "../types/excalidrawViewTypes";
 import { DropManager } from "./managers/DropManager";
-import { ViewRightDragPanManager } from "./managers/ViewRightDragPanManager";
 import { ViewExportManager } from "./managers/ViewExportManager";
 import { ViewFullscreenManager } from "./managers/ViewFullscreenManager";
 import { ViewLinkNavigationManager } from "./managers/ViewLinkNavigationManager";
@@ -499,7 +498,6 @@ export default class ExcalidrawView
   public embeddableMenu: EmbeddableMenu | null = null;
   public selectedElementActionsMenu: SelectedElementActionsMenu | null = null;
   private destroyers: Array<() => void> = [];
-  private rightDragPan: ViewRightDragPanManager;
   private previousContentElHeight: number = 0;
   private resizeBatchTimer: number | null = null;
   private excalidrawInitializeTimer: number | null = null;
@@ -1673,9 +1671,6 @@ export default class ExcalidrawView
   onload() {
     super.onload();
     this.displayLoadingText();
-    this.rightDragPan = new ViewRightDragPanManager(this);
-    this.rightDragPan.attach(this.contentEl);
-    this.destroyers.push(() => this.rightDragPan.destroy());
     if (this.plugin.settings.overrideObsidianFontSize) {
       setStyle(mainDocument.documentElement, {
         fontSize: "",

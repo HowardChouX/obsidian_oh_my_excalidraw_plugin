@@ -1,6 +1,6 @@
 {
   "schema_version": "mimosa-task-review/v2",
-  "run_id": "20261016T032023688Z-41017-5c0ff98cd112",
+  "run_id": "20261016T033542879Z-44149-5d264ead4dc3",
   "run_status": "completed",
   "errors": [],
   "coverage": {
@@ -14,26 +14,26 @@
       "truncated": false,
       "enumeration_error_count": 0,
       "snapshot_error_count": 0,
-      "compensated_target_count": 8
+      "compensated_target_count": 2
     },
     "change_tracking": {
-      "touched_observed": 1,
-      "touched_retained": 1,
+      "touched_observed": 2,
+      "touched_retained": 2,
       "truncated": false,
-      "bash_mutation": true,
-      "bash_discovered": 8,
+      "bash_mutation": false,
+      "bash_discovered": 0,
       "bash_discovery_limit": 80,
       "bash_discovery_truncated": false
     },
     "candidates": {
-      "eligible_files": 8,
-      "selected_files": 8,
+      "eligible_files": 2,
+      "selected_files": 2,
       "limit": 20,
       "truncated": false
     },
     "scanning": {
-      "required_files": 4,
-      "scanned_files": 4,
+      "required_files": 2,
+      "scanned_files": 2,
       "skipped_files": 0,
       "failed_files": 0,
       "project_checks_required": 0,
@@ -49,78 +49,60 @@
     "reasons": [],
     "reasons_truncated": false
   },
-  "generated_at": "2026-10-16T03:20:23.688Z",
+  "generated_at": "2026-10-16T03:35:42.879Z",
   "session_id": "sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc",
   "target": ".",
-  "revision": "c05fd59aee616bb79ddc502eff1fea3801f2ce15",
+  "revision": "aaa5c69a349debba355b6f5f0fbc99da44a41647",
   "rules_version": "unavailable",
-  "diff_hash": "3a8d38e1c124fd13aaf3d7e9a5953b5a29ccf72991f6fea1ad28d7a704cfc2fa",
+  "diff_hash": "25032f4abbbc6d620a1297c7920d1f3a690f1e43ad37e1782201af2baa5a0889",
   "diff": {
     "algorithm": "sha256",
-    "changed_file_count": 4,
+    "changed_file_count": 2,
     "changed_files": [
-      {
-        "file": "src/core/managers/obsidianExcalidrawHostAdapter.ts",
-        "ranges": [
-          {
-            "start": 28,
-            "end": 28
-          }
-        ],
-        "before_hash": "6ec652169c01b585b17cd9072afc4dd55cafa6a8c5f884155ff99f9d20372ed1",
-        "after_hash": "906f41a4b8064de3ea21b64b782074ac4517991b8a939e31442c8e7d04102062"
-      },
-      {
-        "file": "src/core/settingsDefaults.ts",
-        "ranges": [
-          {
-            "start": 210,
-            "end": 689
-          }
-        ],
-        "before_hash": "89ece041a39723d7adc49f902814e1631efb93a28be90b09ae18020425c956ed",
-        "after_hash": "0be2bf6fbbaeff0941549be82432fea8018223ca142617182231aaa9798f1602"
-      },
       {
         "file": "src/view/ExcalidrawView.ts",
         "ranges": [
           {
-            "start": 221,
-            "end": 221
-          },
-          {
-            "start": 502,
-            "end": 502
-          },
-          {
-            "start": 1676,
-            "end": 1678
-          },
-          {
-            "start": 4916,
-            "end": 4916
+            "start": 3729,
+            "end": 3731
           }
         ],
-        "before_hash": "436c42d998eb2d57bd40934fe479e8ff11c32af9eff82c825b867058c8c60f1b",
-        "after_hash": "c29a8ced15f16dac65f3c52610a2e105800558836ec0bee1ce26469213ce80f1"
+        "before_hash": "c29a8ced15f16dac65f3c52610a2e105800558836ec0bee1ce26469213ce80f1",
+        "after_hash": "f97332ab53f21f717855d8d60c12445b9a39124e842e887b6b6ff2fbc27d76c3"
       },
       {
         "file": "src/view/managers/ViewRightDragPanManager.ts",
         "ranges": [
           {
-            "start": 1,
-            "end": 157
+            "start": 36,
+            "end": 36
+          },
+          {
+            "start": 48,
+            "end": 48
+          },
+          {
+            "start": 53,
+            "end": 69
+          },
+          {
+            "start": 155,
+            "end": 156
+          },
+          {
+            "start": 159,
+            "end": 160
           }
         ],
-        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "after_hash": "5bfdf09549b54b73b8d9fb86d84ce466f355442024c6133bbcc17b51323d2d9f"
+        "before_hash": "5bfdf09549b54b73b8d9fb86d84ce466f355442024c6133bbcc17b51323d2d9f",
+        "after_hash": "e5f877c4dafedce1f13bb4075d16164034487d2b3b00e123ec03d8d2c3f9d7aa"
       }
     ]
   },
   "timing": {
-    "started_at": "2026-10-16T03:20:22.595Z",
-    "completed_at": "2026-10-16T03:20:23.688Z",
-    "duration_ms": 1093,
+    "started_at": "2026-10-16T03:35:42.087Z",
+    "completed_at": "2026-10-16T03:35:42.879Z",
+    "duration_ms": 792,
     "measurement": "hook_wall_clock"
   },
   "tokens": {
@@ -135,10 +117,10 @@
     "profile": "gate",
     "operation": "Stop",
     "outcome": "complete",
-    "latencyMs": 1093,
-    "peakMemoryBytes": 235880448,
+    "latencyMs": 792,
+    "peakMemoryBytes": 237142016,
     "memoryMeasurement": "max-observed-process-rss",
-    "scannedFiles": 4,
+    "scannedFiles": 2,
     "cache": {
       "hits": 0,
       "misses": 0,
@@ -163,8 +145,8 @@
   "finding_events": [],
   "findings": [],
   "artifacts": {
-    "immutable_report": ".mimosa/reports/task-review-sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc-20261016T032023688Z-41017-5c0ff98cd112.json",
+    "immutable_report": ".mimosa/reports/task-review-sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc-20261016T033542879Z-44149-5d264ead4dc3.json",
     "latest_report": ".mimosa/reports/task-review-sess_bbcb095c-3b83-4cea-b46c-3458c9820bdc.json",
-    "history_summary": ".mimosa/history/run-20261016T032023688Z-41017-5c0ff98cd112.json"
+    "history_summary": ".mimosa/history/run-20261016T033542879Z-44149-5d264ead4dc3.json"
   }
 }
