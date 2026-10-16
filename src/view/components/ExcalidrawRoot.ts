@@ -9,6 +9,7 @@ import { DEVICE, obsidianToExcalidrawMap } from "../../constants/constants";
 import { t } from "../../lang/helpers";
 import type ExcalidrawView from "../ExcalidrawView";
 import { ToolSettingsPopup } from "../managers/ToolSettingsPopup";
+import { ToolbarResetButton } from "../managers/ToolbarResetButton";
 import { EmbeddableMenu } from "./menu/EmbeddableActionsMenu";
 import { ObsidianMenu } from "./menu/ObsidianMenu";
 import { SelectedElementActionsMenu } from "./menu/SelectedElementActionsMenu";
@@ -71,6 +72,9 @@ export function createExcalidrawRootElement(
     );
     const toolSettingsPopup = new ToolSettingsPopup(view);
     toolSettingsPopup.attach(excalidrawWrapperRef.current);
+    const toolbarResetButton = new ToolbarResetButton(view);
+    toolbarResetButton.attach(excalidrawWrapperRef.current);
+    view.toolbarResetButton = toolbarResetButton;
     const appState = view.excalidrawAPI?.getAppState();
     if (appState) {
       view.selectedElementActionsMenu.update(
@@ -80,6 +84,8 @@ export function createExcalidrawRootElement(
     }
     return () => {
       toolSettingsPopup.detach();
+      toolbarResetButton.detach();
+      view.toolbarResetButton = null;
       view.obsidianMenu.destroy();
       view.obsidianMenu = null;
       view.embeddableMenu.destroy();

@@ -190,7 +190,6 @@ export const ICONS = {
   Info: getIconAsJSX("info"),
   BackOfNote: getIconAsJSX("text-select"),
   Reload: getIconAsJSX("rotate-ccw"),
-  resetCanvas: getIconAsJSX("trash-2"),
   Copy: getIconAsJSX("copy"),
   Globe: getIconAsJSX("globe"),
   Crop: getIconAsJSX("crop"),

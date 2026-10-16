@@ -148,6 +148,7 @@ import {
   generateIdFromFile,
 } from "../shared/EmbeddedFileLoader";
 import { ObsidianMenu } from "./components/menu/ObsidianMenu";
+import { ToolbarResetButton } from "./managers/ToolbarResetButton";
 import { ToolsPanel } from "./components/menu/ToolsPanel";
 import { SelectedElementActionsMenu } from "./components/menu/SelectedElementActionsMenu";
 import { inputPrompt } from "src/utils/promptUtils";
@@ -496,6 +497,7 @@ export default class ExcalidrawView
   public compatibilityMode: boolean = false;
   public obsidianMenu: ObsidianMenu | null = null;
   public embeddableMenu: EmbeddableMenu | null = null;
+  public toolbarResetButton: ToolbarResetButton | null = null;
   public selectedElementActionsMenu: SelectedElementActionsMenu | null = null;
   private destroyers: Array<() => void> = [];
   private previousContentElHeight: number = 0;
@@ -6455,6 +6457,9 @@ export default class ExcalidrawView
   }
 
   public renderTopRightUI(isMobile: boolean, appState: AppState) {
+    // Called on every Excalidraw render, which is where the plugin re-asserts
+    // the reset button it appends to the component's toolbar row.
+    this.toolbarResetButton?.scheduleSync();
     if (!this.excalidrawAPI || !this.semaphores.viewloaded || !this.isLoaded) {
       return null;
     }
