@@ -516,12 +516,6 @@ export class CommandManager {
     });
 
     this.addCommand({
-      id: "excalidraw-download-lib",
-      name: t("DOWNLOAD_LIBRARY"),
-      callback: () => this.plugin.exportLibrary(),
-    });
-
-    this.addCommand({
       id: "excalidraw-open",
       name: t("OPEN_EXISTING_NEW_PANE"),
       callback: () => {
@@ -1413,72 +1407,6 @@ export class CommandManager {
           return true;
         }
         void view.moveBackOfTheNoteCardToFile();
-      },
-    });
-
-    this.addCommand({
-      id: "insert-active-pdfpage",
-      name: t("INSERT_ACTIVE_PDF_PAGE_AS_IMAGE"),
-      checkCallback: (checking: boolean) => {
-        const excalidrawView =
-          this.app.workspace.getActiveViewOfType(ExcalidrawView);
-        if (!excalidrawView) {
-          return false;
-        }
-        const embeddables = excalidrawView
-          .getViewSelectedElements()
-          .filter((el) => el.type === "embeddable");
-        if (embeddables.length !== 1) {
-          if (checking) {
-            return false;
-          }
-          new Notice("Select a single PDF embeddable and try again");
-          return false;
-        }
-        const isPDF =
-          excalidrawView
-            .getEmbeddableLeafElementById(embeddables[0].id)
-            ?.leaf?.view?.getViewType() === "pdf";
-        if (!isPDF) {
-          return false;
-        }
-        const page = getActivePDFPageNumberFromPDFView(
-          excalidrawView.getEmbeddableLeafElementById(embeddables[0].id)?.leaf
-            ?.view,
-        );
-        if (!page) {
-          return false;
-        }
-        if (checking) {
-          return true;
-        }
-
-        const embeddableEl = embeddables[0];
-        const ea = new ExcalidrawAutomate(this.plugin, excalidrawView);
-        const view = excalidrawView.getEmbeddableLeafElementById(
-          embeddableEl.id,
-        )?.leaf?.view;
-        const pdfFile: TFile =
-          view && view instanceof FileView ? view.file : undefined;
-        void (async () => {
-          const imgID = await ea.addImage(
-            embeddableEl.x + embeddableEl.width + 10,
-            embeddableEl.y,
-            `${pdfFile?.path}#page=${page}`,
-            false,
-            false,
-          );
-          const imgEl = ea.getElement(imgID) as Mutable<ExcalidrawImageElement>;
-          const imageAspectRatio = imgEl.width / imgEl.height;
-          if (imageAspectRatio > 1) {
-            imgEl.width = embeddableEl.width;
-            imgEl.height = embeddableEl.width / imageAspectRatio;
-          } else {
-            imgEl.height = embeddableEl.height;
-            imgEl.width = embeddableEl.height * imageAspectRatio;
-          }
-          await ea.addElementsToView(false, true, true);
-        })();
       },
     });
 

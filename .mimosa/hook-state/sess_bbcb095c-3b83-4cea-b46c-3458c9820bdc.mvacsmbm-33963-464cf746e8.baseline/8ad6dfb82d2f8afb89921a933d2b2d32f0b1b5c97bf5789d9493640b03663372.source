@@ -286,14 +286,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
     void view.forceSave();
   }
 
-  actionExportLibrary() {
-    const plugin = this.getView()?.plugin;
-    if (!plugin) {
-      return;
-    }
-    void plugin.exportLibrary();
-  }
-
   actionExportImage() {
     const view = this.getView();
     if (!view) {
@@ -571,12 +563,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
               <fieldset>
                 <legend>Export actions</legend>
                 <div className="buttonList buttonListIcon">
-                  <ActionButton
-                    key={"lib"}
-                    title={t("DOWNLOAD_LIBRARY")}
-                    action={() => this.actionExportLibrary()}
-                    icon={ICONS.exportLibrary}
-                  />
                   <ActionButton
                     key={"exportIMG"}
                     title={t("EXPORT_IMAGE")}

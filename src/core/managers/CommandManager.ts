@@ -33,7 +33,6 @@ import { InsertImageDialog } from "../../shared/Dialogs/InsertImageDialog";
 import { ImportSVGDialog } from "../../shared/Dialogs/ImportSVGDialog";
 import { InsertMDDialog } from "../../shared/Dialogs/InsertMDDialog";
 import { ExcalidrawAutomate } from "../../shared/ExcalidrawAutomate";
-import { search } from "src/utils/excalidrawAutomateUtils";
 import { templatePromt } from "../../shared/Dialogs/Prompt";
 import { t } from "../../lang/helpers";
 import {
@@ -682,24 +681,6 @@ export class CommandManager {
         }
         void insertDrawingToDoc("popout-window");
         return true;
-      },
-    });
-
-    this.addCommand({
-      id: "search-text",
-      name: t("SEARCH"),
-      checkCallback: (checking: boolean) => {
-        if (checking) {
-          return Boolean(
-            this.app.workspace.getActiveViewOfType(ExcalidrawView),
-          );
-        }
-        const view = this.app.workspace.getActiveViewOfType(ExcalidrawView);
-        if (view) {
-          void search(view);
-          return true;
-        }
-        return false;
       },
     });
 

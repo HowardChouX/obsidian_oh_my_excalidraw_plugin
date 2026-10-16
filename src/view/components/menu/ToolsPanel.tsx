@@ -4,7 +4,6 @@ import * as React from "react";
 import { ActionButton } from "./ActionButton";
 import { ICONS, saveIcon, stringToSVG } from "../../../constants/actionIcons";
 import { DEVICE, SCRIPT_INSTALL_FOLDER } from "../../../constants/constants";
-import { search } from "../../../utils/excalidrawViewHelpers";
 import { TextMode } from "../../../shared/TextMode";
 import type ExcalidrawView from "../../ExcalidrawView";
 import { t } from "../../../lang/helpers";
@@ -240,14 +239,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
     } else {
       view.gotoFullscreen();
     }
-  }
-
-  actionSearch() {
-    const view = this.getView();
-    if (!view) {
-      return;
-    }
-    void search(view);
   }
 
   actionOpenLink(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
@@ -534,12 +525,6 @@ export class ToolsPanel extends React.Component<PanelProps, PanelState> {
                   />
                 </div>
                 <div className="buttonList buttonListIcon">
-                  <ActionButton
-                    key={"search"}
-                    title={t("SEARCH")}
-                    action={() => this.actionSearch()}
-                    icon={ICONS.search}
-                  />
                   <ActionButton
                     key={"openLink"}
                     title={t("OPEN_LINK_CLICK")}
