@@ -4,6 +4,7 @@ import type { AppState } from "@zsviczian/excalidraw/types/excalidraw/types";
 import { t } from "../../lang/helpers";
 import { errorlog } from "../../utils/coreUtils";
 import type ExcalidrawView from "../ExcalidrawView";
+import { isAutosaveBlockedByInteraction } from "./autosaveInteractionGate";
 import {
   classifyObservedSaveContent,
   type AcceptedContentIdentity,
@@ -476,12 +477,15 @@ export class ViewSaveCoordinator {
           return;
         }
         const st = api.getAppState() as AppState;
-        const isFreedrawActive =
-          st.activeTool?.type === "freedraw" &&
-          this.dependencies.getFreedrawLastActiveTimestamp() >
-            Date.now() - 2000;
-        const isEditingText = st.editingTextElement !== null;
-        const isEditingNewElement = st.newElement !== null;
+        const isInteractionActive = isAutosaveBlockedByInteraction({
+          activeToolType: st.activeTool?.type,
+          editingTextElement: st.editingTextElement,
+          newElement: st.newElement,
+          cursorButton: st.cursorButton,
+          freedrawLastActive:
+            this.dependencies.getFreedrawLastActiveTimestamp(),
+          now: Date.now(),
+        });
         this.dependencies.refreshCanvasOffset();
         if (
           this.dependencies.isDirty() &&
@@ -489,9 +493,7 @@ export class ViewSaveCoordinator {
           !this.forceSaveInProgress &&
           !this.autosaveInProgress &&
           !this.view.isSameFileEditingActive() &&
-          !isFreedrawActive &&
-          !isEditingText &&
-          !isEditingNewElement
+          !isInteractionActive
         ) {
           this.autosaveTimer = null;
           if (this.view.excalidrawAPI) {
