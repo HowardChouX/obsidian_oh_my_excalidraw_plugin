@@ -1,15 +1,15 @@
 /**
- * Guards the trimmed toolbar in `styles.css` against a component upgrade.
+ * Guards the trimmed toolbar against a component upgrade.
  *
- * Oh My Excalidraw hides the unused tool buttons and the extra-tools ("...")
- * dropdown with CSS that targets the DOM contract of the installed
- * `@zsviczian/excalidraw` artifact: `data-testid="toolbar-<tool>"` on the tool
- * buttons, the `App-toolbar__extra-tools-trigger` class shared by the image and
- * extra-tools dropdown triggers, `App-toolbar__divider`, and
- * `clear-canvas-button` on the component's own "Reset the canvas" menu item.
+ * Oh My Excalidraw hides the Excalidraw component's toolbar Island entirely and
+ * injects its own toolbar (CustomToolbar.ts) into the same row. What the trim
+ * still depends on in the component: the `App-toolbar` class of the Island it
+ * hides, the `App-toolbar-container` row it injects into, and the component's
+ * own "Reset the canvas" menu item (`clear-canvas-button`), which is hidden in
+ * favour of the toolbar's clear button.
  *
  * Run this after changing the component version: a renamed hook turns into a
- * silently visible toolbar button rather than a build error.
+ * doubled toolbar (or a stale menu item) rather than a build error.
  *
  * Usage: node scripts/check-trimmed-toolbar.mjs
  */
@@ -20,31 +20,27 @@ const STYLES_PATH = "styles.css";
 const COMPONENT_PATH =
   "node_modules/@zsviczian/excalidraw/dist/obsidian/excalidraw.production.min.js";
 
-/** Hooks the trim depends on, with the component feature each one hides. */
+/** Hooks the trim depends on, with the component feature each one stands for. */
 const REQUIRED_HOOKS = [
-  ['data-testid":`toolbar-${', "tool button test id template"],
-  ["App-toolbar__extra-tools-trigger", "image and extra-tools triggers"],
-  ["App-toolbar__divider", "toolbar dividers"],
+  ["App-toolbar-container", "the row the plugin toolbar is injected into"],
+  ["App-toolbar__extra-tools-trigger", "the hidden dropdown triggers"],
   ["clear-canvas-button", "the component's Reset the canvas menu item"],
 ];
 
 const styles = readFileSync(STYLES_PATH, "utf8");
 const component = readFileSync(COMPONENT_PATH, "utf8");
 
-const hiddenTestIds = [
-  ...new Set(
-    [...styles.matchAll(/\[data-testid="(toolbar-[a-z-]+)"\]/g)].map(
-      (match) => match[1],
-    ),
-  ),
-];
 assert.ok(
-  hiddenTestIds.length > 0,
-  "styles.css no longer hides any toolbar button",
+  styles.includes(".excalidraw .App-toolbar"),
+  "styles.css no longer hides the component toolbar",
 );
 assert.ok(
-  styles.includes(".App-toolbar__extra-tools-trigger"),
-  "styles.css no longer hides the extra-tools dropdown",
+  styles.includes(".excalidraw-ome-toolbar"),
+  "styles.css no longer styles the plugin toolbar",
+);
+assert.ok(
+  styles.includes('[data-testid="clear-canvas-button"]'),
+  "styles.css no longer hides the component's Reset the canvas menu item",
 );
 
 for (const [hook, description] of REQUIRED_HOOKS) {
@@ -54,18 +50,6 @@ for (const [hook, description] of REQUIRED_HOOKS) {
   );
 }
 
-for (const testId of hiddenTestIds) {
-  const toolType = testId.replace("toolbar-", "");
-  const known =
-    component.includes(testId) ||
-    component.includes(`"${toolType}"`) ||
-    component.includes(`${toolType}:`);
-  assert.ok(
-    known,
-    `component no longer knows ${testId}; the trimmed toolbar CSS is out of date`,
-  );
-}
-
 process.stdout.write(
-  `trimmed toolbar hooks verified: ${hiddenTestIds.length} hidden buttons, ${REQUIRED_HOOKS.length} dropdown/menu hooks\n`,
+  `trimmed toolbar hooks verified: hidden Island, injected toolbar row, ${REQUIRED_HOOKS.length} component hooks\n`,
 );

@@ -2453,44 +2453,85 @@ button.excalidraw-font-picker {
 /* -------------------------------------------------------------------------
    Trimmed toolbar
 
-   Oh My Excalidraw keeps four tools in the toolbar: hand, selection, pen
-   (freedraw), and eraser. The other tool buttons, the now empty divider
-   slots, and the extra-tools ("...") dropdown are hidden here rather than
-   patched out of the Excalidraw runtime, so the list stays explicit and
-   reviewable. The selectors use the data-testids the component assigns to
-   the buttons; both the desktop toolbar and the mobile toolbar are covered.
-   `!important` is required for the dropdown triggers because the component
-   sets `display: flex` on them inline.
+   Oh My Excalidraw replaces the Excalidraw component's toolbar with its own
+   (see CustomToolbar.ts): round icon buttons in one row - hand, select, pen,
+   eraser, clear, undo, redo - in the look of the oh-my-ink toolbar. The
+   component's toolbar Island is hidden entirely, on desktop, in the tray, and
+   in the phone bottom bar; the plugin's toolbar is injected into the same row,
+   so it inherits the component's positioning.
    ------------------------------------------------------------------------- */
-.excalidraw .App-toolbar [data-testid="toolbar-lock"],
-.excalidraw .App-toolbar [data-testid="toolbar-rectangle"],
-.excalidraw .App-toolbar [data-testid="toolbar-diamond"],
-.excalidraw .App-toolbar [data-testid="toolbar-ellipse"],
-.excalidraw .App-toolbar [data-testid="toolbar-arrow"],
-.excalidraw .App-toolbar [data-testid="toolbar-line"],
-.excalidraw .App-toolbar [data-testid="toolbar-text"],
-.excalidraw .App-toolbar [data-testid="toolbar-stickynote"],
-.excalidraw .App-toolbar [data-testid="toolbar-image"],
-.excalidraw .App-toolbar [data-testid="toolbar-frame"],
-.excalidraw .excalidraw-mobile-toolbar [data-testid="toolbar-rectangle"],
-.excalidraw .excalidraw-mobile-toolbar [data-testid="toolbar-arrow"],
-.excalidraw .excalidraw-mobile-toolbar [data-testid="toolbar-text"],
-.excalidraw .excalidraw-mobile-toolbar [data-testid="toolbar-stickynote"],
-.excalidraw .excalidraw-mobile-toolbar [data-testid="toolbar-frame"],
-.excalidraw .App-toolbar .App-toolbar__divider,
-.excalidraw .excalidraw-mobile-toolbar .App-toolbar__divider {
-  display: none;
-}
-
-/* Both the image menu and the extra-tools menu render their trigger with this
-   class, so hiding it removes both dropdowns from the toolbar. */
-.excalidraw .App-toolbar .App-toolbar__extra-tools-trigger,
-.excalidraw .excalidraw-mobile-toolbar .App-toolbar__extra-tools-trigger {
+.excalidraw .App-toolbar {
   display: none !important;
 }
 
-/* The "Reset the canvas" menu item is replaced by a toolbar button. */
+/* The component's "Reset the canvas" menu item is replaced by the toolbar's
+   clear button. */
 .excalidraw [data-testid="clear-canvas-button"] {
+  display: none;
+}
+
+/* -------------------------------------------------------------------------
+   The plugin toolbar (CustomToolbar.ts), styled after oh-my-ink's
+   `ink_tool-menu`: round 2.5em buttons with 1.5em glyphs, eight pixels apart.
+   Colours come from Obsidian's interactive variables; the active tool inverts
+   them, exactly as in oh-my-ink.
+   ------------------------------------------------------------------------- */
+.excalidraw .excalidraw-ome-toolbar {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+  font-size: var(--font-ui-medium);
+}
+
+.excalidraw .excalidraw-ome-toolbar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5em;
+  height: 2.5em;
+  padding: 0;
+  border: none;
+  border-radius: 2.5em;
+  background-color: var(--interactive-normal);
+  box-shadow: none;
+  color: var(--color-base-60);
+  fill: var(--color-base-60);
+  cursor: var(--cursor);
+  pointer-events: auto;
+}
+
+.excalidraw .excalidraw-ome-toolbar-button svg {
+  width: 1.5em;
+  height: 1.5em;
+}
+
+.excalidraw .excalidraw-ome-toolbar-button:hover {
+  background-color: var(--interactive-hover);
+  color: var(--color-base-100);
+  fill: var(--color-base-100);
+}
+
+.excalidraw .excalidraw-ome-toolbar-button.is-active,
+.excalidraw .excalidraw-ome-toolbar-button.is-active:hover {
+  background-color: var(--color-base-60);
+  color: var(--interactive-normal);
+  fill: var(--interactive-normal);
+}
+
+/* Actions (clear / undo / redo) never mark a tool active, so their disabled
+   state is a dimmed button instead of the inverted active look. */
+.excalidraw .excalidraw-ome-toolbar-action:disabled {
+  background-color: var(--interactive-normal);
+  color: var(--text-faint);
+  fill: var(--text-faint);
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* The component hides its own toolbar in zen mode; follow it. */
+.excalidraw .App-toolbar-container.zen-mode .excalidraw-ome-toolbar {
   display: none;
 }
 

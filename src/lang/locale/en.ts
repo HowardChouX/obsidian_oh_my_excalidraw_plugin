@@ -1648,6 +1648,14 @@ export default {
   //ToolbarResetButton.ts
   RESET_CANVAS_BUTTON: "Clear canvas (undoable)",
 
+  //CustomToolbar.ts
+  OME_TOOLBAR_HAND: "Hand (pan)",
+  OME_TOOLBAR_SELECT: "Select",
+  OME_TOOLBAR_PEN: "Pen",
+  OME_TOOLBAR_ERASER: "Eraser",
+  OME_TOOLBAR_UNDO: "Undo",
+  OME_TOOLBAR_REDO: "Redo",
+
   //ToolSettingsPopup.ts
   PEN_POPUP_COLOR: "Color",
   PEN_POPUP_COLOR_CUSTOM: "Custom color",

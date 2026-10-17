@@ -9,8 +9,8 @@ import { DEVICE, obsidianToExcalidrawMap } from "../../constants/constants";
 import { t } from "../../lang/helpers";
 import type ExcalidrawView from "../ExcalidrawView";
 import { EraserSizeManager } from "../managers/EraserSizeManager";
+import { CustomToolbar } from "../managers/CustomToolbar";
 import { ToolSettingsPopup } from "../managers/ToolSettingsPopup";
-import { ToolbarResetButton } from "../managers/ToolbarResetButton";
 import { EmbeddableMenu } from "./menu/EmbeddableActionsMenu";
 import { ObsidianMenu } from "./menu/ObsidianMenu";
 import { SelectedElementActionsMenu } from "./menu/SelectedElementActionsMenu";
@@ -73,23 +73,20 @@ export function createExcalidrawRootElement(
     );
     const toolSettingsPopup = new ToolSettingsPopup(view);
     toolSettingsPopup.attach(excalidrawWrapperRef.current);
-    const toolbarResetButton = new ToolbarResetButton(view);
-    toolbarResetButton.attach(excalidrawWrapperRef.current);
-    view.toolbarResetButton = toolbarResetButton;
+    const customToolbar = new CustomToolbar(view);
+    customToolbar.attach(excalidrawWrapperRef.current);
+    view.customToolbar = customToolbar;
     const eraserSizeManager = new EraserSizeManager(view);
     eraserSizeManager.attach(excalidrawWrapperRef.current);
     view.eraserSizeManager = eraserSizeManager;
     const appState = view.excalidrawAPI?.getAppState();
     if (appState) {
-      view.selectedElementActionsMenu.update(
-        view.getViewElements(),
-        appState,
-      );
+      view.selectedElementActionsMenu.update(view.getViewElements(), appState);
     }
     return () => {
       toolSettingsPopup.detach();
-      toolbarResetButton.detach();
-      view.toolbarResetButton = null;
+      customToolbar.detach();
+      view.customToolbar = null;
       eraserSizeManager.detach();
       view.eraserSizeManager = null;
       view.obsidianMenu.destroy();
@@ -150,7 +147,8 @@ export function createExcalidrawRootElement(
         onKeyDown: view.excalidrawDIVonKeyDown.bind(view),
         onKeyUp: view.excalidrawDIVonKeyUp.bind(view),
         onPointerDownCapture: () => {
-          selectionBeforePointerDown.current = view.excalidrawAPI?.getAppState();
+          selectionBeforePointerDown.current =
+            view.excalidrawAPI?.getAppState();
           canvasPointerDown.current = null;
         },
         onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) =>

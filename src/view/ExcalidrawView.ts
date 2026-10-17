@@ -150,7 +150,7 @@ import {
 import { ObsidianMenu } from "./components/menu/ObsidianMenu";
 import type { EraserSizeManager } from "./managers/EraserSizeManager";
 import { clampEraserSize } from "src/utils/eraserHitTest";
-import { ToolbarResetButton } from "./managers/ToolbarResetButton";
+import type { CustomToolbar } from "./managers/CustomToolbar";
 import { ToolsPanel } from "./components/menu/ToolsPanel";
 import { SelectedElementActionsMenu } from "./components/menu/SelectedElementActionsMenu";
 import { inputPrompt } from "src/utils/promptUtils";
@@ -499,7 +499,7 @@ export default class ExcalidrawView
   public compatibilityMode: boolean = false;
   public obsidianMenu: ObsidianMenu | null = null;
   public embeddableMenu: EmbeddableMenu | null = null;
-  public toolbarResetButton: ToolbarResetButton | null = null;
+  public customToolbar: CustomToolbar | null = null;
   public eraserSizeManager: EraserSizeManager | null = null;
   public selectedElementActionsMenu: SelectedElementActionsMenu | null = null;
   private destroyers: Array<() => void> = [];
@@ -875,7 +875,6 @@ export default class ExcalidrawView
   }
 
   /** Downloads a PDF through the view-scoped export manager. */
-
 
   /** Creates a PNG blob while retaining the established view signature. */
   public async png(
@@ -1744,9 +1743,7 @@ export default class ExcalidrawView
           // This also joins an invalidation already started by a leaf switch,
           // preventing its forced save from registering a persistence handoff
           // after the replacement view has already checked the queue.
-          const migrationSnapshot = this.captureWindowMigrationSnapshot(
-            false,
-          );
+          const migrationSnapshot = this.captureWindowMigrationSnapshot(false);
           const migrationSaveRequired =
             this.windowMigrationSaveSnapshot !== null;
           this.unmountExcalidrawRoot();
@@ -3046,9 +3043,7 @@ export default class ExcalidrawView
               return;
             }
 
-            const drawingBAK = await getImageCache().getBAKFromCache(
-              file.path,
-            );
+            const drawingBAK = await getImageCache().getBAKFromCache(file.path);
             if (!isCurrentLoad()) {
               return;
             }
@@ -3593,10 +3588,7 @@ export default class ExcalidrawView
       );
       const loadedFiles = this.excalidrawAPI.getFiles();
       mergedElements.forEach((element) => {
-        if (
-          element.type === "image" &&
-          !loadedFiles[element.fileId]
-        ) {
+        if (element.type === "image" && !loadedFiles[element.fileId]) {
           fileIdsToReload.add(element.fileId);
         }
       });
@@ -3662,21 +3654,20 @@ export default class ExcalidrawView
     this.semaphores.justLoaded = justloaded;
     this.clearDirty();
     const om = this.excalidrawData.getOpenMode();
-    const requestedViewModeEnabled = this.pendingOpenMode === null
-      ? null
-      : this.pendingOpenMode === "view";
+    const requestedViewModeEnabled =
+      this.pendingOpenMode === null ? null : this.pendingOpenMode === "view";
     this.clearOwnWriteReloadSuppression();
     const penEnabled = this.plugin.isPenMode();
     const api = this.excalidrawAPI;
     if (api) {
       //isLoaded flags that a new file is being loaded, isLoaded will be true after loadDrawing completes
-      const viewModeEnabled = requestedViewModeEnabled ?? (
-        !this.isLoaded
+      const viewModeEnabled =
+        requestedViewModeEnabled ??
+        (!this.isLoaded
           ? excalidrawData.elements.length > 0
             ? om.viewModeEnabled
             : false
-          : api.getAppState().viewModeEnabled
-      );
+          : api.getAppState().viewModeEnabled);
       const zenModeEnabled = !this.isLoaded
         ? om.zenModeEnabled
         : api.getAppState().zenModeEnabled;
@@ -3701,6 +3692,12 @@ export default class ExcalidrawView
           ...(this.excalidrawData.selectedElementIds //https://github.com/zsviczian/obsidian-excalidraw-plugin/issues/609
             ? this.excalidrawData.selectedElementIds
             : {}),
+          // This fork opens drawings with the grid on unless the drawing
+          // itself was saved with it off, and never shows the component's
+          // usage hints (`showHints` is not persisted, so this reads as
+          // always-off).
+          gridModeEnabled: appState.gridModeEnabled ?? true,
+          showHints: false,
           ...(excalidrawData.appState.frameRendering &&
           excalidrawData.appState.frameRendering.markerName === undefined
             ? {
@@ -3754,6 +3751,11 @@ export default class ExcalidrawView
             // The plugin replaces the right-click menu with right-button
             // drag panning; keep the fork's menu disabled at runtime.
             disableContextMenu: true,
+            // Grid on by default (a drawing saved with it off stays off) and
+            // the component's usage hints never shown; see the updateScene
+            // branch above.
+            gridModeEnabled: appState.gridModeEnabled ?? true,
+            showHints: false,
             ...(excalidrawData.appState.frameRendering &&
             excalidrawData.appState.frameRendering.markerName === undefined
               ? {
@@ -3765,9 +3767,9 @@ export default class ExcalidrawView
                 }
               : {}),
             zenModeEnabled: om.zenModeEnabled,
-            viewModeEnabled: requestedViewModeEnabled ?? (
-              excalidrawData.elements.length > 0 ? om.viewModeEnabled : false
-            ),
+            viewModeEnabled:
+              requestedViewModeEnabled ??
+              (excalidrawData.elements.length > 0 ? om.viewModeEnabled : false),
             linkOpacity: this.excalidrawData.getLinkOpacity(),
             penMode: penEnabled,
             penDetected: penEnabled,
@@ -4068,7 +4070,6 @@ export default class ExcalidrawView
         elementsChanged,
       );
     }
-
   }
 
   private evaluateSceneChangeHook(
@@ -4175,7 +4176,10 @@ export default class ExcalidrawView
     }
   }
 
-  public async openAsMarkdown(eState?: MarkdownViewOpenState, active?: boolean) {
+  public async openAsMarkdown(
+    eState?: MarkdownViewOpenState,
+    active?: boolean,
+  ) {
     if (
       this.plugin.settings.compress &&
       this.plugin.settings.decompressForMDView
@@ -4359,27 +4363,22 @@ export default class ExcalidrawView
           .setSection("pane");
       });
     }
-    menu
-      .addItem((item) => {
-        item
-          .setTitle(t("EXPORT_IMAGE"))
-          .setIcon(EXPORT_IMG_ICON_NAME)
-          .setSection("pane")
-          .onClick(async () => {
-            if (!this.excalidrawAPI || !this.file) {
-              return;
-            }
-            if (!this.exportDialog) {
-              this.exportDialog = new ExportDialog(
-                this.plugin,
-                this,
-                this.file,
-              );
-            }
-            this.exportDialog.open();
-          })
-          .setSection("pane");
-      })
+    menu.addItem((item) => {
+      item
+        .setTitle(t("EXPORT_IMAGE"))
+        .setIcon(EXPORT_IMG_ICON_NAME)
+        .setSection("pane")
+        .onClick(async () => {
+          if (!this.excalidrawAPI || !this.file) {
+            return;
+          }
+          if (!this.exportDialog) {
+            this.exportDialog = new ExportDialog(this.plugin, this, this.file);
+          }
+          this.exportDialog.open();
+        })
+        .setSection("pane");
+    });
     super.onPaneMenu(menu, source);
   }
 
@@ -4704,9 +4703,13 @@ export default class ExcalidrawView
     const sceneElements = api.getSceneElements() as ExcalidrawElement[];
     // Guarded callers prepare parsed text in a request-local map. A stale
     // continuation must not leave metadata behind before publishing its scene.
-    const preparedText = validateBeforePublish ? new Map(this.excalidrawData.textElements) : undefined;
+    const preparedText = validateBeforePublish
+      ? new Map(this.excalidrawData.textElements)
+      : undefined;
     const elementsMap = arrayToMap(sceneElements) as ElementsMap;
-    const textElements = newElements.filter((el) => el.type == "text" && (!validateBeforePublish || !el.isDeleted));
+    const textElements = newElements.filter(
+      (el) => el.type == "text" && (!validateBeforePublish || !el.isDeleted),
+    );
     let shouldRefreshArrows = false;
     for (let i = 0; i < textElements.length; i++) {
       const textElement = textElements[i] as Mutable<ExcalidrawTextElement>;
@@ -4785,7 +4788,8 @@ export default class ExcalidrawView
 
     validateBeforePublish?.();
     if (validateBeforePublish) {
-      for (const element of newElements) if (element.isDeleted) preparedText.delete(element.id);
+      for (const element of newElements)
+        if (element.isDeleted) preparedText.delete(element.id);
       this.excalidrawData.textElements = preparedText;
     }
     const files: BinaryFileData[] = [];
@@ -5321,11 +5325,13 @@ export default class ExcalidrawView
           hitElement.type === "text"
             ? hitElement
             : hitElement.type !== "arrow"
-              ? this.excalidrawAPI.getSceneElements().find(
-                  (el) =>
-                    el.type === "text" &&
-                    el.id === getBoundTextElementId(hitElement),
-                )
+              ? this.excalidrawAPI
+                  .getSceneElements()
+                  .find(
+                    (el) =>
+                      el.type === "text" &&
+                      el.id === getBoundTextElementId(hitElement),
+                  )
               : null;
         if (
           textElement?.type !== "text" &&
@@ -5981,7 +5987,9 @@ export default class ExcalidrawView
       return textElement.originalText ?? textElement.text;
     }
     // Undo/redo restores the scene source before the Markdown cache is synchronized.
-    return textElement.rawText ?? this.excalidrawData.getRawText(textElement.id);
+    return (
+      textElement.rawText ?? this.excalidrawData.getRawText(textElement.id)
+    );
   }
 
   public onBeforeTextSubmit(
@@ -6255,19 +6263,16 @@ export default class ExcalidrawView
 
     const nativeEvent = e?.detail?.nativeEvent;
     const ownerMouseEvent = this.ownerWindow?.MouseEvent;
-    const event = nativeEvent ?? new (ownerMouseEvent ?? MouseEvent)("click", {
-      ...emulateKeysForLinkClick("new-tab"),
-    });
+    const event =
+      nativeEvent ??
+      new (ownerMouseEvent ?? MouseEvent)("click", {
+        ...emulateKeysForLinkClick("new-tab"),
+      });
     const hasModifier =
       event.shiftKey || event.ctrlKey || event.metaKey || event.altKey;
     const linkAction = hasModifier ? linkClickModifierType(event) : "new-tab";
     if (
-      this.handleLinkHookCall(
-        element,
-        link,
-        event as MouseEvent,
-        linkAction,
-      )
+      this.handleLinkHookCall(element, link, event as MouseEvent, linkAction)
     ) {
       return;
     }
@@ -6354,8 +6359,6 @@ export default class ExcalidrawView
     }
   }
 
-
-
   public getSingleSelectedImage(): {
     imageEl: ExcalidrawImageElement;
     embeddedFile: EmbeddedFile;
@@ -6373,11 +6376,6 @@ export default class ExcalidrawView
     const imageFile = this.excalidrawData.getFile(el.fileId);
     return { imageEl: el, embeddedFile: imageFile };
   }
-
-
-
-
-
 
   public insertLinkAction(linkVal: string) {
     let link = linkVal.match(/\[\[(.*?)\]\]/)?.[1];
@@ -6483,9 +6481,9 @@ export default class ExcalidrawView
 
   public renderTopRightUI(isMobile: boolean, appState: AppState) {
     // Called on every Excalidraw render, which is where the plugin re-asserts
-    // the reset button it appends to the component's toolbar row and keeps the
-    // eraser size cursor in step with the active tool.
-    this.toolbarResetButton?.scheduleSync();
+    // its toolbar and keeps the eraser size cursor in step with the active
+    // tool.
+    this.customToolbar?.scheduleSync();
     this.eraserSizeManager?.refresh();
     if (!this.excalidrawAPI || !this.semaphores.viewloaded || !this.isLoaded) {
       return null;

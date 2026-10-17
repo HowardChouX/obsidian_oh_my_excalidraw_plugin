@@ -23,15 +23,14 @@ const TOOL_SETTINGS_TOOLS = ["freedraw", "eraser"] as const;
 
 type ToolSettingsTool = (typeof TOOL_SETTINGS_TOOLS)[number];
 
-/** Toolbar buttons are labelled by the Excalidraw component with
- * `data-testid="toolbar-<tool type>"`. */
-const TOOL_BUTTON_SELECTOR = "[data-testid^='toolbar-']";
+/** Buttons of the plugin's own toolbar carry `data-ome-tool="<tool type>"`. */
+const TOOL_BUTTON_SELECTOR = "[data-ome-tool]";
 
 /**
- * Only buttons inside a toolbar are intercepted: the tool popovers render
- * buttons with the same testids into the canvas container.
+ * Only buttons inside the toolbar are intercepted, so unrelated elements
+ * carrying the attribute cannot open the panel.
  */
-const TOOLBAR_SELECTOR = ".App-toolbar, .excalidraw-mobile-toolbar";
+const TOOLBAR_SELECTOR = ".excalidraw-ome-toolbar";
 
 const POPUP_CLASS = "excalidraw-tool-settings-popup";
 const ROW_CLASS = "excalidraw-tool-settings-row";
@@ -169,12 +168,9 @@ export class ToolSettingsPopup {
   }
 
   private getSettingsTool(button: HTMLElement): ToolSettingsTool | null {
-    const testId = button.dataset.testid ?? "";
-    const type = testId.startsWith("toolbar-")
-      ? testId.slice("toolbar-".length)
-      : "";
-    return (TOOL_SETTINGS_TOOLS as readonly string[]).includes(type)
-      ? (type as ToolSettingsTool)
+    const tool = button.dataset.omeTool ?? "";
+    return (TOOL_SETTINGS_TOOLS as readonly string[]).includes(tool)
+      ? (tool as ToolSettingsTool)
       : null;
   }
 
