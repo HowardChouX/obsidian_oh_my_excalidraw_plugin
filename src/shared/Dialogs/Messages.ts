@@ -21,11 +21,12 @@ I build this plugin as a labor of love. Curious about the philosophy behind it? 
 **Oh My Excalidraw** is a trimmed fork of the plugin that reads and writes the same \`.excalidraw.md\` files.
 
 ## Toolbar
-- The toolbar keeps the four tools this fork needs: **hand**, **selection**, **pen** (freedraw), and **eraser**. The shape, arrow, line, text, image, sticky-note, and extra-tools (**...**) entries are removed.
-- Select the **pen** and click it again to open the pen panel under the button: stroke colour (Excalidraw's five top colours plus a custom picker), thickness, and pressure. Choices are stored with the drawing, so they are still in place when it is reopened.
-- **Clear canvas (undoable)** is the last button of the toolbar. It empties the drawing in one step that a single undo brings back, and it is disabled while the drawing is empty.
-- **Eraser size.** The Excalidraw eraser has a fixed reach, so selecting the eraser and clicking it again opens a **Size** slider (5-40 screen pixels) that widens how close the eraser has to pass for a stroke to be erased. Strokes still erase when their line is reached, not when the pointer is inside an enclosed area, and whole elements with their group are erased as before. **5** means the eraser behaves exactly as the component defines it, and a circle shows the reach while a larger size is in use.
+- The toolbar is the plugin's own, in the look of the oh-my-ink toolbar: round icon buttons in one row - **hand**, **select**, **pen**, **eraser**, then **clear**, **undo**, **redo** - replacing the Excalidraw toolbar, which is hidden. Tools still react to the keyboard shortcuts, and the active tool is highlighted.
+- Select the **pen** and click it again to open the pen panel under the button: stroke colour (Excalidraw's five top colours plus a custom picker), thickness, and pressure. Choices are stored with the drawing, so they are still in place when it is reopened. Selecting the **eraser** and clicking it again opens the size slider.
+- **Clear canvas (undoable)** empties the drawing in one step that a single undo brings back, and it is disabled while the drawing is empty.
+- **Eraser size.** The Excalidraw eraser has a fixed reach, so the **Size** slider (5-40 screen pixels) widens how close the eraser has to pass for a stroke to be erased. Strokes still erase when their line is reached, not when the pointer is inside an enclosed area, and whole elements with their group are erased as before. **5** means the eraser behaves exactly as the component defines it, and a circle shows the reach while a larger size is in use.
 - **No more stalls while dragging.** Autosave now waits out every in-progress pointer gesture - including right-button panning, which changes the drawing's saved scroll position and previously let a save fire in the middle of a long drag. The save happens right after the gesture ends.
+- **Grid on, hints off.** Drawings open with the grid visible unless the drawing itself was saved with it off, and the component's usage hints are never shown.
 `,
 "2.29.1": `
 ## Fixed
