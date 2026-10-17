@@ -18,6 +18,12 @@ const MAIN_BUTTON = 0;
 const STYLUS_ERASER_BUTTON = 5;
 
 /**
+ * Held-button mask (PointerEvent.buttons) of the buttons that pan the canvas
+ * instead of acting on it: secondary (right) and middle.
+ */
+const PANNING_BUTTONS_MASK = 2 | 4;
+
+/**
  * The reach the Excalidraw component's own eraser already has: its hit test
  * uses a tolerance of `max(2.25, 5 / zoom)` scene units, i.e. ~2-5 screen
  * pixels. Sizes at or below this need no plugin-side help, and the extra pass
@@ -68,6 +74,8 @@ export class EraserSizeManager {
   private lastScenePoint: ScenePoint | null = null;
   private deletedDuringGesture = false;
   private detached = false;
+  private lastPointerEvent: PointerEvent | null = null;
+  private pointerMoveFrame: number | null = null;
 
   public constructor(private readonly host: EraserSizeManagerHost) {}
 
@@ -89,6 +97,7 @@ export class EraserSizeManager {
   /** Removes every listener and the size cursor. */
   public detach(): void {
     this.detached = true;
+    this.cancelScheduledPointerMove();
     this.endGesture();
     const container = this.wrapperEl;
     if (container) {
@@ -101,6 +110,17 @@ export class EraserSizeManager {
     this.wrapperEl = null;
     this.cursorEl?.remove();
     this.cursorEl = null;
+  }
+
+  /** Drops a pointer move still waiting for its frame, if any. */
+  private cancelScheduledPointerMove(): void {
+    if (this.pointerMoveFrame !== null) {
+      this.host.ownerDocument.defaultView?.cancelAnimationFrame(
+        this.pointerMoveFrame,
+      );
+      this.pointerMoveFrame = null;
+    }
+    this.lastPointerEvent = null;
   }
 
   /**
@@ -138,8 +158,37 @@ export class EraserSizeManager {
   };
 
   private readonly onPointerMove = (event: PointerEvent): void => {
+    // Secondary and middle buttons pan the canvas; that is not erasing, and
+    // the size circle would follow a pan it does not describe.
+    if (event.buttons & PANNING_BUTTONS_MASK) {
+      this.hideCursor();
+      return;
+    }
     if (!this.isActive()) {
       this.hideCursor();
+      return;
+    }
+    // Pointer events can arrive far more often than frames (a stylus reports
+    // ~200 times a second). Handle at most one move per frame, keeping the
+    // latest one.
+    this.lastPointerEvent = event;
+    if (this.pointerMoveFrame !== null) {
+      return;
+    }
+    this.pointerMoveFrame =
+      this.host.ownerDocument.defaultView?.requestAnimationFrame(
+        this.handleScheduledPointerMove,
+      ) ?? null;
+    if (this.pointerMoveFrame === null) {
+      this.handleScheduledPointerMove();
+    }
+  };
+
+  private readonly handleScheduledPointerMove = (): void => {
+    this.pointerMoveFrame = null;
+    const event = this.lastPointerEvent;
+    this.lastPointerEvent = null;
+    if (!event || this.detached) {
       return;
     }
     this.showCursor(event);
