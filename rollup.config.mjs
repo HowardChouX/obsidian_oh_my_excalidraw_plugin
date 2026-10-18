@@ -90,10 +90,26 @@ function compressLanguageFile(lang) {
   return compressDeflateBase64(minifyCode(`x = ${content};`));
 }
 
+/**
+ * The editor payload is built from the local `zsviczian/excalidraw` checkout by
+ * `scripts/component-artifacts.mjs` and vendored under `vendor/excalidraw/`.
+ * Nothing here reads the npm package: fixing the editor means editing that
+ * checkout and rebuilding (`npm run component:rebuild`).
+ */
+const EXCALIDRAW_ARTIFACT_DIR = "./vendor/excalidraw/dist/obsidian";
+const excalidrawArtifactPath = (file) => {
+  const artifactPath = `${EXCALIDRAW_ARTIFACT_DIR}/${file}`;
+  if (!fs.existsSync(artifactPath)) {
+    throw new Error(
+      `Missing ${artifactPath}. Build the editor from the local checkout first: npm run component:rebuild`,
+    );
+  }
+  return artifactPath;
+};
 const excalidrawSource = isLib ? "" : fs.readFileSync(
-  isProd
-    ? "./node_modules/@zsviczian/excalidraw/dist/obsidian/excalidraw.production.min.js"
-    : "./node_modules/@zsviczian/excalidraw/dist/obsidian/excalidraw.development.js",
+  excalidrawArtifactPath(
+    isProd ? "excalidraw.production.min.js" : "excalidraw.development.js",
+  ),
   "utf8",
 );
 const excalidraw_pkg = isLib
@@ -115,9 +131,12 @@ const reactPackagesCompressed = isLib
 const pako_pkg = isLib ? "" : fs.readFileSync("./node_modules/pako/dist/pako_inflate.min.js", "utf8");
 
 if (!isLib) {
-  const excalidraw_styles = isProd
-    ? fs.readFileSync("./node_modules/@zsviczian/excalidraw/dist/obsidian/excalidraw.production.min.css", "utf8")
-    : fs.readFileSync("./node_modules/@zsviczian/excalidraw/dist/obsidian/excalidraw.development.css", "utf8");
+  const excalidraw_styles = fs.readFileSync(
+    excalidrawArtifactPath(
+      isProd ? "excalidraw.production.min.css" : "excalidraw.development.css",
+    ),
+    "utf8",
+  );
   const plugin_styles = fs.readFileSync("./styles.css", "utf8");
   const styles = excalidraw_styles + plugin_styles;
   cssnano()
@@ -135,12 +154,6 @@ if (!isLib) {
 
 const manifestStr = isLib ? "" : fs.readFileSync("manifest-beta.json", "utf-8");
 const manifest = isLib ? {} : JSON.parse(manifestStr);
-const startupScriptBase64 = isLib
-  ? ""
-  : Buffer.from(
-    fs.readFileSync("src/constants/assets/startupScript.md", "utf-8"),
-    "utf-8",
-  ).toString("base64");
 if (!isLib) {
   console.log(manifest.version);
 }
@@ -265,7 +278,6 @@ const packageString = isLib
   // justified exceptions.
   `const deliberateFetch = async (payload, init) => await fetch(payload, init);\n` +
   `const PLUGIN_VERSION="${manifest.version}";\n` +
-  `const STARTUP_SCRIPT_BASE64="${startupScriptBase64}";\n` +
   // Scanner compatibility shim: intentional diagnostic logging.
   // Excalidraw does not use console.log for routine application output. Remaining log calls
   // are deliberate diagnostic/debug information used for troubleshooting.

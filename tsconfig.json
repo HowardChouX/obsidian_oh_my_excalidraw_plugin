@@ -20,6 +20,13 @@
       // was tried first and reverted: its independently-versioned types
       // structurally disagreed with this package's own bundled ExcalidrawElement,
       // producing false-positive mismatches between two same-named-but-different types.)
+      //
+      // Types intentionally stay on the installed package: the editor *runtime*
+      // is the local checkout (vendor/excalidraw, see scripts/component-artifacts.mjs),
+      // but the checkout's generated types/ layout differs from the published
+      // package (dist/types/**), and mixing both identities produced ~250
+      // false-positive assignability warnings. Switch these to the checkout's
+      // dist/types/** only when that layout is verified for every subpath.
       "@excalidraw/common": ["./node_modules/@zsviczian/excalidraw/types/common/src/index"],
       "@excalidraw/common/*": ["./node_modules/@zsviczian/excalidraw/types/common/src/*"],
       "@excalidraw/element": ["./node_modules/@zsviczian/excalidraw/types/element/src/index"],

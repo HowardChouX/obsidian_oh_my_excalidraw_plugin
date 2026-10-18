@@ -1,6 +1,6 @@
 {
-  "name": "obsidian-excalidraw-plugin",
-  "version": "2.2.5",
+  "name": "oh-my-excalidraw",
+  "version": "0.1.0",
   "description": "This is an Obsidian.md plugin that lets you view and edit Excalidraw drawings",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -8,12 +8,17 @@
     "lib/**/*"
   ],
   "scripts": {
-    "dev": "cross-env NODE_ENV=development rollup --config rollup.config.mjs",
-    "build": "cross-env NODE_ENV=production rollup --config rollup.config.mjs",
+    "dev": "node scripts/component-artifacts.mjs && cross-env NODE_ENV=development rollup --config rollup.config.mjs",
+    "build": "node scripts/component-artifacts.mjs && cross-env NODE_ENV=production rollup --config rollup.config.mjs",
     "test:bundle": "node --test scripts/testing/bundle.test.mjs",
     "test:drawing-load-error": "node --test scripts/testing/drawingLoadError.test.mjs",
     "test:obsidian:runner": "node --test scripts/testing/host/runner.test.mjs scripts/testing/host/processTools.test.mjs",
     "test:markdown-embeds": "node --test scripts/testing/markdownEmbeds.test.mjs",
+    "test:scene-pan-performance": "node --test scripts/testing/scenePanPerformance.test.mjs",
+    "test:gesture-recovery": "node --test scripts/testing/gestureRecovery.test.mjs",
+    "test:component-hardening": "node --test scripts/testing/componentHardening.test.mjs",
+    "component:rebuild": "node scripts/component-artifacts.mjs --force",
+    "component:check": "node scripts/component-artifacts.mjs --check",
     "test:inline-link-suggester": "node --test scripts/testing/inlineLinkSuggester.test.mjs",
     "verify:obsidian": "node scripts/testing/host/verify.mjs",
     "verify:obsidian:plugin": "node scripts/testing/host/verify.mjs --plugin-only",
