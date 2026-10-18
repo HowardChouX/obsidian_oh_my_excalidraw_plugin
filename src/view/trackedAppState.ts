@@ -79,14 +79,10 @@ function areStructuredValuesEqual(left: unknown, right: unknown): boolean {
   );
 }
 
-/**
- * Reports whether drawing-owned app state changed. Viewport state participates
- * only when opening the drawing will not replace it with zoom-to-fit.
- */
-export function didTrackedAppStateChange(
+/** Reports changes to drawing-owned app state other than viewport movement. */
+export function didTrackedNonViewportAppStateChange(
   previous: TrackedAppStateSnapshot,
   next: TrackedAppStateSnapshot,
-  trackViewport: boolean,
 ): boolean {
   return (
     previous.theme !== next.theme ||
@@ -100,10 +96,33 @@ export function didTrackedAppStateChange(
     previous.objectsSnapModeEnabled !== next.objectsSnapModeEnabled ||
     previous.bindingPreference !== next.bindingPreference ||
     previous.isMidpointSnappingEnabled !== next.isMidpointSnappingEnabled ||
-    previous.boxSelectionMode !== next.boxSelectionMode ||
-    (trackViewport &&
-      (previous.scrollX !== next.scrollX ||
-        previous.scrollY !== next.scrollY ||
-        previous.zoom !== next.zoom))
+    previous.boxSelectionMode !== next.boxSelectionMode
+  );
+}
+
+/** Whether scroll or zoom changed between tracked app-state snapshots. */
+export function didTrackedViewportChange(
+  previous: TrackedAppStateSnapshot,
+  next: TrackedAppStateSnapshot,
+): boolean {
+  return (
+    previous.scrollX !== next.scrollX ||
+    previous.scrollY !== next.scrollY ||
+    previous.zoom !== next.zoom
+  );
+}
+
+/**
+ * Reports whether drawing-owned app state changed. Viewport state participates
+ * only when opening the drawing will not replace it with zoom-to-fit.
+ */
+export function didTrackedAppStateChange(
+  previous: TrackedAppStateSnapshot,
+  next: TrackedAppStateSnapshot,
+  trackViewport: boolean,
+): boolean {
+  return (
+    didTrackedNonViewportAppStateChange(previous, next) ||
+    (trackViewport && didTrackedViewportChange(previous, next))
   );
 }

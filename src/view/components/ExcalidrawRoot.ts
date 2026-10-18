@@ -9,6 +9,7 @@ import { DEVICE, obsidianToExcalidrawMap } from "../../constants/constants";
 import { t } from "../../lang/helpers";
 import type ExcalidrawView from "../ExcalidrawView";
 import { EraserSizeManager } from "../managers/EraserSizeManager";
+import { PointerGestureWatchdog } from "../managers/PointerGestureWatchdog";
 import { CustomToolbar } from "../managers/CustomToolbar";
 import { ToolSettingsPopup } from "../managers/ToolSettingsPopup";
 import { EmbeddableMenu } from "./menu/EmbeddableActionsMenu";
@@ -79,6 +80,24 @@ export function createExcalidrawRootElement(
     const eraserSizeManager = new EraserSizeManager(view);
     eraserSizeManager.attach(excalidrawWrapperRef.current);
     view.eraserSizeManager = eraserSizeManager;
+    const pointerGestureWatchdog = new PointerGestureWatchdog({
+      ownerDocument: view.ownerDocument,
+      getCursorButton: () =>
+        view.excalidrawAPI?.getAppState().cursorButton ?? null,
+      getInteractiveCanvas: () =>
+        excalidrawWrapperRef.current?.querySelector<HTMLElement>(
+          "canvas.excalidraw__canvas.interactive",
+        ) ?? null,
+      isRecoverable: () =>
+        Boolean(view.excalidrawAPI) &&
+        !view.semaphores?.viewunload &&
+        !view.semaphores?.windowMigrating,
+      releaseStuckCursorButton: () => {
+        view.excalidrawAPI?.updateScene({ appState: { cursorButton: "up" } });
+      },
+    });
+    pointerGestureWatchdog.attach(excalidrawWrapperRef.current);
+    view.pointerGestureWatchdog = pointerGestureWatchdog;
     const appState = view.excalidrawAPI?.getAppState();
     if (appState) {
       view.selectedElementActionsMenu.update(view.getViewElements(), appState);
@@ -89,6 +108,8 @@ export function createExcalidrawRootElement(
       view.customToolbar = null;
       eraserSizeManager.detach();
       view.eraserSizeManager = null;
+      pointerGestureWatchdog.detach();
+      view.pointerGestureWatchdog = null;
       view.obsidianMenu.destroy();
       view.obsidianMenu = null;
       view.embeddableMenu.destroy();

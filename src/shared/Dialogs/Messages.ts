@@ -17,6 +17,19 @@ I build this plugin as a labor of love. Curious about the philosophy behind it? 
 
 <div class="ex-coffee-div"><a href="${URLs.KO_FI_COM_ZSOLT}"><img src="${URLs.CDN_KO_FI_COM_CDN_KOFI3_PNG}" border="0" alt="Buy Me a Coffee at ko-fi.com"  height=45></a></div>
 `,
+"0.1.1": `
+## Fixed
+- Right-button panning can no longer leave the drawing unresponsive. The editor component now drops a pointer whose release never arrived (stylus side button, release outside the canvas, a cancel the browser never sent), ends a pan session that outlives its pointer, and releases the shared pointer state when the drawing closes. Previously this state was shared by every drawing in the window, so reopening the file did not help and only restarting Obsidian recovered it.
+
+## Performance
+- Right-button panning no longer rechecks every drawing element on each viewport update. The final viewport is still saved after the gesture.
+- A lost pointer release (for example a stylus side button whose release never reaches the editor) no longer leaves the canvas unable to draw or pan. The editor replays the missing cancel event and recovers by itself instead of requiring an Obsidian restart.
+
+## Simplified
+- Settings pages no longer show the Excalidraw Mastery promotion, the external link row, or embedded tutorial videos. Settings still render in the same searchable pages.
+- Removed settings rows that had no effect: the immersive live-preview toggle, the script folder and JavaScript-file options, and the Markdown font and CSS options. Their stored values are preserved and ignored.
+- Removed leftover Community Script Store, AI provider, and Taskbone OCR text and network endpoints. No drawing, export, or editing behavior changed.
+`,
 "0.1.0": `
 **Oh My Excalidraw** is a trimmed fork of the plugin that reads and writes the same \`.excalidraw.md\` files.
 

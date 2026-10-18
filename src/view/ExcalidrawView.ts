@@ -84,7 +84,6 @@ import {
   getURLImageExtension,
 } from "../utils/fileUtils";
 import {
-  checkExcalidrawVersion,
   errorlog,
   getEmbeddedFilenameParts,
   getExportTheme,
@@ -149,6 +148,7 @@ import {
 } from "../shared/EmbeddedFileLoader";
 import { ObsidianMenu } from "./components/menu/ObsidianMenu";
 import type { EraserSizeManager } from "./managers/EraserSizeManager";
+import type { PointerGestureWatchdog } from "./managers/PointerGestureWatchdog";
 import { clampEraserSize } from "src/utils/eraserHitTest";
 import type { CustomToolbar } from "./managers/CustomToolbar";
 import { ToolsPanel } from "./components/menu/ToolsPanel";
@@ -229,6 +229,8 @@ import {
   ViewLoadGeneration,
   type ViewLoadToken,
 } from "./managers/ViewLoadGeneration";
+import { SceneChangeTracker } from "./managers/SceneChangeTracker";
+import { ViewportChangeTracker } from "./managers/ViewportChangeTracker";
 import { SameFileEditGate } from "./managers/SameFileEditGate";
 import { OwnWriteReloadGuard } from "./managers/OwnWriteReloadGuard";
 import { shouldRetainLoadedFileAfterReload } from "./textFileViewReloadPolicy";
@@ -276,7 +278,8 @@ import { isInstanceOfHTMLElement } from "src/utils/typechecks";
 import { setElementDisplay } from "src/utils/htmlUtils";
 import {
   captureTrackedAppState,
-  didTrackedAppStateChange,
+  didTrackedNonViewportAppStateChange,
+  didTrackedViewportChange,
   type TrackedAppStateSnapshot,
 } from "./trackedAppState";
 
@@ -501,6 +504,7 @@ export default class ExcalidrawView
   public embeddableMenu: EmbeddableMenu | null = null;
   public customToolbar: CustomToolbar | null = null;
   public eraserSizeManager: EraserSizeManager | null = null;
+  public pointerGestureWatchdog: PointerGestureWatchdog | null = null;
   public selectedElementActionsMenu: SelectedElementActionsMenu | null = null;
   private destroyers: Array<() => void> = [];
   private previousContentElHeight: number = 0;
@@ -546,7 +550,8 @@ export default class ExcalidrawView
   };
   private packageLease: PackageLease | null = null;
   private lastAppState: AppState | null = null;
-  private lastElementsVersion: number = -1;
+  private readonly sceneChangeTracker = new SceneChangeTracker();
+  private readonly viewportChangeTracker = new ViewportChangeTracker();
   private pendingMigrationHandoffToken: string | null = null;
   private pendingOpenMode: "view" | "edit" | null = null;
   private pendingOpenZoomToFit = false;
@@ -2820,6 +2825,7 @@ export default class ExcalidrawView
     this.pendingMigrationHandoffToken = null;
     if (this.textFileViewLoadedFile !== this.file) {
       this.saveCoordinator.beginSaveTarget();
+      this.viewportChangeTracker.reset();
     }
     //I am using the TextFileView-loaded file to control when the view reloads.
     //It seems text file view gets the modified file event after sync before the modifyEventHandler in main.ts
@@ -2861,9 +2867,6 @@ export default class ExcalidrawView
       }
       if (plugin.settings.compareManifestToPluginVersion) {
         void checkVersionMismatch(plugin);
-      }
-      if (plugin.settings.showNewVersionNotification) {
-        void checkExcalidrawVersion();
       }
       if (isMaskFile(plugin, targetFile)) {
         const notice = new Notice(t("MASK_FILE_NOTICE"), 5000);
@@ -4043,33 +4046,27 @@ export default class ExcalidrawView
     if (this.semaphores.viewunload) return;
 
     const hookServer = this.getHookServer();
-
-    const currentVersion = this.getSceneVersion(et);
+    const elementsChanged =
+      this.sceneChangeTracker.consumeElementChangeForHook();
 
     if (!hookServer?.onSceneChangeHook) {
       this.lastAppState = st;
-      this.lastElementsVersion = currentVersion;
       return;
     }
 
     const last = this.lastAppState;
-    const elementsChanged = currentVersion !== this.lastElementsVersion;
-
     this.lastAppState = st;
-    this.lastElementsVersion = currentVersion;
 
     if (!last && !elementsChanged) return;
 
-    if (hookServer && hookServer.onSceneChangeHook) {
-      this.evaluateSceneChangeHook(
-        hookServer,
-        et,
-        st,
-        last,
-        files,
-        elementsChanged,
-      );
-    }
+    this.evaluateSceneChangeHook(
+      hookServer,
+      et,
+      st,
+      last,
+      files,
+      elementsChanged,
+    );
   }
 
   private evaluateSceneChangeHook(
@@ -5551,19 +5548,23 @@ export default class ExcalidrawView
   public onExcalidrawIncrement(
     event: DurableIncrement | EphemeralIncrement,
   ): void {
+    const changedElements = Object.values(event.change.elements);
+    if (changedElements.length === 0) {
+      return;
+    }
+    this.sceneChangeTracker.recordElementChange();
     if (event.type !== "durable") {
       return;
     }
-    const changedElements = Object.values(event.change.elements);
     // Durable increments also contain undoable selection/app-state changes.
     // Only element changes advance the persistence revision here; tracked
     // drawing app state is handled explicitly in onChange().
-    if (changedElements.length > 0) {
-      this.setDirty();
-    }
+    this.setDirty();
   }
 
   public onChange(et: ExcalidrawElement[], st: AppState, files: BinaryFiles) {
+    const sceneElementsChanged =
+      this.sceneChangeTracker.consumeElementChangeForOnChange();
     this.selectedElementActionsMenu?.update(et, st);
     if (st.activeTool?.type) {
       if (st.activeTool.type === "image") {
@@ -5640,15 +5641,25 @@ export default class ExcalidrawView
       const nextTrackedAppState = captureTrackedAppState(st);
       const backgroundChanged =
         st.viewBackgroundColor !== this.previousBackgroundColor;
-      if (
-        this.previousTrackedAppState !== null &&
-        didTrackedAppStateChange(
-          this.previousTrackedAppState,
-          nextTrackedAppState,
-          !this.plugin.settings.zoomToFitOnOpen,
-        )
-      ) {
-        this.setDirty();
+      const previousTrackedAppState = this.previousTrackedAppState;
+      if (previousTrackedAppState !== null) {
+        const trackViewport = !this.plugin.settings.zoomToFitOnOpen;
+        const shouldMarkDirty = this.viewportChangeTracker.shouldMarkDirty({
+          pointerDown: st.cursorButton === "down",
+          viewportChanged:
+            trackViewport &&
+            didTrackedViewportChange(
+              previousTrackedAppState,
+              nextTrackedAppState,
+            ),
+          nonViewportChanged: didTrackedNonViewportAppStateChange(
+            previousTrackedAppState,
+            nextTrackedAppState,
+          ),
+        });
+        if (shouldMarkDirty) {
+          this.setDirty();
+        }
       }
       this.previousTrackedAppState = nextTrackedAppState;
       this.previousTheme = st.theme;
@@ -5664,6 +5675,7 @@ export default class ExcalidrawView
       }
     }
     if (
+      sceneElementsChanged &&
       !this.isDirty() &&
       st.editingTextElement === null &&
       //Removed because of
