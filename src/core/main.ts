@@ -25,7 +25,6 @@ import {
   FRONTMATTER_KEYS,
   FRONTMATTER,
   JSON_parse,
-  EXPORT_TYPES,
   EXPORT_IMG_ICON_NAME,
   EXPORT_IMG_ICON,
   LOCALE,
@@ -46,7 +45,6 @@ import {
 } from "../utils/fileUtils";
 import {
   isVersionNewerThanOther,
-  versionUpdateCheckTimer,
   calculateUIModeValue,
 } from "../utils/utils";
 import {
@@ -496,13 +494,6 @@ export default class ExcalidrawPlugin extends Plugin {
 
     this.updateFooterSafeAreaPadding();
 
-    try {
-    } catch (e) {
-      new Notice("Error initializing script engine", 6000);
-      console.error("Error initializing script engine", e);
-    }
-    this.logStartupEvent("Script engine initialized");
-
     void this.initializeFonts();
 
     try {
@@ -525,7 +516,6 @@ export default class ExcalidrawPlugin extends Plugin {
 
     try {
       if (this.settings.showReleaseNotes) {
-        //I am repurposing imageElementNotice, if the value is true, this means the plugin was just newly installed to Obsidian.
         const obsidianJustInstalled =
           this.settings.previousRelease === "0.0.0" ||
           !this.settings.previousRelease;
@@ -814,11 +804,6 @@ export default class ExcalidrawPlugin extends Plugin {
     excalidrawViews.forEach(({ leaf }) => {
       void this.setMarkdownView(leaf);
     });
-
-    if (versionUpdateCheckTimer) {
-      window.clearTimeout(versionUpdateCheckTimer);
-    }
-
 
     if (getImageCache()) {
       getImageCache().destroy();

@@ -1,9 +1,8 @@
 import clsx from "clsx";
-import { Notice, TFile } from "obsidian";
 import * as React from "react";
 import { ActionButton } from "./ActionButton";
-import { ICONS, saveIcon, stringToSVG } from "../../../constants/actionIcons";
-import { DEVICE, SCRIPT_INSTALL_FOLDER } from "../../../constants/constants";
+import { ICONS, saveIcon } from "../../../constants/actionIcons";
+import { DEVICE } from "../../../constants/constants";
 import { TextMode } from "../../../shared/TextMode";
 import type ExcalidrawView from "../../ExcalidrawView";
 import { t } from "../../../lang/helpers";
@@ -17,7 +16,6 @@ import { ExportDialog } from "src/shared/Dialogs/ExportDialog";
 import { openExternalLink } from "src/utils/excalidrawViewUtils";
 import { UniversalInsertFileModal } from "src/shared/Dialogs/UniversalInsertFileModal";
 import { REM_VALUE } from "src/core/managers/StylesManager";
-import { getExcalidrawViews } from "src/utils/obsidianUtils";
 import { UIModeSettings } from "src/shared/Dialogs/UIModeSettings";
 import { getYouTubeUrl } from "src/constants/safeUrls";
 

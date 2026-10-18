@@ -43,9 +43,6 @@ export interface ExcalidrawSettings {
   libraryMigrationSnoozeUntil: number;
   embedUseExcalidrawFolder: boolean;
   templateFilePath: string;
-  scriptFolderPath: string;
-  allowJavaScriptFiles: boolean;
-  storeScriptFilesAsJavaScript: boolean;
   fontAssetsPath: string;
   loadChineseFonts: boolean;
   loadJapaneseFonts: boolean;
@@ -133,30 +130,22 @@ export interface ExcalidrawSettings {
   compatibilityMode: boolean;
   experimentalFileType: boolean;
   experimentalFileTag: string;
-  experimentalLivePreview: boolean;
   fadeOutExcalidrawMarkup: boolean;
   loadPropertySuggestions: boolean;
   experimentalEnableFourthFont: boolean;
   experimantalFourthFont: string;
   addDummyTextElement: boolean;
   zoteroCompatibility: boolean;
-  fieldSuggester: boolean;
   enableOnloadScripts: boolean;
   enableCommandLinks: boolean;
   //loadCount: number; //version 1.2 migration counter
-  drawingOpenCount: number;
   library: string;
   library2: StencilLibraryData;
   //patchCommentBlock: boolean; //1.3.12
-  imageElementNotice: boolean; //1.4.0
   //runWYSIWYGpatch: boolean; //1.4.9
   //fixInfinitePreviewLoop: boolean; //1.4.10
   mdSVGwidth: number;
   mdSVGmaxHeight: number;
-  mdFont: string;
-  mdFontColor: string;
-  mdBorderColor: string;
-  mdCSS: string;
   scriptEngineSettings: {
     [key: string]: {
       [key: string]: ScriptSettingValue | string | number | boolean;
@@ -178,9 +167,7 @@ export interface ExcalidrawSettings {
   previousRelease: string;
   showReleaseNotes: boolean;
   useDeclarativeSettings: boolean;
-  excalidrawMasteryPromoCollapsed: boolean;
   compareManifestToPluginVersion: boolean;
-  showNewVersionNotification: boolean;
   //mathjaxSourceURL: string;
   pinnedScripts: string[];
   sidepanelTabs: string[];
@@ -196,7 +183,6 @@ export interface ExcalidrawSettings {
   embeddableMarkdownDefaults: EmbeddableMDCustomProps;
   markdownNodeOneClickEditing: boolean;
   canvasImmersiveEmbed: boolean;
-  startupScriptPath: string;
   modifierKeyConfig: {
     Mac: Record<ModifierSetType, ModifierKeySet>;
     Win: Record<ModifierSetType, ModifierKeySet>;
@@ -227,9 +213,6 @@ export const DEFAULT_SETTINGS: ExcalidrawSettings = {
   libraryMigrationSnoozeUntil: 0,
   embedUseExcalidrawFolder: false,
   templateFilePath: "Excalidraw/Template.excalidraw",
-  scriptFolderPath: "Excalidraw/Scripts",
-  allowJavaScriptFiles: false,
-  storeScriptFilesAsJavaScript: false,
   fontAssetsPath: "Excalidraw/CJK Fonts",
   loadChineseFonts: false,
   loadJapaneseFonts: false,
@@ -312,19 +295,16 @@ export const DEFAULT_SETTINGS: ExcalidrawSettings = {
   syncExcalidraw: false,
   experimentalFileType: false,
   experimentalFileTag: "✏️",
-  experimentalLivePreview: true,
   fadeOutExcalidrawMarkup: false,
   loadPropertySuggestions: false,
   experimentalEnableFourthFont: false,
   experimantalFourthFont: "Virgil",
   addDummyTextElement: false,
   zoteroCompatibility: false,
-  fieldSuggester: true,
   enableOnloadScripts: false,
   enableCommandLinks: false,
   compatibilityMode: false,
   //loadCount: 0,
-  drawingOpenCount: 0,
   library: `deprecated`,
   library2: {
     type: "excalidrawlib",
@@ -333,24 +313,17 @@ export const DEFAULT_SETTINGS: ExcalidrawSettings = {
     libraryItems: [],
   },
   //patchCommentBlock: true,
-  imageElementNotice: true,
   //runWYSIWYGpatch: true,
   //fixInfinitePreviewLoop: true,
   mdSVGwidth: 500,
   mdSVGmaxHeight: 800,
-  mdFont: "Cascadia",
-  mdFontColor: "Black",
-  mdBorderColor: "Black",
-  mdCSS: "",
   scriptEngineSettings: {},
   autostartScripts: {},
   autostartScriptFailures: {},
   previousRelease: "0.0.0",
   showReleaseNotes: true,
   useDeclarativeSettings: true,
-  excalidrawMasteryPromoCollapsed: false,
   compareManifestToPluginVersion: true,
-  showNewVersionNotification: true,
   pinnedScripts: [],
   sidepanelTabs: [],
   customPens: [
@@ -392,7 +365,6 @@ export const DEFAULT_SETTINGS: ExcalidrawSettings = {
   },
   markdownNodeOneClickEditing: false,
   canvasImmersiveEmbed: true,
-  startupScriptPath: "",
   modifierKeyConfig: {
     Mac: {
       LocalFileDragAction: {

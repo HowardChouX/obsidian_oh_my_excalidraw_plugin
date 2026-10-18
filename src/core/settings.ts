@@ -1,6 +1,5 @@
 import {
   App,
-  ButtonComponent,
   DropdownComponent,
   normalizePath,
   Notice,
@@ -12,7 +11,6 @@ import {
 import {
   DEVICE,
   getCSSFontDefinition,
-  LOGO_EXCALIDRAW_MASTERY,
   setRootElementSize,
 } from "src/constants/constants";
 import { t } from "src/lang/helpers";
@@ -20,12 +18,10 @@ import type ExcalidrawPlugin from "src/core/main";
 import { PreviewImageType } from "src/types/utilTypes";
 import { setDynamicStyle } from "src/utils/dynamicStyling";
 import {
-  createOrOverwriteFile,
   getDrawingFilename,
   getEmbedFilename,
 } from "src/utils/fileUtils";
 import {
-  addYouTubeThumbnail,
   fragWithHTML,
   setLeftHandedMode,
   setUIMode,
@@ -59,7 +55,6 @@ import { configureSliderWithText } from "src/utils/sliderUtils";
 import { ContentSearcher } from "src/shared/components/ContentSearcher";
 import { URLs } from "src/constants/safeUrls";
 import { hideElement, setStyle, showElement } from "src/utils/styleUtils";
-import { errorlog } from "src/utils/coreUtils";
 import {
   getMarkdownFontFamilyId,
   getSelectableFontOptions,
@@ -98,18 +93,6 @@ const sanitizeFilenameSegment = (value: string): string =>
 
 const NAVIGATION_TAG_EMBED_PREVIEW = "EmbedPreview";
 
-const configurePasswordTextInput = (text: TextComponent) => {
-  const { inputEl } = text;
-  inputEl.type = "password";
-  inputEl.autocomplete = "off";
-  inputEl.spellcheck = false;
-  inputEl.addEventListener("focus", () => {
-    inputEl.type = "text";
-  });
-  inputEl.addEventListener("blur", () => {
-    inputEl.type = "password";
-  });
-};
 
 interface SettingsPageModel {
   name: string;
@@ -409,7 +392,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
 
   private createDeclarativeUtilitiesDefinition(
     scope: string,
-    includeMastery: boolean,
     pagePath?: readonly string[],
   ): SettingDefinition<SettingBindingKey> {
     return annotateMarkdownDefinition(
@@ -424,9 +406,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
           });
           if (pagePath) {
             this.renderDeclarativeBreadcrumbs(setting.settingEl, pagePath);
-          }
-          if (includeMastery) {
-            this.renderMasteryPromo(setting.settingEl);
           }
           return this.attachDeclarativeSettingsCrossLinks(
             setting.settingEl.parentElement,
@@ -653,7 +632,7 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
   ): SettingDefinitionItem<SettingBindingKey>[] {
     const scope = pagePath.at(-1) ?? this.plugin.manifest.name;
     return [
-      this.createDeclarativeUtilitiesDefinition(scope, false, pagePath),
+      this.createDeclarativeUtilitiesDefinition(scope, pagePath),
       this.createSectionDescriptionDefinition(
         `${scope} · overview`,
         description,
@@ -681,19 +660,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
     );
   }
 
-  private createYouTubeDefinition(
-    scope: string,
-    videoId: string,
-    startAt?: number,
-  ): SettingDefinition<SettingBindingKey> {
-    return this.createRenderedDefinition({
-      name: `${scope} · YouTube · ${videoId}`,
-      searchable: false,
-      omitFromMarkdown: true,
-      render: (container) => addYouTubeThumbnail(container, videoId, startAt),
-    });
-  }
-
   private getBasicAndSavingPages(
     renderState: SettingsRenderState,
   ): SettingsPageModel[] {
@@ -717,11 +683,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
               this.getGeneralDrawingFolderSpecs(),
             ),
             ...this.toDeclarativeDefinitions(this.getGeneralTrailingSpecs()),
-            this.createYouTubeDefinition(
-              t("TEMPLATE_NAME"),
-              "jgUpYznHP9A",
-              216,
-            ),
           ],
           renderLegacy: (container) => {
             this.renderSettingSpecs(
@@ -729,7 +690,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
               this.getGeneralDrawingFolderSpecs(),
             );
             this.renderSettingSpecs(container, this.getGeneralTrailingSpecs());
-            addYouTubeThumbnail(container, "jgUpYznHP9A", 216);
           },
         },
       ],
@@ -821,14 +781,10 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
         {
           name: t("MODES_HEAD"),
           description: t("MODES_DESC"),
-          buildDefinitions: () => [
-            ...this.toDeclarativeDefinitions(this.getUIModeSpecs()),
-            this.createYouTubeDefinition(t("MODES_HEAD"), "H8Njp7ZXYag", 999),
-          ],
-          renderLegacy: (container) => {
-            this.renderSettingSpecs(container, this.getUIModeSpecs());
-            addYouTubeThumbnail(container, "H8Njp7ZXYag", 999);
-          },
+          buildDefinitions: () =>
+            this.toDeclarativeDefinitions(this.getUIModeSpecs()),
+          renderLegacy: (container) =>
+            this.renderSettingSpecs(container, this.getUIModeSpecs()),
         },
         {
           name: t("HOTKEY_OVERRIDE_HEAD"),
@@ -839,39 +795,15 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
         {
           name: t("THEME_HEAD"),
           description: t("THEME_DESC"),
-          buildDefinitions: () => {
-            const specs = this.getThemeSpecs();
-            return [
-              ...this.toDeclarativeDefinitions(specs.slice(0, 2)),
-              this.createYouTubeDefinition(
-                t("DYNAMICSTYLE_NAME"),
-                "fypDth_-8q0",
-              ),
-              ...this.toDeclarativeDefinitions(specs.slice(2, 3)),
-              this.createYouTubeDefinition(
-                t("IFRAME_MATCH_THEME_NAME"),
-                "ICpoyMv6KSs",
-              ),
-              ...this.toDeclarativeDefinitions(specs.slice(3)),
-            ];
-          },
+          buildDefinitions: () =>
+            this.toDeclarativeDefinitions(this.getThemeSpecs()),
           renderLegacy: (container) => this.renderThemeSettings(container),
         },
         {
           name: t("ZOOM_AND_PAN_HEAD"),
           description: t("ZOOM_AND_PAN_DESC"),
-          buildDefinitions: () => {
-            const specs = this.getZoomAndPanSpecs();
-            return [
-              ...this.toDeclarativeDefinitions(specs.slice(0, 2)),
-              this.createYouTubeDefinition(
-                t("DEFAULT_PINCHZOOM_NAME"),
-                "rBarRfcSxNo",
-                107,
-              ),
-              ...this.toDeclarativeDefinitions(specs.slice(2)),
-            ];
-          },
+          buildDefinitions: () =>
+            this.toDeclarativeDefinitions(this.getZoomAndPanSpecs()),
           renderLegacy: (container) => this.renderZoomAndPanSettings(container),
         },
         {
@@ -958,7 +890,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
       description: t("EXPORT_SUBHEAD_DESC"),
       navigationTags: [TAG_PDFEXPORT],
       buildDefinitions: () => [
-        this.createYouTubeDefinition(t("EXPORT_SUBHEAD"), "wTtaXmRJ7wg", 171),
         ...this.toDeclarativeDefinitions(this.getExportGeneralSpecs()),
       ],
       renderLegacy: (container) => this.renderExportGeneralSettings(container),
@@ -1009,7 +940,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
       name: t("EMBED_TOEXCALIDRAW_HEAD"),
       description: t("EMBED_TOEXCALIDRAW_DESC"),
       buildDefinitions: () => [
-        this.createYouTubeDefinition(t("PDF_TO_IMAGE"), "nB4cOfn0xAs"),
         ...this.toDeclarativeDefinitions(this.getPdfImportSpecs()),
       ],
       renderLegacy: (container) => this.renderPdfImportSettings(container),
@@ -1168,7 +1098,7 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
     this.declarativePagePathsByTag = null;
     this.declarativeSettingsAdapter.beginBuild(registerBindings);
     return makeDescriptionsReusable([
-      this.createDeclarativeUtilitiesDefinition("Root", true),
+      this.createDeclarativeUtilitiesDefinition("Root"),
       this.declarativeSettingsAdapter.toDefinition(
         this.getSettingsLayoutSpec(),
       ),
@@ -1375,7 +1305,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
     this.renderSettingsUtilityBar(containerEl, () =>
       contentSearcher.copyContentAsMarkdown(),
     );
-    this.renderMasteryPromo(containerEl);
     if (requireApiVersion("1.13.0")) {
       this.buildSetting(containerEl, this.getSettingsLayoutSpec());
     }
@@ -1411,139 +1340,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
       },
     });
     copyButton.addEventListener("click", copySettings);
-
-    const links = [
-      {
-        href: URLs.NOTEBOOKLM_GOOGLE_COM_NOTEBOOK_42D76A2F_C11D_4002_9286_1683C43D0AB0,
-        aria: t("NOTEBOOKLM_LINK_ARIA"),
-        text: t("SETTINGS_TOOLBAR_NOTEBOOKLM"),
-      },
-      {
-        href: URLs.GITHUB_COM_ZSVICZIAN_OBSIDIAN_EXCALIDRAW_PLUGIN_ISSUES,
-        aria: t("LINKS_BUGS_ARIA"),
-        text: t("SETTINGS_TOOLBAR_BUGS"),
-      },
-      {
-        href: URLs.COMMUNITY_SKETCH_YOUR_MIND_COM_WIKI,
-        aria: t("LINKS_WIKI_ARIA"),
-        text: t("SETTINGS_TOOLBAR_WIKI"),
-      },
-      {
-        href: URLs.WWW_YOUTUBE_COM_VISUALPKM,
-        aria: t("LINKS_YT_ARIA"),
-        text: t("SETTINGS_TOOLBAR_YOUTUBE"),
-      },
-      {
-        href: URLs.COMMUNITY_SKETCH_YOUR_MIND_COM_EE,
-        aria: t("LINKS_JOIN_SYM_ARIA"),
-        text: t("SETTINGS_TOOLBAR_LEARN"),
-      },
-      {
-        href: URLs.TWITTER_COM_ZSVICZIAN,
-        aria: t("LINKS_TWITTER"),
-        text: t("SETTINGS_TOOLBAR_FOLLOW"),
-      },
-      {
-        href: URLs.COMMUNITY_SKETCH_YOUR_MIND_COM_SYM,
-        aria: t("LINKS_BOOK_ARIA"),
-        text: t("SETTINGS_TOOLBAR_READ"),
-      },
-      {
-        href: URLs.KO_FI_COM_ZSOLT,
-        aria: t("SETTINGS_TOOLBAR_KOFI"),
-        text: t("SETTINGS_TOOLBAR_KOFI"),
-      },
-    ];
-
-    for (const link of links) {
-      toolbar.createEl("a", {
-        text: link.text,
-        href: link.href,
-        attr: {
-          "aria-label": link.aria,
-          target: "_blank",
-          rel: "noopener noreferrer",
-        },
-      });
-    }
-  }
-
-  private renderMasteryPromo(container: HTMLElement): void {
-    const excalidrawMasteryPromo = container.createEl("details", {
-      cls: "setting-item-description excalidraw-mastery-promo",
-    });
-    excalidrawMasteryPromo.open =
-      !this.plugin.settings.excalidrawMasteryPromoCollapsed;
-    excalidrawMasteryPromo.classList.toggle(
-      "is-collapsed",
-      this.plugin.settings.excalidrawMasteryPromoCollapsed,
-    );
-
-    const excalidrawMasterySummary = excalidrawMasteryPromo.createEl(
-      "summary",
-      { cls: "excalidraw-mastery-promo__summary" },
-    );
-    const excalidrawMasterySummaryTitle = excalidrawMasterySummary.createSpan({
-      cls: "excalidraw-mastery-promo__summary-title",
-      text: t("EXCALIDRAW_MASTERY"),
-    });
-    const excalidrawMasterySummaryState = excalidrawMasterySummary.createSpan({
-      cls: "excalidraw-mastery-promo__summary-state",
-    });
-
-    const updateExcalidrawMasteryPromoState = (persist: boolean) => {
-      const isCollapsed = !excalidrawMasteryPromo.open;
-      const didStateChange =
-        this.plugin.settings.excalidrawMasteryPromoCollapsed !== isCollapsed;
-      this.plugin.settings.excalidrawMasteryPromoCollapsed = isCollapsed;
-      excalidrawMasteryPromo.classList.toggle("is-collapsed", isCollapsed);
-      excalidrawMasterySummaryTitle.classList.toggle("is-hidden", !isCollapsed);
-      excalidrawMasterySummaryState.setText(
-        isCollapsed
-          ? t("EXCALIDRAW_MASTERY_PROMO_SHOW")
-          : t("EXCALIDRAW_MASTERY_PROMO_HIDE"),
-      );
-      if (persist && didStateChange) {
-        void this.plugin.saveSettings();
-      }
-    };
-
-    excalidrawMasteryPromo.addEventListener("toggle", () =>
-      updateExcalidrawMasteryPromoState(true),
-    );
-    updateExcalidrawMasteryPromoState(false);
-
-    const excalidrawMasteryContent = excalidrawMasteryPromo.createDiv({
-      cls: "excalidraw-mastery-promo__content",
-    });
-    const excalidrawMasteryImageLink = excalidrawMasteryContent.createEl("a", {
-      cls: "excalidraw-mastery-promo__image-link",
-      href: URLs.COMMUNITY_SKETCH_YOUR_MIND_COM_EM,
-      attr: {
-        "aria-label": t("EXCALIDRAW_MASTERY_PROMO_ARIA"),
-        target: "_blank",
-        rel: "noopener noreferrer",
-      },
-    });
-    excalidrawMasteryImageLink.createEl("img", {
-      cls: "excalidraw-mastery-promo__image",
-      attr: {
-        src: LOGO_EXCALIDRAW_MASTERY,
-        alt: "Excalidraw Mastery",
-      },
-    });
-
-    const excalidrawMasteryText = excalidrawMasteryContent.createDiv({
-      cls: "excalidraw-mastery-promo__text",
-    });
-    setSanitizedHtml(excalidrawMasteryText, t("EXCALIDRAW_MASTERY_PROMO_HTML"));
-    excalidrawMasteryText
-      .querySelectorAll("a")
-      .forEach((anchor: HTMLAnchorElement) => {
-        anchor.setAttribute("aria-label", t("EXCALIDRAW_MASTERY_PROMO_ARIA"));
-        anchor.setAttribute("target", "_blank");
-        anchor.setAttribute("rel", "noopener noreferrer");
-      });
   }
 
   private renderSearchSection(): ContentSearcher {
@@ -1561,11 +1357,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
         name: t("WARN_ON_MANIFEST_MISMATCH_NAME"),
         desc: fragWithHTML(t("WARN_ON_MANIFEST_MISMATCH_DESC")),
         control: { type: "toggle", key: "compareManifestToPluginVersion" },
-      },
-      {
-        name: t("NEWVERSION_NOTIFICATION_NAME"),
-        desc: fragWithHTML(t("NEWVERSION_NOTIFICATION_DESC")),
-        control: { type: "toggle", key: "showNewVersionNotification" },
       },
       {
         name: t("TOGGLE_SPLASHSCREEN"),
@@ -2014,12 +1805,7 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
   }
 
   private renderThemeSettings(container: HTMLElement): void {
-    const specs = this.getThemeSpecs();
-    this.renderSettingSpecs(container, specs.slice(0, 2));
-    addYouTubeThumbnail(container, "fypDth_-8q0");
-    this.renderSettingSpecs(container, specs.slice(2, 3));
-    addYouTubeThumbnail(container, "ICpoyMv6KSs");
-    this.renderSettingSpecs(container, specs.slice(3));
+    this.renderSettingSpecs(container, this.getThemeSpecs());
   }
 
   private getZoomAndPanSpecs(): SettingSpec[] {
@@ -2117,10 +1903,7 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
   }
 
   private renderZoomAndPanSettings(container: HTMLElement): void {
-    const specs = this.getZoomAndPanSpecs();
-    this.renderSettingSpecs(container, specs.slice(0, 2));
-    addYouTubeThumbnail(container, "rBarRfcSxNo", 107);
-    this.renderSettingSpecs(container, specs.slice(2));
+    this.renderSettingSpecs(container, this.getZoomAndPanSpecs());
   }
 
   private getPenSpecs(): SettingSpec[] {
@@ -3010,15 +2793,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
     const specs = this.getEmbedPreviewSpecs();
     return [
       this.declarativeSettingsAdapter.toDefinition(specs[0]),
-      this.createYouTubeDefinition(
-        t("EMBED_PREVIEW_IMAGETYPE_NAME"),
-        "yZQoJg2RCKI",
-      ),
-      this.createYouTubeDefinition(
-        t("EMBED_PREVIEW_IMAGETYPE_NAME"),
-        "opLd1SqaH_I",
-        8,
-      ),
       this.createEmbedTypeDefinition(renderState),
       this.createEmbedCommentDefinition(renderState),
       ...this.toDeclarativeDefinitions(specs.slice(1)),
@@ -3031,8 +2805,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
   ): void {
     const specs = this.getEmbedPreviewSpecs();
     this.buildSetting(container, specs[0]);
-    addYouTubeThumbnail(container, "yZQoJg2RCKI");
-    addYouTubeThumbnail(container, "opLd1SqaH_I", 8);
     this.configureEmbedTypeSetting(new Setting(container), renderState);
     this.configureEmbedCommentSetting(new Setting(container), renderState);
     this.renderSettingSpecs(container, specs.slice(1));
@@ -3161,7 +2933,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
   }
 
   private renderExportGeneralSettings(container: HTMLElement): void {
-    addYouTubeThumbnail(container, "wTtaXmRJ7wg", 171);
     const specs = this.getExportGeneralSpecs();
     const pdfExportSetting = this.buildSetting(container, specs[0]);
     pdfExportSetting?.nameEl.setAttribute("id", TAG_PDFEXPORT);
@@ -3281,7 +3052,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
   }
 
   private renderPdfImportSettings(container: HTMLElement): void {
-    addYouTubeThumbnail(container, "nB4cOfn0xAs");
     this.renderSettingSpecs(container, this.getPdfImportSpecs());
   }
 
@@ -3392,7 +3162,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
     const specs = this.getNonstandardSpecs();
     return [
       this.declarativeSettingsAdapter.toDefinition(specs[0]),
-      this.createYouTubeDefinition(t("CUSTOM_PEN_HEAD"), "OjNhjaH2KjI", 69),
       this.declarativeSettingsAdapter.toDefinition(specs[1]),
     ];
   }
@@ -3400,7 +3169,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
   private renderNonstandardSettings(container: HTMLElement): void {
     const specs = this.getNonstandardSpecs();
     this.buildSetting(container, specs[0]);
-    addYouTubeThumbnail(container, "OjNhjaH2KjI", 69);
     this.buildSetting(container, specs[1]);
   }
 
@@ -3455,7 +3223,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
 
   private getLocalFontDefinitions(): SettingDefinitionItem<SettingBindingKey>[] {
     return [
-      this.createYouTubeDefinition(t("CUSTOM_FONT_HEAD"), "eKFmrSQhFA4"),
       ...this.toDeclarativeDefinitions(this.getLocalFontSpecs()),
       this.createCustomSettingDefinition({
         name: t("FOURTH_FONT_NAME"),
@@ -3468,7 +3235,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
   }
 
   private renderLocalFontSettings(container: HTMLElement): void {
-    addYouTubeThumbnail(container, "eKFmrSQhFA4");
     this.renderSettingSpecs(container, this.getLocalFontSpecs());
     this.configureFourthFontSetting(new Setting(container));
   }
@@ -3557,12 +3323,6 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
         },
       },
       {
-        name: t("LIVEPREVIEW_NAME"),
-        desc: fragWithHTML(t("LIVEPREVIEW_DESC")),
-        aliases: ["live preview image", "immersive embed"],
-        control: { type: "toggle", key: "experimentalLivePreview" },
-      },
-      {
         name: t("FADE_OUT_EXCALIDRAW_MARKUP_NAME"),
         desc: fragWithHTML(t("FADE_OUT_EXCALIDRAW_MARKUP_DESC")),
         aliases: ["hide drawing markup", "markdown fade"],
@@ -3586,14 +3346,10 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
   }
 
   private getExperimentalDefinitions(): SettingDefinitionItem<SettingBindingKey>[] {
-    return [
-      this.createYouTubeDefinition(t("EXPERIMENTAL_HEAD"), "r08wk-58DPk"),
-      ...this.toDeclarativeDefinitions(this.getExperimentalSpecs()),
-    ];
+    return this.toDeclarativeDefinitions(this.getExperimentalSpecs());
   }
 
   private renderExperimentalSettings(container: HTMLElement): void {
-    addYouTubeThumbnail(container, "r08wk-58DPk");
     this.renderSettingSpecs(container, this.getExperimentalSpecs());
   }
 

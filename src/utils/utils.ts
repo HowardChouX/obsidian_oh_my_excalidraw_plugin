@@ -1,4 +1,4 @@
-import { App, Notice, request, requestUrl, TFile } from "obsidian";
+import { App, Notice, TFile } from "obsidian";
 import { Random } from "roughjs/bin/math";
 import {
   AppState,
@@ -49,7 +49,6 @@ import { UIMode } from "src/shared/Dialogs/UIModeSettingComponent";
 import ExcalidrawView from "../view/ExcalidrawView";
 import { getEmptyDrawingElementsRuntime } from "src/constants/emptydrawing";
 import { makeEntitiesXmlSafe, sanitizedFragment } from "./htmlUtils";
-import { URLs } from "src/constants/safeUrls";
 import { isInstanceOfSVGSVGElement } from "./typechecks";
 export { arrayToMap };
 export { errorlog, getDataURL } from "./coreUtils";
@@ -70,18 +69,6 @@ export {
 } from "./embeddedFilenameParts";
 
 declare const PLUGIN_VERSION: string;
-
-type GitHubReleaseInfo = {
-  draft: boolean;
-  prerelease: boolean;
-  tag_name: string;
-  published_at: string;
-};
-
-type PublishedReleaseInfo = {
-  version: string;
-  published: Date;
-};
 
 type SceneForExport = {
   elements: readonly ExcalidrawElement[];
@@ -105,52 +92,8 @@ export async function checkVersionMismatch(plugin: ExcalidrawPlugin) {
   }
 }
 
-export let versionUpdateCheckTimer: number = null;
-let versionUpdateChecked = false;
-export async function checkExcalidrawVersion() {
-  if (versionUpdateChecked) {
-    return;
-  }
-  versionUpdateChecked = true;
+export const random = new Random(Date.now());
 
-  try {
-    const gitAPIrequest = async () => {
-      return JSON.parse(
-        await request({
-          url: URLs.API_GITHUB_COM_REPOS_ZSVICZIAN_OBSIDIAN_EXCALIDRAW_PLUGIN_RELEASES,
-        }),
-      ) as GitHubReleaseInfo[];
-    };
-
-    const latestVersion = (await gitAPIrequest())
-      .filter((el: GitHubReleaseInfo) => !el.draft && !el.prerelease)
-      .map((el: GitHubReleaseInfo): PublishedReleaseInfo => {
-        return {
-          version: el.tag_name,
-          published: new Date(el.published_at),
-        };
-      })
-      .filter((el: PublishedReleaseInfo) => el.version.match(/^\d+\.\d+\.\d+$/))
-      .sort(
-        (el1: PublishedReleaseInfo, el2: PublishedReleaseInfo) =>
-          el2.published.getTime() - el1.published.getTime(),
-      )[0].version;
-
-    if (isVersionNewerThanOther(latestVersion, PLUGIN_VERSION)) {
-      new Notice(`${t("UPDATE_AVAILABLE")} ${latestVersion}`);
-    }
-
-  } catch (e) {
-    log({ where: "Utils/checkExcalidrawVersion", error: e });
-  }
-  versionUpdateCheckTimer = window.setTimeout(() => {
-    versionUpdateChecked = false;
-    versionUpdateCheckTimer = null;
-  }, 28800000); //reset after 8 hours
-}
-
-
-const random = new Random(Date.now());
 export function randomInteger() {
   return Math.floor(random.next() * 2 ** 31);
 }
