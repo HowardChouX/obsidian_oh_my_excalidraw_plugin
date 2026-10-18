@@ -24,7 +24,7 @@ const latexPreview = process.argv.includes("--latex-preview");
 if (process.argv.slice(2).some(arg => !["--plugin-only", "--text-undo", "--native-cli", "--embed-recovery", "--grouped-link-click", "--latex-input", "--latex-preview"].includes(arg))) {
   throw new Error("Supported options: --plugin-only, --text-undo, --native-cli, --embed-recovery, --grouped-link-click, --latex-input, --latex-preview");
 }
-const forkRoot = resolve(process.env.EXCALIDRAW_FORK_ROOT || join(pluginRoot, "../excalidraw"));
+const forkRoot = resolve(process.env.EXCALIDRAW_FORK_ROOT || join(pluginRoot, "../oh_my_excalidraw"));
 const reportDir = process.env.EXCALIDRAW_TEST_REPORT_DIR || mkdtempSync(join(tmpdir(), "excalidraw-obsidian-"));
 const FORK_ARTIFACTS = ["excalidraw.production.min.js", "excalidraw.production.min.css",
   "excalidraw.development.js", "excalidraw.development.css"];
@@ -70,7 +70,9 @@ const report = await runObsidianSmoke({
   runBuild: () => {
     if (Number(process.versions.node.split(".")[0]) < 22) throw new Error("Node.js 22 or newer is required");
     const sourceDir = join(forkRoot, "packages/excalidraw/dist/obsidian");
-    const installedDir = join(pluginRoot, "node_modules/@zsviczian/excalidraw/dist/obsidian");
+    // The plugin embeds the payload vendored from the checkout, not the copy in
+    // the installed package; that package only supplies TypeScript types.
+    const installedDir = join(pluginRoot, "vendor/excalidraw/dist/obsidian");
     if (!existsSync(join(pluginRoot, "node_modules/@zsviczian/excalidraw/package.json"))) {
       throw new Error("Install the plugin's declared dependencies before running the native lane");
     }
@@ -89,7 +91,7 @@ const report = await runObsidianSmoke({
     const hashes = {};
     for (const name of FORK_ARTIFACTS) {
       const sourcePath = join(pluginOnly ? installedDir : sourceDir, name);
-      if (!existsSync(sourcePath)) throw new Error(`Installed package is missing ${name}; run npm install`);
+      if (!existsSync(sourcePath)) throw new Error(`Vendored payload is missing ${name}; run npm run component:rebuild`);
       if (!pluginOnly) copyFileSync(sourcePath, join(installedDir, name));
       const digest = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
       const sourceHash = digest(sourcePath);

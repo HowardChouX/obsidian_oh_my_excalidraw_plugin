@@ -18,7 +18,7 @@ import { readFileSync } from "node:fs";
 
 const STYLES_PATH = "styles.css";
 const COMPONENT_PATH =
-  "node_modules/@zsviczian/excalidraw/dist/obsidian/excalidraw.production.min.js";
+  "vendor/excalidraw/dist/obsidian/excalidraw.production.min.js";
 
 /** Hooks the trim depends on, with the component feature each one stands for. */
 const REQUIRED_HOOKS = [

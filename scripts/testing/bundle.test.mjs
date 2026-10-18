@@ -71,10 +71,10 @@ test("production bootstrap supplies matching private React and JSX runtimes", ()
   }
 });
 
-test("compressed Excalidraw retains every published offline font asset", () => {
-  const original = read("node_modules/@zsviczian/excalidraw/dist/obsidian/excalidraw.production.min.js");
+test("compressed Excalidraw retains every offline font asset of the vendored payload", () => {
+  const original = read("vendor/excalidraw/dist/obsidian/excalidraw.production.min.js");
   const expected = fontAssets(original);
-  assert.ok(expected.length > 0, "Published artifact must contain offline fonts");
+  assert.ok(expected.length > 0, "Vendored artifact must contain offline fonts");
   assert.deepEqual(fontAssets(runtimeSource), expected);
   assert.ok(!runtimeSource.includes("//# sourceMappingURL="));
   assert.ok(!code.includes("//# sourceMappingURL="));

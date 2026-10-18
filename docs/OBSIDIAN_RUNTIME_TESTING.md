@@ -94,19 +94,19 @@ macOS evals use native argument arrays without the Windows temporary-file bridge
 | `npm run verify:obsidian:plugin` | Installed `@zsviczian/excalidraw` artifacts | Plugin dependencies and prepared test vault |
 | `npm run verify:obsidian` | Fresh sibling fork build | Both repositories' dependencies, Yarn, prepared test vault |
 
-The plugin-only lane checks the installed component version against the exact
-declared dependency, hashes its four Obsidian artifacts, and runs the real
-production `npm run build`. It does not require the sibling fork checkout. If you
-previously copied unpublished fork artifacts into `node_modules`, this lane uses
-those bytes; version equality alone does not prove published provenance. Run
-`npm install` to restore the published dependency before a release smoke.
+The plugin-only lane checks the declared component version, hashes the four
+vendored Obsidian artifacts under `vendor/excalidraw/dist/obsidian/`, and runs
+the real production `npm run build`. It does not require the sibling fork
+checkout. The declared `@zsviczian/excalidraw` dependency is only the source of
+the plugin's TypeScript types; it is never the payload that gets embedded, so a
+published-vs-vendored difference cannot be hidden by it.
 
 For a fork integration check, use `npm run verify:obsidian`. It runs
-`yarn build:obsidian` in `../excalidraw/packages/excalidraw`, copies only the four
-generated Obsidian JavaScript/CSS files into the ignored installed package,
-checks their hashes, then builds the plugin. Set `EXCALIDRAW_FORK_ROOT` to an
-absolute checkout path when the fork is elsewhere. This temporary handoff does
-not change dependencies or lockfiles and remains in `node_modules` afterward.
+`yarn build:obsidian` in `../oh_my_excalidraw/packages/excalidraw`, copies only
+the four generated Obsidian JavaScript/CSS files into the git-ignored
+`vendor/excalidraw/dist/obsidian/`, checks their hashes, then builds the plugin.
+Set `EXCALIDRAW_FORK_ROOT` to an absolute checkout path when the fork is
+elsewhere. This does not change dependencies or lockfiles.
 
 Windows resolves Yarn's JavaScript entry from the Node installation, the user's
 global npm installation, or Corepack. For a different installation, set
