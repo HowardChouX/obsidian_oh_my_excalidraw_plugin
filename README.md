@@ -357,6 +357,40 @@ Drag the desired file from the Obsidian file explorer and hold down <kbd>SHIFT</
 
 ---
 
+## Building from source
+
+The editor inside this plugin is **not** part of this repository. It is built
+from a separate checkout of the customized Excalidraw fork, so building the
+plugin requires that checkout:
+
+```bash
+# 1) clone the component next to this repository, and install its dependencies
+git clone git@github.com:HowardChouX/oh_my_excalidraw.git ~/oh_my_excalidraw
+cd ~/oh_my_excalidraw && yarn install
+
+# 2) build the plugin
+cd ~/obsidian_oh_my_excalidraw_plugin
+npm install
+npm run build     # builds the editor payload from the checkout, then bundles the plugin
+```
+
+- The checkout is expected at `../oh_my_excalidraw`. Point the build somewhere
+  else with `EXCALIDRAW_FORK=/path/to/checkout npm run build`, or
+  `npm run component:rebuild -- --fork /path/to/checkout`.
+- `npm run build` (and `npm run dev`) rebuild the editor automatically when the
+  checkout is newer than the vendored payload, so editing the editor source and
+  rebuilding the plugin is all it takes.
+- The payload is vendored under `vendor/excalidraw/` (git-ignored) together with
+  `PROVENANCE.md`, which records the exact commit and the hash of every artifact.
+- `npm run component:check` verifies the vendored payload still matches the
+  checkout. `npm run test:component-hardening` fails when the payload is missing
+  or predates the pointer-release hardening.
+- Without the checkout, `npm run build` stops with a message telling you to run
+  `npm run component:rebuild -- --fork <path>`; this is deliberate — the plugin
+  embeds the editor built from that source instead of a published package.
+
+---
+
 ## Feedback, questions, ideas, problems
 
 Join the conversation about the Excalidraw plugin on

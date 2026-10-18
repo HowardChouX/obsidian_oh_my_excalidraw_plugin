@@ -227,18 +227,16 @@ React and the Excalidraw package are separate compressed payloads. React must re
 
 ### Two-Repository Excalidraw Workflow
 
-The customized component lives in the sibling `zsviczian/excalidraw` repository. When both repositories are available locally, it is normally at `../excalidraw`; verify the actual workspace path and branch instead of assuming it.
+The customized component lives in the sibling `zsviczian/excalidraw` fork — this project's copy is `HowardChouX/oh_my_excalidraw`, normally checked out at `../oh_my_excalidraw`; verify the actual workspace path and branch instead of assuming it.
 
 - The Excalidraw repository uses Yarn and builds the consumer-specific payload from `packages/excalidraw` with `yarn build:obsidian`.
 - That build emits four files under `packages/excalidraw/dist/obsidian/`: production and development JavaScript plus production and development CSS.
-- This plugin consumes the same four paths from `node_modules/@zsviczian/excalidraw/dist/obsidian/` in `rollup.config.mjs`.
-- For a temporary unpublished integration test, build the sibling package and copy only those four generated files into the installed package under `node_modules`. Do not change `package.json` or `package-lock.json` to a local `file:` dependency merely for this handoff. A later `npm install` restores the published package.
-- For the durable handoff, publish a new `@zsviczian/excalidraw` version, update this repository's dependency, run `npm install`, and rebuild the plugin.
-- A local artifact copy proves integration only. If plugin source consumes a
-  new fork API, do not describe the plugin handoff as commit- or release-ready
-  until the published package is installed and the exact dependency and
-  lockfile contain that API, unless the maintainer explicitly requests a
-  paired intermediate commit.
+- `scripts/component-artifacts.mjs` runs that build when the checkout is newer than the vendored payload, copies the four files into `vendor/excalidraw/dist/obsidian/`, and writes `vendor/excalidraw/PROVENANCE.md` (checkout path, remote, commit, per-file hashes). `npm run build` and `npm run dev` run it first, `npm run component:rebuild` forces it, and `npm run component:check` only verifies.
+- `rollup.config.mjs` reads the four files from `vendor/excalidraw/dist/obsidian/` and fails with a pointer to `npm run component:rebuild` when they are absent. Nothing is read from `node_modules/@zsviczian/excalidraw` at build time.
+- `vendor/` is git-ignored, so a fresh clone cannot build until the component checkout exists. Redirect the script with `--fork <path>` or `EXCALIDRAW_FORK`.
+- `npm run test:component-hardening` guards the vendored payload: it fails when the artifacts are missing or predate the pointer-release hardening.
+- The declared `@zsviczian/excalidraw` dependency is now only the source of TypeScript types (see `tsconfig.json`); it is not the runtime payload.
+- For a durable handoff to third parties, either publish a new `@zsviczian/excalidraw` version and update this repository's dependency, or commit the vendored production artifacts, then rebuild the plugin.
 - Never hand-edit or commit generated `dist/`, `lib/`, or `node_modules` artifacts as source fixes.
 - Treat the repositories as separate Git histories. Check branch, status, diff, build, and commit state independently in each one, and do not commit or publish unless explicitly requested.
 

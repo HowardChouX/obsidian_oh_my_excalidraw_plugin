@@ -14,7 +14,13 @@ Before spending your valuable time writing code for a new feature or significant
 2. Use Node.js 22 or newer and verify it with `node --version`. A shell that mixes a different Node binary with another installation's Corepack can fail before a build starts.
 3. Run `npm install` in the root directory to install the main dependencies.
    *(Note: The `MathjaxToSVG` sub-component has its own separate dependencies. You do not need to install them manually; the first time you run `npm run build`, it will take care of this automatically).*
-4. Create or locate a dedicated `excalidraw-test` vault, install and enable Excalidraw from **Settings → Community plugins**, and follow [Obsidian runtime testing](docs/OBSIDIAN_RUNTIME_TESTING.md). The CLI runner copies the three built files from `dist/` into this vault; it rejects symlinked plugin targets. For an independent manual development setup, [Obsidian Hot Reload](https://github.com/pjeby/hot-reload) can make reloads faster.
+4. **Clone and install the component checkout.** The editor payload is built from a separate checkout of the customized Excalidraw fork, so the build needs it:
+   ```bash
+   git clone git@github.com:HowardChouX/oh_my_excalidraw.git ../oh_my_excalidraw
+   cd ../oh_my_excalidraw && yarn install
+   ```
+   Without it `npm run build` stops with instructions pointing at `npm run component:rebuild`. See [Working across both repositories](#4-working-across-both-repositories).
+5. Create or locate a dedicated `excalidraw-test` vault, install and enable Excalidraw from **Settings → Community plugins**, and follow [Obsidian runtime testing](docs/OBSIDIAN_RUNTIME_TESTING.md). The CLI runner copies the three built files from `dist/` into this vault; it rejects symlinked plugin targets. For an independent manual development setup, [Obsidian Hot Reload](https://github.com/pjeby/hot-reload) can make reloads faster.
 
 ## 🛠️ Build and Lint Commands
 
@@ -179,24 +185,18 @@ If you must submit a PR to the Excalidraw fork, **keep changes to the absolute m
 
 ### 4. Working Across Both Repositories
 
-The customized component is maintained in the separate [`zsviczian/excalidraw`](https://github.com/zsviczian/excalidraw/) repository. When both repositories are checked out as siblings, the usual path is `../excalidraw`.
+The customized component is maintained in the separate [`zsviczian/excalidraw`](https://github.com/zsviczian/excalidraw/) repository; this project's copy is [`HowardChouX/oh_my_excalidraw`](https://github.com/HowardChouX/oh_my_excalidraw), checked out as a sibling at `../oh_my_excalidraw`.
 
 The repositories deliberately use different package managers:
 
-- `obsidian-excalidraw-plugin`: npm
-- `zsviczian/excalidraw`: Yarn
+- `obsidian_oh_my_excalidraw_plugin`: npm
+- `oh_my_excalidraw` (the component): Yarn
 
-From `../excalidraw/packages/excalidraw`, `yarn build:obsidian` produces four consumer-specific files in `dist/obsidian`: development and production JavaScript and CSS. This plugin reads the corresponding four files from `node_modules/@zsviczian/excalidraw/dist/obsidian/`.
+`scripts/component-artifacts.mjs` builds the component from that checkout with `yarn --cwd packages/excalidraw build:obsidian`, which emits four consumer-specific files under `packages/excalidraw/dist/obsidian/` — development and production JavaScript plus CSS. The script rebuilds only when the checkout is newer than the vendored payload, copies the four files into the git-ignored `vendor/excalidraw/dist/obsidian/`, writes `vendor/excalidraw/PROVENANCE.md` (checkout path, remote, commit, one hash per artifact), and refuses to continue when the build lacks the pointer-release hardening.
 
-For an unpublished integration test, you may temporarily copy those four generated files into the installed package under this repository's ignored `node_modules`. Keep the declared npm dependency unchanged. Running `npm install` restores the published package. The durable workflow is to publish a new component version, update the plugin dependency, run `npm install`, and rebuild.
+`npm run build` and `npm run dev` run it first, `npm run component:rebuild` forces a rebuild, and `npm run component:check` only verifies that the vendored payload still matches the checkout. `rollup.config.mjs` reads the payload from `vendor/excalidraw/dist/obsidian/`; nothing is read from `node_modules/@zsviczian/excalidraw` at build time, so `npm install` can no longer revert the editor fixes. A fresh clone therefore does not build until the component checkout exists; redirect the build with `npm run component:rebuild -- --fork /path/to/checkout` or `EXCALIDRAW_FORK=/path/to/checkout npm run build`.
 
-Keep component commit readiness, local integration readiness, and durable
-consumer handoff separate. A copied artifact can validate the pair locally,
-but a plugin change that consumes a new fork API is not release-ready until the
-published package is installed and `package.json` plus `package-lock.json`
-reference that version.
-
-For a maintainer-coordinated host-protocol release, update and test the fork contract first, inspect the package tarball, publish the fork package, then update this repository's exact dependency and lockfile. The final production build and smoke test must use the published package installed by `npm install`, not the temporary copied artifacts. Unit tests in the fork use structural fake adapters and do not require Obsidian; integration testing here must cover startup, reload, the main window, and popout creation and teardown.
+The declared `@zsviczian/excalidraw` dependency remains the source of the TypeScript types used by `tsconfig.json`; it is not the runtime payload. Handing the pair to third parties still means publishing a new component version and updating this repository's dependency — or committing the vendored production artifacts, which makes a clone build without the checkout.
 
 The Excalidraw Obsidian artifact has strict runtime constraints:
 
