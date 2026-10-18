@@ -49,7 +49,7 @@
     "lz-string": "^1.5.0",
     "monkey-around": "^2.3.0",
     "nanoid": "^5.1.16",
-    "pako": "^2.1.0",
+    "pako": "^3.0.2",
     "points-on-path": "^0.2.1",
     "polybooljs": "^1.2.0",
     "react": "19.2.8",
