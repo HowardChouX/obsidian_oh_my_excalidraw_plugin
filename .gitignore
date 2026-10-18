@@ -14,6 +14,8 @@ data.json
 lib
 dist
 tmp
+# editor build input, produced from the local Excalidraw checkout
+vendor
 deploy.ps1
 eslint_results.json
 bundle-analysis.html
@@ -28,3 +30,6 @@ yarn.lock
 Obsidian
 
 repository.zip
+
+# agent tooling state
+.mimosa/
