@@ -89,7 +89,7 @@
     "eslint-plugin-obsidianmd": "^0.4.2",
     "eslint-plugin-prettier": "^5.0.0",
     "jiti": "^2.6.1",
-    "obsidian": "1.8.7",
+    "obsidian": "1.14.4",
     "postcss": "^8.5.25",
     "prettier": "^3.0.1",
     "rollup": "^4.14.0",
