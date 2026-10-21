@@ -731,6 +731,9 @@ export default class ExcalidrawView
       return;
     }
     this.plugin.settings.eraserSizePx = clamped;
+    // Rebuild the native eraser cursor while the popup slider is dragged; the
+    // manager caches by radius, so this is a no-op after the first refresh.
+    this.eraserSizeManager?.refresh();
     if (persist) {
       void this.plugin.saveSettings();
     }

@@ -4,14 +4,13 @@ import {
   CaptureUpdateAction,
   viewportCoordsToSceneCoords,
 } from "src/constants/constants";
-import { setElementHidden } from "src/utils/htmlUtils";
 import {
   pointRectBorderDistance,
   pointSegmentDistance,
   toElementLocalPoint,
 } from "src/utils/eraserHitTest";
 import type { ScenePoint } from "src/utils/eraserHitTest";
-import { setStyle } from "src/utils/styleUtils";
+import { removeStyle, setStyle } from "src/utils/styleUtils";
 
 /** Pointer buttons the Excalidraw eraser reacts to (see `POINTER_BUTTON`). */
 const MAIN_BUTTON = 0;
@@ -37,6 +36,33 @@ const NATIVE_ERASER_REACH_PX = 5;
 const SWEEP_SAMPLE_SPACING_PX = 6;
 
 const CURSOR_CLASS = "excalidraw-eraser-size-cursor";
+
+/** Custom property carrying the radius-specific cursor image to styles.css. */
+const CURSOR_PROPERTY = "--excalidraw-eraser-cursor";
+
+/** Browsers cap cursor images around 128px; ink clamps the disc to 120px. */
+const CURSOR_MAX_DIAMETER_PX = 120;
+const CURSOR_MIN_DIAMETER_PX = 8;
+
+/**
+ * Eraser cursor in oh-my-ink's look: a white disc with a soft dark rim, sized
+ * to the eraser's hit radius on screen so it shows exactly what the eraser
+ * catches. Browsers cap cursor images around 128px, so the drawn size is
+ * clamped.
+ */
+function buildEraserCursor(radiusScreenPx: number): string {
+  const diameter = Math.max(
+    CURSOR_MIN_DIAMETER_PX,
+    Math.min(CURSOR_MAX_DIAMETER_PX, Math.round(radiusScreenPx * 2)),
+  );
+  const centre = diameter / 2;
+  const radius = Math.max(2, centre - 1);
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${diameter}" height="${diameter}">` +
+    `<circle cx="${centre}" cy="${centre}" r="${radius}" fill="#ffffff" fill-opacity="0.9" stroke="rgba(0,0,0,0.65)" stroke-width="1"/>` +
+    `</svg>`;
+  return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}") ${centre} ${centre}, crosshair`;
+}
 
 /** Minimum view surface required by {@link EraserSizeManager}. */
 export interface EraserSizeManagerHost {
@@ -67,12 +93,16 @@ export interface EraserSizeManagerHost {
  *     the circle's line is actually reached, not when the pointer is inside it.
  *   - Whole elements are erased, with their group and bound text, matching what
  *     the component's eraser does.
- *   - At or below {@link NATIVE_ERASER_REACH_PX} the manager stays inert, so the
- *     default setting changes nothing about the eraser's behaviour.
+ *   - At or below {@link NATIVE_ERASER_REACH_PX} the extra hit-test pass stays
+ *     inert, so the default setting changes nothing about the eraser's
+ *     behaviour. The cursor still follows the configured radius.
  */
 export class EraserSizeManager {
   private wrapperEl: HTMLElement | null = null;
-  private cursorEl: HTMLDivElement | null = null;
+  /** Document the pointer-up listeners belong to; it can change in a popout. */
+  private listenerDocument: Document | null = null;
+  /** Radius the current cursor image was built for; avoids restyling per render. */
+  private cursorSizePx: number | null = null;
   private activePointerId: number | null = null;
   private lastScenePoint: ScenePoint | null = null;
   private deletedDuringGesture = false;
@@ -94,7 +124,22 @@ export class EraserSizeManager {
     container.addEventListener("pointermove", this.onPointerMove);
     container.addEventListener("pointerup", this.onPointerUp);
     container.addEventListener("pointercancel", this.onPointerUp);
-    container.addEventListener("pointerleave", this.onPointerLeave);
+    // A pan can end outside the wrapper; restoring on the document keeps the
+    // eraser cursor from staying suspended until the next mouse move. Keep the
+    // document used at attach time: a move between windows changes the view's
+    // ownerDocument, but these listeners still belong to the old document.
+    this.listenerDocument = this.host.ownerDocument;
+    this.listenerDocument.addEventListener(
+      "pointerup",
+      this.onDocumentPointerUp,
+      true,
+    );
+    this.listenerDocument.addEventListener(
+      "pointercancel",
+      this.onDocumentPointerUp,
+      true,
+    );
+    this.refresh();
   }
 
   /** Removes every listener and the size cursor. */
@@ -108,19 +153,28 @@ export class EraserSizeManager {
       container.removeEventListener("pointermove", this.onPointerMove);
       container.removeEventListener("pointerup", this.onPointerUp);
       container.removeEventListener("pointercancel", this.onPointerUp);
-      container.removeEventListener("pointerleave", this.onPointerLeave);
+      this.clearCursor(container);
     }
+    const listenerDocument = this.listenerDocument ?? this.host.ownerDocument;
+    listenerDocument.removeEventListener(
+      "pointerup",
+      this.onDocumentPointerUp,
+      true,
+    );
+    listenerDocument.removeEventListener(
+      "pointercancel",
+      this.onDocumentPointerUp,
+      true,
+    );
+    this.listenerDocument = null;
     this.wrapperEl = null;
-    this.cursorEl?.remove();
-    this.cursorEl = null;
   }
 
   /** Drops a pointer move still waiting for its frame, if any. */
   private cancelScheduledPointerMove(): void {
     if (this.pointerMoveFrame !== null) {
-      this.host.ownerDocument.defaultView?.cancelAnimationFrame(
-        this.pointerMoveFrame,
-      );
+      const doc = this.listenerDocument ?? this.host.ownerDocument;
+      doc.defaultView?.cancelAnimationFrame(this.pointerMoveFrame);
       this.pointerMoveFrame = null;
     }
     this.lastPointerEvent = null;
@@ -136,9 +190,7 @@ export class EraserSizeManager {
     if (this.detached) {
       return;
     }
-    if (!this.isActive()) {
-      this.hideCursor();
-    }
+    this.refreshCursor();
   }
 
   /** Whether the extra reach applies right now. */
@@ -146,29 +198,77 @@ export class EraserSizeManager {
     if (this.host.getEraserSize() <= NATIVE_ERASER_REACH_PX) {
       return false;
     }
+    return this.isEraserActive();
+  }
+
+  private isEraserActive(): boolean {
     return this.host.excalidrawAPI?.getAppState().activeTool.type === "eraser";
   }
 
+  /**
+   * Shows ink's disc while the eraser is active and rebuilds the image only
+   * when the radius changed. The class is removed for every other tool so the
+   * component's own cursors take over again.
+   */
+  private refreshCursor(): void {
+    const wrapper = this.wrapperEl;
+    if (!wrapper) {
+      return;
+    }
+    if (!this.isEraserActive()) {
+      // refresh() runs on every render; avoid touching the style attribute
+      // unless the cursor is actually present.
+      if (this.cursorSizePx !== null || wrapper.hasClass(CURSOR_CLASS)) {
+        this.clearCursor(wrapper);
+      }
+      return;
+    }
+    wrapper.addClass(CURSOR_CLASS);
+    const size = this.host.getEraserSize();
+    if (this.cursorSizePx === size) {
+      return;
+    }
+    this.cursorSizePx = size;
+    setStyle(wrapper, { [CURSOR_PROPERTY]: buildEraserCursor(size) });
+  }
+
+  private clearCursor(wrapper: HTMLElement): void {
+    wrapper.removeClass(CURSOR_CLASS);
+    removeStyle(wrapper, [CURSOR_PROPERTY]);
+    this.cursorSizePx = null;
+  }
+
+  /**
+   * Drops the eraser cursor without discarding its image. Used while a pan is
+   * in progress so the component's grab/grabbing cursor can show instead.
+   */
+  private suspendCursor(): void {
+    this.wrapperEl?.removeClass(CURSOR_CLASS);
+  }
+
   private readonly onPointerDown = (event: PointerEvent): void => {
+    if (event.buttons & PANNING_BUTTONS_MASK) {
+      this.suspendCursor();
+      return;
+    }
     if (!this.isActive() || !this.isEraserPointer(event)) {
-      this.hideCursor();
       return;
     }
     this.activePointerId = event.pointerId;
     this.deletedDuringGesture = false;
     this.lastScenePoint = this.toScenePoint(event);
-    this.showCursor(event);
   };
 
   private readonly onPointerMove = (event: PointerEvent): void => {
-    // Secondary and middle buttons pan the canvas; that is not erasing, and
-    // the size circle would follow a pan it does not describe.
+    // Secondary and middle buttons pan the canvas; that is not erasing, so
+    // the wider hit-test sweep must stay out of a pan gesture and the grab
+    // cursor must not stay covered by the eraser disc.
     if (event.buttons & PANNING_BUTTONS_MASK) {
-      this.hideCursor();
+      this.suspendCursor();
       return;
     }
+    this.refreshCursor();
     if (!this.isActive()) {
-      this.hideCursor();
       return;
     }
     // Pointer events can arrive far more often than frames (a stylus reports
@@ -194,7 +294,6 @@ export class EraserSizeManager {
     if (!event || this.detached) {
       return;
     }
-    this.showCursor(event);
     if (this.activePointerId !== event.pointerId) {
       return;
     }
@@ -206,11 +305,19 @@ export class EraserSizeManager {
     this.lastScenePoint = scenePoint;
   };
 
+  private readonly onDocumentPointerUp = (): void => {
+    if (!this.detached) {
+      this.refresh();
+    }
+  };
+
   private readonly onPointerUp = (event: PointerEvent): void => {
     if (this.activePointerId !== event.pointerId) {
       return;
     }
     this.endGesture();
+    // A pan may have suspended the cursor; restore it for the current tool.
+    this.refresh();
     if (!this.deletedDuringGesture) {
       return;
     }
@@ -220,12 +327,6 @@ export class EraserSizeManager {
     this.host.excalidrawAPI?.updateScene({
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     });
-  };
-
-  private readonly onPointerLeave = (): void => {
-    if (this.activePointerId === null) {
-      this.hideCursor();
-    }
   };
 
   private endGesture(): void {
@@ -413,30 +514,5 @@ export class EraserSizeManager {
       api.mutateElement(element, { isDeleted: true });
       this.deletedDuringGesture = true;
     }
-  }
-
-  private hideCursor(): void {
-    if (this.cursorEl) {
-      setElementHidden(this.cursorEl, true);
-    }
-  }
-
-  private showCursor(event: PointerEvent): void {
-    const wrapper = this.wrapperEl;
-    if (!wrapper) {
-      return;
-    }
-    if (!this.cursorEl) {
-      this.cursorEl = wrapper.createDiv({ cls: CURSOR_CLASS });
-    }
-    const size = this.host.getEraserSize();
-    const wrapperRect = wrapper.getBoundingClientRect();
-    setStyle(this.cursorEl, {
-      left: `${event.clientX - wrapperRect.left}px`,
-      top: `${event.clientY - wrapperRect.top}px`,
-      width: `${size * 2}px`,
-      height: `${size * 2}px`,
-    });
-    setElementHidden(this.cursorEl, false);
   }
 }

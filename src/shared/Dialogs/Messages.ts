@@ -20,6 +20,8 @@ I build this plugin as a labor of love. Curious about the philosophy behind it? 
 "0.1.1": `
 ## Changed
 - **Eraser size** now matches the oh-my-ink eraser slider: a **5-60** screen-pixel radius in **1**-pixel steps, up from 5-40 in steps of 5. The value is the eraser's own radius, and the toolbar panel shows the diameter (10-120px) - the size of the circle drawn on the canvas. The setting also lives under **Settings → Pen**.
+- **Pen and eraser panels** now use the oh-my-ink tool-popup design: a compact secondary-surface card with small muted labels, round colour swatches with a rainbow custom-colour swatch, and slider-plus-value rows. Thickness steps through Excalidraw's five freedraw widths; pressure switches between **Constant** and **Variable**, the two values this editor supports.
+- **Eraser cursor.** The translucent circle overlay is replaced by oh-my-ink's mouse cursor: a white disc with a soft dark rim, sized to the eraser radius. It appears on hover, updates live while the **Size** slider moves, and no longer trails the pointer between frames.
 
 ## Fixed
 - The pen and eraser panels now appear under their toolbar button. The panel is added beside the component's canvas root, so its styles must not be scoped under that root; previously it rendered unstyled below the visible canvas and looked like nothing happened. The eraser-size circle had the same styling problem and is visible again.

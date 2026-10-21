@@ -42,22 +42,31 @@ assert.ok(
   styles.includes('[data-testid="clear-canvas-button"]'),
   "styles.css no longer hides the component's Reset the canvas menu item",
 );
-// The tool panel and the eraser cursor are appended to `.excalidraw-wrapper`,
-// which is a sibling of the component's `.excalidraw` root. Scoping their
-// styles under `.excalidraw` silently leaves them unstyled and off-screen.
-for (const overlayClass of [
-  "excalidraw-tool-settings-popup",
-  "excalidraw-eraser-size-cursor",
-]) {
-  assert.ok(
-    styles.includes(`.excalidraw-wrapper .${overlayClass}`),
-    `styles.css no longer styles .${overlayClass} under .excalidraw-wrapper`,
-  );
-  assert.ok(
-    !styles.includes(`.excalidraw .${overlayClass}`),
-    `.${overlayClass} is a sibling of .excalidraw; its styles must not be scoped under .excalidraw`,
-  );
-}
+// The tool panel is appended to `.excalidraw-wrapper`, which is a sibling of
+// the component's `.excalidraw` root. Scoping its styles under `.excalidraw`
+// silently leaves the panel unstyled below the canvas.
+assert.ok(
+  styles.includes(".excalidraw-wrapper .excalidraw-tool-settings-popup"),
+  "styles.css no longer styles the tool popup under .excalidraw-wrapper",
+);
+assert.ok(
+  !styles.includes(".excalidraw .excalidraw-tool-settings-popup"),
+  "the tool popup is a sibling of .excalidraw; its styles must not be scoped under .excalidraw",
+);
+
+// The eraser cursor is a native CSS cursor on the component's canvas. The
+// wrapper class gates it so the component's own cursors return with other
+// tools; the image itself comes from a radius-specific custom property.
+assert.ok(
+  styles.includes(
+    ".excalidraw-wrapper.excalidraw-eraser-size-cursor .excalidraw__canvas",
+  ),
+  "styles.css no longer applies the eraser cursor to .excalidraw__canvas",
+);
+assert.ok(
+  styles.includes("cursor: var(--excalidraw-eraser-cursor"),
+  "the eraser cursor no longer uses its radius-specific custom property",
+);
 
 for (const [hook, description] of REQUIRED_HOOKS) {
   assert.ok(

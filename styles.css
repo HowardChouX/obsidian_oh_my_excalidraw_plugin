@@ -2450,10 +2450,11 @@ button.excalidraw-font-picker {
 }
 
 /* -------------------------------------------------------------------------
-   Tool settings popup (ToolSettingsPopup.ts): a small panel anchored under a
-   toolbar button, opened by clicking the already active pen again. Rows follow
-   the layout of the equivalent panels in oh-my-pdftion / oh-my-ink: a label on
-   the left, the control on the right.
+   Tool settings popup (ToolSettingsPopup.ts): a compact panel anchored under a
+   toolbar button, opened by clicking the already active pen or eraser again.
+   The card, typography, swatches, and slider rows follow oh-my-ink's
+   tool-popup.scss: a secondary surface, small muted labels, round swatches with
+   an accent ring, and an entrance animation.
 
    The popup is appended to `.excalidraw-wrapper` - a sibling of the component's
    `.excalidraw` root - so these selectors must not be scoped under
@@ -2463,13 +2464,25 @@ button.excalidraw-font-picker {
   position: absolute;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px;
+  gap: 8px;
+  padding: 10px 12px;
   border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m);
-  background-color: var(--background-primary);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-l);
+  background-color: var(--background-secondary);
+  box-shadow: var(--shadow-s);
   z-index: 9999;
+  animation: excalidraw-tool-settings-popup-in 0.15s ease-out both;
+}
+
+@keyframes excalidraw-tool-settings-popup-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .excalidraw-wrapper .excalidraw-tool-settings-row {
@@ -2479,110 +2492,95 @@ button.excalidraw-font-picker {
 }
 
 .excalidraw-wrapper .excalidraw-tool-settings-label {
-  flex: 0 0 4.5rem;
+  flex: 0 0 auto;
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
+  white-space: nowrap;
 }
 
 .excalidraw-wrapper .excalidraw-tool-settings-control {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+  min-width: 0;
 }
 
 .excalidraw-wrapper .excalidraw-tool-settings-swatches {
   display: flex;
-  gap: 4px;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
 }
 
 .excalidraw-wrapper .excalidraw-tool-settings-swatch {
   position: relative;
-  width: 18px;
-  height: 18px;
+  width: 1.5em;
+  height: 1.5em;
   padding: 0;
   border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-s);
+  border-radius: 50%;
+  background-image: none;
   box-shadow: none;
-  cursor: var(--cursor);
+  cursor: pointer;
+  animation: none;
+}
+
+.excalidraw-wrapper .excalidraw-tool-settings-swatch:hover {
+  border-color: var(--interactive-accent);
 }
 
 .excalidraw-wrapper .excalidraw-tool-settings-swatch.is-selected {
-  border-color: var(--text-accent);
-  box-shadow: 0 0 0 1px var(--text-accent);
+  border-color: transparent;
+  box-shadow: 0 0 0 2px var(--interactive-accent);
 }
 
 /* The native colour picker fills the last swatch, so clicking the swatch opens
-   the picker. It stays invisible; the swatch itself shows the colour. */
+   the picker. It stays invisible; the swatch itself shows the colour. With no
+   custom colour chosen, the swatch keeps ink's rainbow marker. */
 .excalidraw-wrapper .excalidraw-tool-settings-swatch--custom {
-  background:
-    linear-gradient(
-      135deg,
-      transparent 45%,
-      var(--text-muted) 45%,
-      var(--text-muted) 55%,
-      transparent 55%
-    ),
-    linear-gradient(
-      45deg,
-      transparent 45%,
-      var(--text-faint) 45%,
-      var(--text-faint) 55%,
-      transparent 55%
-    );
+  background-image: conic-gradient(
+    from 0.25turn,
+    #e03131,
+    #fab005,
+    #2f9e44,
+    #1971c2,
+    #e03131
+  );
 }
 
 .excalidraw-wrapper .excalidraw-tool-settings-color-input {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   padding: 0;
+  margin: 0;
   border: none;
   opacity: 0;
-  cursor: var(--cursor);
-}
-
-.excalidraw-wrapper .excalidraw-tool-settings-item {
-  padding: 3px 8px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-s);
-  background-color: transparent;
-  box-shadow: none;
-  color: var(--text-normal);
-  font-size: var(--font-ui-small);
-  cursor: var(--cursor);
-}
-
-.excalidraw-wrapper .excalidraw-tool-settings-item:hover {
-  background-color: var(--background-modifier-hover);
-}
-
-.excalidraw-wrapper .excalidraw-tool-settings-item.is-selected {
-  border-color: var(--text-accent);
-  color: var(--text-accent);
-  font-weight: var(--font-semibold);
+  cursor: pointer;
 }
 
 .excalidraw-wrapper .excalidraw-tool-settings-slider {
-  flex: 1 1 auto;
-  min-width: 6rem;
+  flex: 1 1 9em;
+  width: 9em;
+  min-width: 7em;
+  margin: 0;
 }
 
 .excalidraw-wrapper .excalidraw-tool-settings-value {
-  flex: 0 0 2.5rem;
+  min-width: 5em;
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
   text-align: right;
+  white-space: nowrap;
 }
 
-/* Eraser size cursor (EraserSizeManager.ts): shows how far the eraser reaches
-   while the size is larger than the component's own eraser. */
-.excalidraw-wrapper .excalidraw-eraser-size-cursor {
-  position: absolute;
-  border: 1px solid var(--text-muted);
-  border-radius: 50%;
-  background-color: var(--background-modifier-hover);
-  opacity: 0.6;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  z-index: 9998;
+/* Eraser cursor (EraserSizeManager.ts), in oh-my-ink's look: a white disc with
+   a soft dark rim, sized to the configured eraser radius. The browser-native
+   cursor shows the exact reach on hover and does not lag a DOM overlay. The
+   image depends on the radius, so EraserSizeManager passes it in as a custom
+   property on the wrapper. */
+.excalidraw-wrapper.excalidraw-eraser-size-cursor .excalidraw__canvas {
+  cursor: var(--excalidraw-eraser-cursor, crosshair) !important;
 }

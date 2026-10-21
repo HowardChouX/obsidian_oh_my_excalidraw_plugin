@@ -11,7 +11,7 @@ import {
   ERASER_SIZE_STEP_PX,
 } from "src/utils/eraserHitTest";
 import { t } from "src/lang/helpers";
-import { setStyle } from "src/utils/styleUtils";
+import { removeStyle, setStyle } from "src/utils/styleUtils";
 import { isInstanceOfElement } from "src/utils/typechecks";
 
 /**
@@ -40,11 +40,10 @@ const SWATCHES_CLASS = "excalidraw-tool-settings-swatches";
 const SWATCH_CLASS = "excalidraw-tool-settings-swatch";
 const CUSTOM_SWATCH_CLASS = "excalidraw-tool-settings-swatch--custom";
 const COLOR_INPUT_CLASS = "excalidraw-tool-settings-color-input";
-const ITEM_CLASS = "excalidraw-tool-settings-item";
 const SELECTED_CLASS = "is-selected";
 
-/** Gap between the toolbar button and the popup, in pixels. */
-const ANCHOR_OFFSET = 6;
+/** Gap between the toolbar button and the popup, in pixels (as in ink). */
+const ANCHOR_OFFSET = 2;
 
 /**
  * Excalidraw's own top-picks stroke colours - the row its colour picker shows
@@ -89,6 +88,13 @@ export interface ToolSettingsPopupHost {
  * already active (and in compact mode opens its own tool-variant popover
  * instead), so that second click is consumed here and answered with a small
  * panel under the button.
+ *
+ * The look and row layout follow the tool popup of oh-my-ink (which itself
+ * follows oh-my-pdftion): a compact `--background-secondary` card with small
+ * muted labels, round colour swatches, and a slider plus value readout per
+ * numeric setting. Excalidraw only exposes five freedraw widths and a
+ * constant/variable pressure mode, so those two sliders stop at those values
+ * instead of covering ink's continuous ranges.
  *
  * A plain DOM popup is used instead of a React component because the panel
  * must outlive toolbar re-renders and is owned by the view rather than by the
@@ -209,8 +215,8 @@ export class ToolSettingsPopup {
   /**
    * The eraser size is the eraser's radius. The stored preference is a radius
    * (`EraserSizeManager` measures hits from it), but the value shown is the
-   * diameter - what the on-canvas circle actually covers - exactly as the
-   * oh-my-ink eraser panel shows it.
+   * diameter - what the on-canvas eraser disc actually covers - exactly as
+   * the oh-my-ink eraser panel shows it.
    */
   private renderEraserSizeRow(popupEl: HTMLDivElement): void {
     const controlsEl = this.renderRow(popupEl, t("ERASER_POPUP_SIZE"));
@@ -278,13 +284,17 @@ export class ToolSettingsPopup {
       }
       swatchEl.onClickEvent(() => {
         this.markSelected(swatchEl, swatchEls);
+        // The custom swatch falls back to its rainbow marker when another
+        // colour is picked; inline colours would otherwise outrank the class.
+        removeStyle(customEl, ["backgroundColor", "backgroundImage"]);
         this.applyStrokeColor(color);
       });
       swatchEls.push(swatchEl);
     }
 
     // Custom colour: the native picker input fills, and therefore opens, the
-    // last swatch, which then shows the colour in use.
+    // last swatch, which then shows the colour in use. In its inactive state
+    // the swatch shows ink's rainbow marker instead of a cross.
     const customEl = swatchesEl.createEl("label", {
       cls: `${SWATCH_CLASS} ${CUSTOM_SWATCH_CLASS}`,
       attr: { title: t("PEN_POPUP_COLOR_CUSTOM") },
@@ -292,7 +302,10 @@ export class ToolSettingsPopup {
     if (!STROKE_COLORS.includes(currentColor)) {
       customEl.addClass(SELECTED_CLASS);
       if (HEX_COLOR_PATTERN.test(currentColor)) {
-        setStyle(customEl, { backgroundColor: currentColor });
+        setStyle(customEl, {
+          backgroundColor: currentColor,
+          backgroundImage: "none",
+        });
       }
     }
     const inputEl = customEl.createEl("input", {
@@ -307,7 +320,10 @@ export class ToolSettingsPopup {
     });
     swatchEls.push(customEl);
     inputEl.addEventListener("input", () => {
-      setStyle(customEl, { backgroundColor: inputEl.value });
+      setStyle(customEl, {
+        backgroundColor: inputEl.value,
+        backgroundImage: "none",
+      });
       this.markSelected(customEl, swatchEls);
       this.applyStrokeColor(inputEl.value);
     });
@@ -318,12 +334,13 @@ export class ToolSettingsPopup {
     appState: AppState | undefined,
   ): void {
     const controlsEl = this.renderRow(popupEl, t("PEN_POPUP_THICKNESS"));
-    // An explicit numeric width overrides the preset key, so only a preset
-    // width marks a selected entry.
-    const activeKey =
+    // An explicit numeric width overrides the preset key, so the slider falls
+    // back to the component's default preset instead of inventing a position
+    // for a width the five presets cannot represent.
+    const activeKey: StrokeWidthKey =
       appState && appState.currentItemStrokeWidth == null
         ? appState.currentItemStrokeWidthKey
-        : null;
+        : "medium";
     const options: ReadonlyArray<readonly [StrokeWidthKey, string]> = [
       ["extraThin", t("PEN_SETTINGS_STROKE_PRESET_EXTRA_THIN")],
       ["thin", t("PEN_SETTINGS_STROKE_PRESET_THIN")],
@@ -331,22 +348,38 @@ export class ToolSettingsPopup {
       ["bold", t("PEN_SETTINGS_STROKE_PRESET_BOLD")],
       ["extraBold", t("PEN_SETTINGS_STROKE_PRESET_EXTRA_BOLD")],
     ];
-    const itemEls: HTMLElement[] = [];
-    for (const [key, label] of options) {
-      const itemEl = controlsEl.createEl("button", {
-        cls: ITEM_CLASS,
-        text: label,
-        attr: { type: "button", title: label },
-      });
-      if (key === activeKey) {
-        itemEl.addClass(SELECTED_CLASS);
-      }
-      itemEl.onClickEvent(() => {
-        this.markSelected(itemEl, itemEls);
-        this.applyStrokeWidth(key);
-      });
-      itemEls.push(itemEl);
-    }
+    const activeIndex = Math.max(
+      0,
+      options.findIndex(([key]) => key === activeKey),
+    );
+    // Excalidraw exposes five freedraw widths, not a continuous size, so the
+    // slider has one stop per preset while keeping oh-my-ink's row layout.
+    const inputEl = controlsEl.createEl("input", {
+      cls: SLIDER_CLASS,
+      attr: {
+        type: "range",
+        min: "0",
+        max: String(options.length - 1),
+        step: "1",
+        value: String(activeIndex),
+        "aria-label": t("PEN_POPUP_THICKNESS"),
+        "aria-valuetext": options[activeIndex][1],
+      },
+    });
+    const valueEl = controlsEl.createSpan({
+      cls: VALUE_CLASS,
+      text: options[activeIndex][1],
+    });
+    inputEl.addEventListener("input", () => {
+      const index = Math.min(
+        options.length - 1,
+        Math.max(0, Math.round(Number(inputEl.value))),
+      );
+      const [key, label] = options[index];
+      valueEl.setText(label);
+      inputEl.setAttribute("aria-valuetext", label);
+      this.applyStrokeWidth(key);
+    });
   }
 
   private renderPressureRow(
@@ -354,28 +387,42 @@ export class ToolSettingsPopup {
     appState: AppState | undefined,
   ): void {
     const controlsEl = this.renderRow(popupEl, t("PEN_POPUP_PRESSURE"));
+    // Freedraw pressure is a two-state freedraw setting in this component, not
+    // a percentage, so the slider has two stops with the values in its labels.
     const options: ReadonlyArray<
       readonly [AppState["currentItemStrokeVariability"], string]
     > = [
       ["constant", t("PEN_POPUP_PRESSURE_CONSTANT")],
       ["variable", t("PEN_POPUP_PRESSURE_VARIABLE")],
     ];
-    const itemEls: HTMLElement[] = [];
-    for (const [value, label] of options) {
-      const itemEl = controlsEl.createEl("button", {
-        cls: ITEM_CLASS,
-        text: label,
-        attr: { type: "button", title: label },
-      });
-      if (appState?.currentItemStrokeVariability === value) {
-        itemEl.addClass(SELECTED_CLASS);
-      }
-      itemEl.onClickEvent(() => {
-        this.markSelected(itemEl, itemEls);
-        this.applyPressure(value);
-      });
-      itemEls.push(itemEl);
-    }
+    const activeIndex =
+      appState?.currentItemStrokeVariability === "variable" ? 1 : 0;
+    const inputEl = controlsEl.createEl("input", {
+      cls: SLIDER_CLASS,
+      attr: {
+        type: "range",
+        min: "0",
+        max: String(options.length - 1),
+        step: "1",
+        value: String(activeIndex),
+        "aria-label": t("PEN_POPUP_PRESSURE"),
+        "aria-valuetext": options[activeIndex][1],
+      },
+    });
+    const valueEl = controlsEl.createSpan({
+      cls: VALUE_CLASS,
+      text: options[activeIndex][1],
+    });
+    inputEl.addEventListener("input", () => {
+      const index = Math.min(
+        options.length - 1,
+        Math.max(0, Math.round(Number(inputEl.value))),
+      );
+      const [value, label] = options[index];
+      valueEl.setText(label);
+      inputEl.setAttribute("aria-valuetext", label);
+      this.applyPressure(value);
+    });
   }
 
   private updateAppState(appState: Partial<AppState>): void {
