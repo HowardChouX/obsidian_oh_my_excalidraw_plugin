@@ -42,6 +42,22 @@ assert.ok(
   styles.includes('[data-testid="clear-canvas-button"]'),
   "styles.css no longer hides the component's Reset the canvas menu item",
 );
+// The tool panel and the eraser cursor are appended to `.excalidraw-wrapper`,
+// which is a sibling of the component's `.excalidraw` root. Scoping their
+// styles under `.excalidraw` silently leaves them unstyled and off-screen.
+for (const overlayClass of [
+  "excalidraw-tool-settings-popup",
+  "excalidraw-eraser-size-cursor",
+]) {
+  assert.ok(
+    styles.includes(`.excalidraw-wrapper .${overlayClass}`),
+    `styles.css no longer styles .${overlayClass} under .excalidraw-wrapper`,
+  );
+  assert.ok(
+    !styles.includes(`.excalidraw .${overlayClass}`),
+    `.${overlayClass} is a sibling of .excalidraw; its styles must not be scoped under .excalidraw`,
+  );
+}
 
 for (const [hook, description] of REQUIRED_HOOKS) {
   assert.ok(

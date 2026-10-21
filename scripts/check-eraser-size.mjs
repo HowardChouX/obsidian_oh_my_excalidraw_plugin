@@ -39,9 +39,10 @@ assert.equal(clampEraserSize("25"), 25);
 assert.equal(clampEraserSize("nonsense"), ERASER_SIZE_MIN_PX);
 assert.equal(clampEraserSize(undefined), ERASER_SIZE_MIN_PX);
 assert.equal(clampEraserSize(null), ERASER_SIZE_MIN_PX);
-// Values between steps land on the nearest step.
-assert.equal(clampEraserSize(23), 25);
-assert.equal(clampEraserSize(21), 20);
+// Fractional values land on the nearest whole pixel.
+assert.equal(clampEraserSize(23), 23);
+assert.equal(clampEraserSize(21.4), 21);
+assert.equal(clampEraserSize(23.6), 24);
 assert.equal(
   clampEraserSize(ERASER_SIZE_MIN_PX + 1) % ERASER_SIZE_STEP_PX,
   0,

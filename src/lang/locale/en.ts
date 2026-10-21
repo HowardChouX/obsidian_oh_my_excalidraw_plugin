@@ -430,7 +430,7 @@ export default {
     "The effect depends on the device. Crosshair is typically visible on drawing tablets, MS Surface, but not on iOS.",
   ERASER_SIZE_NAME: "Eraser size",
   ERASER_SIZE_DESC:
-    "How far the eraser reaches, in screen pixels. The Excalidraw eraser itself has a fixed reach, so a larger size lets the plugin erase anything the eraser path passes this close to - strokes erase when their line is reached, not when the pointer is inside an enclosed area. <b>5</b> keeps the eraser exactly as the component defines it. The same size can be set from the eraser tool panel in the toolbar.",
+    "The eraser's radius in screen pixels, from <b>5</b> to <b>60</b>. The Excalidraw eraser itself has a fixed reach, so a larger radius lets the plugin erase anything the eraser path passes this close to - strokes erase when their line is reached, not when the pointer is inside an enclosed area. At <b>5</b> the eraser behaves exactly as the component defines it. The same value can be set from the eraser panel in the toolbar, which shows the diameter (10-120px).",
   SHOW_DRAWING_OR_MD_IN_HOVER_PREVIEW_NAME:
     "Render Excalidraw file as an image in hover preview...",
   SHOW_DRAWING_OR_MD_IN_HOVER_PREVIEW_DESC:

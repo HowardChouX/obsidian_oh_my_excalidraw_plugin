@@ -207,9 +207,10 @@ export class ToolSettingsPopup {
   }
 
   /**
-   * The eraser size is the reach of the extra eraser pass (see
-   * `EraserSizeManager`): the component's own eraser has a fixed reach, so a
-   * larger size is what this value adds.
+   * The eraser size is the eraser's radius. The stored preference is a radius
+   * (`EraserSizeManager` measures hits from it), but the value shown is the
+   * diameter - what the on-canvas circle actually covers - exactly as the
+   * oh-my-ink eraser panel shows it.
    */
   private renderEraserSizeRow(popupEl: HTMLDivElement): void {
     const controlsEl = this.renderRow(popupEl, t("ERASER_POPUP_SIZE"));
@@ -227,13 +228,13 @@ export class ToolSettingsPopup {
     });
     const valueEl = controlsEl.createSpan({
       cls: VALUE_CLASS,
-      text: `${sizePx}px`,
+      text: `${sizePx * 2}px`,
     });
     // Live while dragging; the preference is written to disk once the value
     // settles, so dragging does not hammer the settings file.
     inputEl.addEventListener("input", () => {
       const nextSize = clampEraserSize(inputEl.value);
-      valueEl.setText(`${nextSize}px`);
+      valueEl.setText(`${nextSize * 2}px`);
       this.host.setEraserSize(nextSize, false);
     });
     inputEl.addEventListener("change", () => {

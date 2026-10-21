@@ -1941,7 +1941,12 @@ export class ExcalidrawSettingTab extends PluginSettingTab {
       {
         name: t("ERASER_SIZE_NAME"),
         desc: fragWithHTML(t("ERASER_SIZE_DESC")),
-        aliases: ["eraser size", "eraser thickness", "eraser reach"],
+        aliases: [
+          "eraser size",
+          "eraser thickness",
+          "eraser reach",
+          "eraser radius",
+        ],
         control: {
           type: "slider",
           key: "eraserSizePx",

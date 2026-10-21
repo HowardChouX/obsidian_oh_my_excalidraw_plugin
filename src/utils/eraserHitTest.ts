@@ -7,10 +7,15 @@
  * exercised without an Excalidraw runtime (see `scripts/check-eraser-size.mjs`).
  */
 
-/** Bounds and step of the eraser size setting, in screen pixels. */
+/**
+ * Bounds and step of the eraser radius, in screen pixels.
+ *
+ * The 5-60 range and 1 px step match the eraser slider of oh-my-ink, so the
+ * same sizes can be chosen in both editors.
+ */
 export const ERASER_SIZE_MIN_PX = 5;
-export const ERASER_SIZE_MAX_PX = 40;
-export const ERASER_SIZE_STEP_PX = 5;
+export const ERASER_SIZE_MAX_PX = 60;
+export const ERASER_SIZE_STEP_PX = 1;
 
 export type ScenePoint = { x: number; y: number };
 

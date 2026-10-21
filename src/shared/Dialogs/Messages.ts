@@ -18,7 +18,11 @@ I build this plugin as a labor of love. Curious about the philosophy behind it? 
 <div class="ex-coffee-div"><a href="${URLs.KO_FI_COM_ZSOLT}"><img src="${URLs.CDN_KO_FI_COM_CDN_KOFI3_PNG}" border="0" alt="Buy Me a Coffee at ko-fi.com"  height=45></a></div>
 `,
 "0.1.1": `
+## Changed
+- **Eraser size** now matches the oh-my-ink eraser slider: a **5-60** screen-pixel radius in **1**-pixel steps, up from 5-40 in steps of 5. The value is the eraser's own radius, and the toolbar panel shows the diameter (10-120px) - the size of the circle drawn on the canvas. The setting also lives under **Settings → Pen**.
+
 ## Fixed
+- The pen and eraser panels now appear under their toolbar button. The panel is added beside the component's canvas root, so its styles must not be scoped under that root; previously it rendered unstyled below the visible canvas and looked like nothing happened. The eraser-size circle had the same styling problem and is visible again.
 - Right-button panning can no longer leave the drawing unresponsive. The editor component now drops a pointer whose release never arrived (stylus side button, release outside the canvas, a cancel the browser never sent), ends a pan session that outlives its pointer, and releases the shared pointer state when the drawing closes. Previously this state was shared by every drawing in the window, so reopening the file did not help and only restarting Obsidian recovered it.
 
 ## Performance

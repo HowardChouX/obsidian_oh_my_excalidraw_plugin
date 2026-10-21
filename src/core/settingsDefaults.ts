@@ -82,7 +82,7 @@ export interface ExcalidrawSettings {
   penModeDoubleTapEraser: boolean;
   penModeSingleFingerPanning: boolean;
   penModeCrosshairVisible: boolean;
-  /** Eraser reach in screen pixels; 5 keeps the component's own eraser. */
+  /** Eraser radius in screen pixels; 5 keeps the component's own eraser. */
   eraserSizePx: number;
   renderImageInMarkdownReadingMode: boolean;
   renderImageInHoverPreviewForMDNotes: boolean;

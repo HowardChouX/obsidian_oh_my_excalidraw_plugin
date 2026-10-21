@@ -714,13 +714,13 @@ export default class ExcalidrawView
     return Boolean(this.semaphores?.viewunload);
   }
 
-  /** Eraser size preference, in screen pixels (`EraserSizeManager`). */
+  /** Eraser radius preference, in screen pixels (`EraserSizeManager`). */
   public getEraserSize(): number {
     return clampEraserSize(this.plugin.settings.eraserSizePx);
   }
 
   /**
-   * Updates the eraser size preference, clamped to the supported range.
+   * Updates the eraser radius preference, clamped to the supported range.
    *
    * @param persist write the preference to disk; the tool popup passes `false`
    * while its slider is dragged and persists once the value settles

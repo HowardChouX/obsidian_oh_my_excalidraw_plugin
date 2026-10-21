@@ -26,8 +26,10 @@ const PANNING_BUTTONS_MASK = 2 | 4;
 /**
  * The reach the Excalidraw component's own eraser already has: its hit test
  * uses a tolerance of `max(2.25, 5 / zoom)` scene units, i.e. ~2-5 screen
- * pixels. Sizes at or below this need no plugin-side help, and the extra pass
- * in {@link EraserSizeManager} stays out of the way.
+ * pixels. The size setting is the eraser's full radius, so this is the part
+ * the component already covers; {@link EraserSizeManager} adds the remainder.
+ * Sizes at or below it need no plugin-side help, and the extra pass stays out
+ * of the way.
  */
 const NATIVE_ERASER_REACH_PX = 5;
 
@@ -40,7 +42,7 @@ const CURSOR_CLASS = "excalidraw-eraser-size-cursor";
 export interface EraserSizeManagerHost {
   readonly ownerDocument: Document;
   readonly excalidrawAPI: ExcalidrawImperativeAPI | null;
-  /** Current eraser size preference, in screen pixels. */
+  /** Current eraser radius preference, in screen pixels. */
   getEraserSize(): number;
 }
 
@@ -50,10 +52,11 @@ export interface EraserSizeManagerHost {
  *
  *   The Excalidraw component's eraser has a fixed reach - `EraserTrail` draws
  *   with `size: 5` and `eraserTest()` decides hits with hard-coded tolerances -
- *   and exposes no setting for it. This manager adds a configurable *reach* on
- *   top of the component's own eraser instead of replacing it: while the eraser
- *   is dragged, strokes and other elements whose geometry comes within the
- *   configured distance of the pointer are erased as well.
+ *   and exposes no setting for it. The size setting is the eraser's radius; this
+ *   manager adds the part of that radius the component does not already cover
+ *   instead of replacing the eraser: while the eraser is dragged, strokes and
+ *   other elements whose geometry comes within the remaining distance of the
+ *   pointer are erased as well.
  *
  * Notes:
  *   - The manager never blocks or re-routes pointer events. The component's
@@ -284,12 +287,17 @@ export class EraserSizeManager {
   }
 
   /**
-   * The reach in scene units. The setting is a screen size - like the
-   * component's own tolerance - so the eraser keeps feeling the same at any
-   * zoom level.
+   * The reach the extra pass adds, in scene units: the configured radius minus
+   * what the component's own eraser already reaches. The setting is a screen
+   * size - like the component's own tolerance - so the eraser keeps feeling
+   * the same at any zoom level.
    */
   private reachInSceneUnits(zoom: number): number {
-    return this.host.getEraserSize() / (zoom || 1);
+    const extraReachPx = Math.max(
+      0,
+      this.host.getEraserSize() - NATIVE_ERASER_REACH_PX,
+    );
+    return extraReachPx / (zoom || 1);
   }
 
   /** Elements whose geometry comes within `reach` of `point`. */
